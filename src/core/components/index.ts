@@ -11,3 +11,5 @@ export { TopBar } from './TopBar';
 export { Avatar } from './Avatar';
 export { ProgressBar } from './ProgressBar';
 export { ProgressRing } from './ProgressRing';
+export { Fab } from './Fab';
+export { SegmentedControl } from './SegmentedControl';
