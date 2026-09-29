@@ -53,6 +53,10 @@ service cloud.firestore {
       // Admin pode alterar tudo (meta, membros...). RN-04
       // Membro comum só pode mexer no saldo e na própria contribuição (via aporte).
       allow update: if isAdmin(resource)
+        // Membro saindo da caixinha: só pode remover a si mesmo.
+        || (isMember(resource)
+            && request.resource.data.memberIds == resource.data.memberIds.removeAll([request.auth.uid])
+            && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['memberIds', 'members']))
         || (isMember(resource)
             && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['savedAmount', 'members'])
             && request.resource.data.memberIds == resource.data.memberIds

@@ -13,3 +13,4 @@ export { ProgressBar } from './ProgressBar';
 export { ProgressRing } from './ProgressRing';
 export { Fab } from './Fab';
 export { SegmentedControl } from './SegmentedControl';
+export { SettingRow, SettingsSection, Toggle } from './Settings';

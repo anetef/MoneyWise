@@ -1,9 +1,3 @@
-import { useLocalSearchParams } from 'expo-router';
+import { GoalStatementScreen } from '@/features/goals/screens/GoalStatementScreen';
 
-import { PlaceholderScreen } from '@/core/navigation/PlaceholderScreen';
-
-/** Extrato da caixinha — tela provisória. */
-export default function GoalStatementRoute() {
-  const { id } = useLocalSearchParams<{ id: string }>();
-  return <PlaceholderScreen title="Extrato da caixinha" figmaFrame={`Extrato da Caixinha · caixinha ${id}`} />;
-}
+export default GoalStatementScreen;
