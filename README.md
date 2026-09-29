@@ -12,7 +12,8 @@ Aplicativo de gestão financeira pessoal e colaborativa (TCC — Universidade Ca
 # 1. Instalar as dependências
 npm install
 
-# 2. Configurar o Firebase (veja a seção abaixo)
+# 2. (Opcional) Configurar o Firebase — veja docs/FIREBASE.md
+#    Sem isso, o app roda em MODO DEMONSTRAÇÃO com dados de exemplo.
 cp .env.example .env
 
 # 3. Iniciar
@@ -64,6 +65,13 @@ screens/  (UI)  →  use*.ts (hooks: lógica e estado)  →  *Repository.ts (dad
 ```
 
 A tela **nunca** acessa o Firebase diretamente, só através do hook, que usa o repositório.
+
+---
+
+## Documentação
+
+- [Navegação entre telas](docs/NAVEGACAO.md)
+- [Conexão com o Firebase](docs/FIREBASE.md)
 
 ---
 
