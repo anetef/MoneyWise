@@ -1,10 +1,11 @@
-import { createContext, useCallback, useContext, useMemo, useState, type ReactNode } from 'react';
+import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
 
+import { authRepository } from './authRepository';
 import type { AppUser, SignInInput, SignUpInput } from './types';
 
 type AuthState = {
   user: AppUser | null;
-  /** true enquanto verificamos se já existe uma sessão salva (RF-03). */
+  /** true enquanto o Firebase verifica se já existe uma sessão salva (RF-03). */
   initializing: boolean;
   signIn: (input: SignInInput) => Promise<void>;
   signUp: (input: SignUpInput) => Promise<void>;
@@ -17,26 +18,31 @@ const AuthContext = createContext<AuthState | null>(null);
 /**
  * Guarda quem está logado e disponibiliza isso para o app inteiro.
  * O layout raiz usa `user` para decidir quais telas podem ser abertas.
- *
- * Nesta etapa a sessão é só em memória, para testar a navegação.
  */
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<AppUser | null>(null);
+  const [initializing, setInitializing] = useState(true);
 
-  const signIn = useCallback(async ({ email }: SignInInput) => {
-    setUser({ id: 'demo', name: 'Usuário Demo', email });
+  useEffect(() => {
+    // Fica "ouvindo" o Firebase: dispara no login, no logout e ao abrir o app
+    // com uma sessão já salva (UC02 — Manter sessão persistente).
+    const unsubscribe = authRepository.onUserChanged((nextUser) => {
+      setUser(nextUser);
+      setInitializing(false);
+    });
+    return unsubscribe;
   }, []);
 
-  const signUp = useCallback(async ({ name, email }: SignUpInput) => {
-    setUser({ id: 'demo', name, email });
-  }, []);
-
-  const signOut = useCallback(async () => setUser(null), []);
-  const resetPassword = useCallback(async (_email: string) => {}, []);
-
-  const value = useMemo(
-    () => ({ user, initializing: false, signIn, signUp, signOut, resetPassword }),
-    [user, signIn, signUp, signOut, resetPassword],
+  const value = useMemo<AuthState>(
+    () => ({
+      user,
+      initializing,
+      signIn: (input) => authRepository.signIn(input),
+      signUp: (input) => authRepository.signUp(input),
+      signOut: () => authRepository.signOut(),
+      resetPassword: (email) => authRepository.resetPassword(email),
+    }),
+    [user, initializing],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
@@ -47,4 +53,11 @@ export function useAuth(): AuthState {
   const ctx = useContext(AuthContext);
   if (!ctx) throw new Error('useAuth precisa estar dentro de <AuthProvider>');
   return ctx;
+}
+
+/** Atalho para telas do grupo (app), onde sempre há um usuário logado. */
+export function useCurrentUser(): AppUser {
+  const { user } = useAuth();
+  if (!user) throw new Error('useCurrentUser usado fora de uma tela autenticada');
+  return user;
 }
