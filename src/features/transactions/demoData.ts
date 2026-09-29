@@ -19,6 +19,8 @@ export function createDemoTransactions(userId: string): Transaction[] {
   ): Transaction => ({ id, userId, type, amount, categoryId, description, date });
 
   return [
+    // Saldo trazido do mês anterior (deixa o saldo igual ao do Figma: R$ 14.529,80).
+    t('d0', 'income', 12317.3, 'other-income', 'Saldo do mês anterior', daysAgo(40, 9, 0)),
     t('d1', 'expense', 149.9, 'shopping', 'Mercado Livre', daysAgo(0, 14, 30)),
     t('d2', 'income', 450, 'pix', 'Pix recebido · João Silva', daysAgo(1, 9, 15)),
     t('d3', 'expense', 68.5, 'food', 'iFood', daysAgo(3, 20, 45)),

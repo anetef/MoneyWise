@@ -1,6 +1,3 @@
-import { PlaceholderScreen } from '@/core/navigation/PlaceholderScreen';
+import { TransactionFormScreen } from '@/features/transactions/screens/TransactionFormScreen';
 
-/** Adicionar transação — tela provisória. */
-export default function NewTransactionRoute() {
-  return <PlaceholderScreen title="Adicionar transação" figmaFrame="Adicionar Transação" />;
-}
+export default TransactionFormScreen;

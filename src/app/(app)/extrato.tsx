@@ -1,15 +1,3 @@
-import { PlaceholderScreen } from '@/core/navigation/PlaceholderScreen';
-import { routes } from '@/core/navigation/routes';
+import { StatementScreen } from '@/features/transactions/screens/StatementScreen';
 
-/** Extrato de transações — tela provisória (visual do Figma entra na branch de telas). */
-export default function StatementRoute() {
-  return (
-    <PlaceholderScreen
-      title="Extrato de transações"
-      figmaFrame="Extrato de Transações"
-      links={[
-        { label: 'Adicionar transação', href: routes.newTransaction }
-      ]}
-    />
-  );
-}
+export default StatementScreen;
