@@ -1,6 +1,3 @@
-import { PlaceholderScreen } from '@/core/navigation/PlaceholderScreen';
+import { NewGoalScreen } from '@/features/goals/screens/NewGoalScreen';
 
-/** Nova caixinha — tela provisória. */
-export default function NewGoalRoute() {
-  return <PlaceholderScreen title="Nova caixinha" figmaFrame="Nova Caixinha - Criar" />;
-}
+export default NewGoalScreen;

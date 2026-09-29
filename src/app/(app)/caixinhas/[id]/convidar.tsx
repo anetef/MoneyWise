@@ -1,9 +1,3 @@
-import { useLocalSearchParams } from 'expo-router';
+import { GoalInviteScreen } from '@/features/goals/screens/GoalInviteScreen';
 
-import { PlaceholderScreen } from '@/core/navigation/PlaceholderScreen';
-
-/** Convidar membros — tela provisória. */
-export default function GoalInviteRoute() {
-  const { id } = useLocalSearchParams<{ id: string }>();
-  return <PlaceholderScreen title="Convidar membros" figmaFrame={`Convidar Membros · caixinha ${id}`} />;
-}
+export default GoalInviteScreen;

@@ -119,11 +119,18 @@ export function useGoal(goalId: string) {
     [goal, isAdmin],
   );
 
+  /** Membro comum sai da caixinha compartilhada. */
+  const leave = useCallback(async () => {
+    if (!goal) return;
+    if (isAdmin) throw new AppError('O administrador não pode sair; exclua a caixinha.');
+    await goalRepository.removeMember(goal.id, user.id);
+  }, [goal, isAdmin, user.id]);
+
   const remove = useCallback(async () => {
     if (!goal) return;
     if (!isAdmin) throw new AppError('Apenas o administrador pode excluir a caixinha.');
     await goalRepository.remove(goal.id);
   }, [goal, isAdmin]);
 
-  return { goal, entries, loading, isAdmin, thermometer, addEntry, update, invite, removeMember, remove };
+  return { goal, entries, loading, isAdmin, thermometer, addEntry, update, invite, removeMember, leave, remove };
 }
