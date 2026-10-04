@@ -238,9 +238,9 @@ moneywise/
 
 ---
 
-## 1. GitFlow
+## GitFlow
 
-### 1.1 Estrutura de Branches
+### Estrutura de Branches
 
 | Branch | Finalidade | Regra |
 |---|---|---|
@@ -249,7 +249,7 @@ moneywise/
 | `feature/nome-da-feature` | Novas funcionalidades | Criada a partir de `develop`; merge via PR |
 | `fix/nome-do-bug` | Correção de bugs encontrados em desenvolvimento | Criada a partir de `develop`; merge via PR |
 
-### 1.2 Fluxo de Trabalho — Feature
+### Fluxo de Trabalho — Feature
 
 ```bash
 # 1. Atualizar o repositório local
@@ -268,9 +268,9 @@ git checkout -b feature/nome-da-feature
 ```
 ---
 
-## 2. Padrões de Commit
+## Padrões de Commit
 
-### 2.1 Formato
+### Formato
 
 ```
 <tipo>(escopo): <descrição curta no imperativo>
@@ -291,7 +291,7 @@ test(timer): adiciona testes de UsageTimeTracker
 chore(ci): adiciona job de lint ao pipeline
 ```
 
-### 2.2 Tipos Permitidos
+### Tipos Permitidos
 
 | Tipo | Quando usar |
 |---|---|
@@ -305,7 +305,7 @@ chore(ci): adiciona job de lint ao pipeline
 | `perf` | Melhoria de performance |
 | `revert` | Reversão de commit anterior |
 
-### 2.3 Regras Gerais
+### Regras Gerais
 
 - Mensagem em **inglês**.
 - Descrição curta
