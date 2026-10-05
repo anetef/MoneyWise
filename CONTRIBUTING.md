@@ -54,7 +54,7 @@ git commit -m "feat: adiciona caso de uso de cadastro de usuário"
 
 # 4. Antes de abrir a PR, traga a develop atualizada
 git fetch origin
-git merge origin/develop      # ou: git rebase origin/develop
+git merge origin/develop
 
 # 5. Envie a branch e abra a PR para develop no GitHub
 git push -u origin feature/SEC-05-register-user
