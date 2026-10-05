@@ -333,7 +333,7 @@ O guia completo, com o passo a passo e a Definition of Done, está no [CONTRIBUT
 ### Padrões
 
 - **Uma task, uma branch, uma Pull Request.**
-- Commits em [Conventional Commits](https://www.conventionalcommits.org/pt-br/) em inglês: `feat:`, `fix:`, `docs:`, `test:`, `refactor:`, `chore:`.
+- Commits em [Conventional Commits](https://www.conventionalcommits.org/pt-br/) em português: `feat:`, `fix:`, `docs:`, `test:`, `refactor:`, `chore:`.
 - Título da PR com o ID da task, como `[SEC-05] Cadastro de usuário`, e `Closes #n` na descrição.
 - Pelo menos **uma aprovação** de outra pessoa da equipe antes do merge, que é feito com **squash and merge**.
 - Nomes de código (classes, arquivos, tabelas e endpoints) em **inglês**. Textos para o usuário e documentação em **português**.

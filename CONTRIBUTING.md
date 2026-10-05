@@ -50,7 +50,7 @@ git checkout -b feature/SEC-05-register-user
 
 # 3. Trabalhe e faça commits pequenos (ver seção 4)
 git add .
-git commit -m "feat: add user registration use case"
+git commit -m "feat: adiciona caso de uso de cadastro de usuário"
 
 # 4. Antes de abrir a PR, traga a develop atualizada
 git fetch origin
@@ -67,7 +67,7 @@ No quadro do projeto, mova o card da task para **Em andamento** ao começar e pa
 Formato:
 
 ```
-<tipo>(escopo opcional): <descrição curta em inglês, no imperativo>
+<tipo>(escopo opcional): <descrição curta em português, no presente>
 
 [corpo opcional: o quê e por quê]
 
@@ -86,14 +86,14 @@ Formato:
 Exemplos:
 
 ```
-feat(auth): add user registration endpoint
-fix(transactions): fix date range filter on statement
-docs: add contributing guide
-test(goals): cover thermometer calculation when contribution exceeds target
-chore(mobile): update Expo dependencies
+feat(auth): adiciona endpoint de cadastro de usuário
+fix(transactions): corrige filtro por período no extrato
+docs: adiciona guia de contribuição
+test(goals): cobre cálculo do termômetro com aporte acima da meta
+chore(mobile): atualiza dependências do Expo
 ```
 
-- Mensagens **em inglês**, no imperativo ("add", "fix", "update"), começando com letra minúscula e sem ponto final.
+- Mensagens **em português**, no presente ("adiciona", "corrige", "atualiza"), começando com letra minúscula e sem ponto final.
 - Um commit trata de um assunto só. Não misture mudanças sem relação.
 
 ## 5. Pull Requests
@@ -111,7 +111,7 @@ chore(mobile): update Expo dependencies
 - Toda PR precisa de **pelo menos 1 aprovação** de outra pessoa do time antes do merge. Quem abriu a PR não aprova a própria.
 - Quem revisa confere os critérios de aceitação da issue e a Definition of Done.
 - Pedidos de mudança são respondidos com novos commits na mesma branch.
-- O merge em `develop` é feito com **squash and merge**, para que cada task vire um único commit na `develop`. A mensagem do squash segue o padrão de commit (ex.: `feat: add user registration (#45)`).
+- O merge em `develop` é feito com **squash and merge**, para que cada task vire um único commit na `develop`. A mensagem do squash segue o padrão de commit (ex.: `feat: adiciona cadastro de usuário (#45)`).
 - Depois do merge, apague a branch da task.
 
 ## 7. Definition of Done
