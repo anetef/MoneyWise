@@ -1,0 +1,21 @@
+# IDEs
+.idea/
+.vscode/
+*.iml
+
+# Dependências e arquivos gerados
+node_modules/
+.expo/
+dist/
+web-build/
+target/
+*.class
+
+# Variáveis de ambiente
+.env
+.env.*
+!.env.example
+
+# Sistema operacional
+.DS_Store
+Thumbs.db
