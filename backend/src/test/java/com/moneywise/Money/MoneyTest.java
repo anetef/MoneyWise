@@ -1,11 +1,12 @@
-package com.moneywise.Money;
-import com.moneywise.shared.Money;
+package com.moneywise.money;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+
+import com.moneywise.shared.money.Money;
 
 // Testes da classe Money
 class MoneyTest {
@@ -33,7 +34,7 @@ class MoneyTest {
                 .isInstanceOf(IllegalArgumentException.class);
     }
 
-    @Test 
+    @Test
     @DisplayName("Subtrai dois valores na mesma moeda")
     void shouldSubtractTwoAmountsInSameCurrency() {
         // Arrange (preparar)
@@ -42,7 +43,6 @@ class MoneyTest {
 
         // Act (agir)
         Money result = a.minus(b);
-
 
         // Assert (verificar)
         assertThat(result).isEqualTo(Money.of("4.50", "BRL"));
@@ -58,7 +58,7 @@ class MoneyTest {
                 .isInstanceOf(IllegalArgumentException.class);
     }
 
-    @Test 
+    @Test
     @DisplayName("Valor maior que outro")
     void shouldBeGreaterThanAnotherAmount() {
         // Arrange (preparar)
@@ -72,7 +72,7 @@ class MoneyTest {
         assertThat(result).isTrue();
     }
 
-    @Test 
+    @Test
     @DisplayName("Valor menor que outro")
     void shouldBeLessThanAnotherAmount() {
         // Arrange (preparar)
@@ -80,10 +80,10 @@ class MoneyTest {
         Money b = Money.of("5.50", "BRL");
 
         // Act (agir)
-        boolean result = a.isLessThan(b);
+        boolean result = b.isLessThan(a);
 
         // Assert (verificar)
-        assertThat(result).isFalse();
+        assertThat(result).isTrue();
     }
 
     @Test
@@ -129,13 +129,21 @@ class MoneyTest {
 
         // Assert (verificar)
         assertThat(result.isNegative()).isTrue();
-    }   
+    }
 
     @Test
     @DisplayName("Não permite criar Money com moeda nula")
     void shouldNotAllowNullCurrency() {
         assertThatThrownBy(() -> Money.of("10.00", null))
-        .isInstanceOf(NullPointerException.class);
+                .isInstanceOf(NullPointerException.class);
+    }
+
+    @Test
+    @DisplayName("Arredonda 10.005 para 10.00 (arredondamento bancário)")
+    void shouldRoundDownToEven() {
+        Money money = Money.of("10.005", "BRL");
+
+        assertThat(money).isEqualTo(Money.of("10.00", "BRL"));
     }
 
 }

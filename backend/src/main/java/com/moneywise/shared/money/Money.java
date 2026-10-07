@@ -1,4 +1,4 @@
-package com.moneywise.shared;
+package com.moneywise.shared.money;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
