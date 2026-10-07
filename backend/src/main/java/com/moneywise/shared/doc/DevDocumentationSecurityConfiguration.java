@@ -1,4 +1,4 @@
-package com.moneywise.shared;
+package com.moneywise.shared.doc;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;

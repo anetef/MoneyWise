@@ -10,6 +10,7 @@ import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.web.HttpRequestMethodNotSupportedException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
+import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 import org.springframework.web.servlet.resource.NoResourceFoundException;
@@ -33,21 +34,25 @@ public class GlobalExceptionHandler {
     // Exceções de domínio 
     // Se alguma dessas excecoes ocorrer, ele chama um dos metodos que saiba trata-la
     @ExceptionHandler(ResourceNotFoundException.class)
+    @ResponseStatus(HttpStatus.NOT_FOUND)
     public ResponseEntity<ErrorResponse> handleNotFound(ResourceNotFoundException ex) {
         return build(HttpStatus.NOT_FOUND, ex);                  // 404
     }
 
     @ExceptionHandler(ForbiddenOperationException.class)
+    @ResponseStatus(HttpStatus.FORBIDDEN)
     public ResponseEntity<ErrorResponse> handleForbidden(ForbiddenOperationException ex) {
         return build(HttpStatus.FORBIDDEN, ex);                  // 403
     }
 
     @ExceptionHandler(ConflictException.class)
+    @ResponseStatus(HttpStatus.CONFLICT)
     public ResponseEntity<ErrorResponse> handleConflict(ConflictException ex) {
         return build(HttpStatus.CONFLICT, ex);                   // 409
     }
 
     @ExceptionHandler(BusinessRuleException.class)
+    @ResponseStatus(HttpStatus.UNPROCESSABLE_CONTENT)
     public ResponseEntity<ErrorResponse> handleBusinessRule(BusinessRuleException ex) {
         return build(HttpStatus.UNPROCESSABLE_CONTENT, ex);       // 422
     }
@@ -55,6 +60,7 @@ public class GlobalExceptionHandler {
     // Validação (Bean Validation) 
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
     public ResponseEntity<ErrorResponse> handleValidation(MethodArgumentNotValidException ex) {
         // pega os campos que deram errado
         List<ErrorResponse.InvalidField> fields = ex.getBindingResult().getFieldErrors().stream()
@@ -69,6 +75,7 @@ public class GlobalExceptionHandler {
 
     // Spring não consegue ler o corpo da requisição.
     @ExceptionHandler(HttpMessageNotReadableException.class)
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
     public ResponseEntity<ErrorResponse> handleUnreadableBody(HttpMessageNotReadableException ex) {
         return ResponseEntity.status(HttpStatus.BAD_REQUEST)
                 .body(ErrorResponse.of("MALFORMED_REQUEST", "O corpo da requisição está mal formatado."));
@@ -76,6 +83,7 @@ public class GlobalExceptionHandler {
 
     // Parametro com tipo errado
     @ExceptionHandler(MethodArgumentTypeMismatchException.class)
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
     public ResponseEntity<ErrorResponse> handleTypeMismatch(MethodArgumentTypeMismatchException ex) {
         return ResponseEntity.status(HttpStatus.BAD_REQUEST)
                 .body(ErrorResponse.of("INVALID_PARAMETER",
@@ -84,6 +92,7 @@ public class GlobalExceptionHandler {
 
     // Método HTTP não permitido
     @ExceptionHandler(HttpRequestMethodNotSupportedException.class)
+    @ResponseStatus(HttpStatus.METHOD_NOT_ALLOWED)
     public ResponseEntity<ErrorResponse> handleMethodNotSupported(HttpRequestMethodNotSupportedException ex) {
         return ResponseEntity.status(HttpStatus.METHOD_NOT_ALLOWED)
                 .body(ErrorResponse.of("METHOD_NOT_ALLOWED", "Método HTTP não suportado neste endpoint."));
@@ -91,6 +100,7 @@ public class GlobalExceptionHandler {
 
     // Endpoint inexistente
     @ExceptionHandler(NoResourceFoundException.class)
+    @ResponseStatus(HttpStatus.NOT_FOUND)
     public ResponseEntity<ErrorResponse> handleNoEndpoint(NoResourceFoundException ex) {
         return ResponseEntity.status(HttpStatus.NOT_FOUND)
                 .body(ErrorResponse.of("ENDPOINT_NOT_FOUND", "Endpoint não encontrado."));
@@ -98,6 +108,7 @@ public class GlobalExceptionHandler {
 
     //  Pega-tudo , caso o erro nao seja tratado por nenhuma outra funcao
     @ExceptionHandler(Exception.class)
+    @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
     public ResponseEntity<ErrorResponse> handleUnexpected(Exception ex) {
         log.error("Erro inesperado", ex);
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
