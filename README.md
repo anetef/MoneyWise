@@ -307,7 +307,7 @@ chore(ci): adiciona job de lint ao pipeline
 
 ### Regras Gerais
 
-- Mensagem em **inglês**.
+- Mensagem em **português**.
 - Descrição curta
 - Nunca misturar múltiplas mudanças não relacionadas em um único commit.
 
