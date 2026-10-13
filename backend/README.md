@@ -76,3 +76,7 @@ Para apagar o banco local e reaplicar todas as migrations do zero (na raiz do pr
     docker compose up -d
 
 **Atenção:** o `-v` apaga todos os dados do banco local.
+
+6. **Toda tabela tem `created_at` e `updated_at`** (decisão L-08):
+   `TIMESTAMPTZ NOT NULL DEFAULT now()`. Na entidade JPA, são preenchidas com
+   `@CreationTimestamp` e `@UpdateTimestamp`.
