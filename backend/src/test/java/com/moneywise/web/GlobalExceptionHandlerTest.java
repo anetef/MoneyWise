@@ -6,6 +6,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import com.moneywise.shared.exception.UnauthorizedException;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -69,6 +70,11 @@ class GlobalExceptionHandlerTest {
 
         @PostMapping("/test/validation")
         void validation(@Valid @RequestBody SampleRequest request) {
+        }
+
+        @GetMapping("/test/unauthorized")
+        void unauthorized() {
+            throw new UnauthorizedException("INVALID_CREDENTIALS", "E-mail ou senha inválidos.");
         }
     }
 
@@ -157,4 +163,15 @@ class GlobalExceptionHandlerTest {
                 .andExpect(jsonPath("$.code").value("INTERNAL_ERROR"))
                 .andExpect(jsonPath("$.message").value("Ocorreu um erro inesperado. Tente novamente mais tarde."));
     }
+
+        @Test
+    @DisplayName("Credenciais inválidas retornam 401")
+    void shouldReturn401ForUnauthorized() throws Exception {
+        mockMvc.perform(get("/test/unauthorized"))
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.code").value("INVALID_CREDENTIALS"))
+                .andExpect(jsonPath("$.message").value("E-mail ou senha inválidos."));
+    }
+
+  
 }

@@ -20,7 +20,7 @@ import com.moneywise.shared.exception.ConflictException;
 import com.moneywise.shared.exception.DomainException;
 import com.moneywise.shared.exception.ForbiddenOperationException;
 import com.moneywise.shared.exception.ResourceNotFoundException;
-
+import com.moneywise.shared.exception.UnauthorizedException;
 /**
  * Converte as exceções da API em respostas HTTP no formato ErrorResponse.
  * Pertence à camada de apresentação: é o único lugar que traduz erros para HTTP.
@@ -114,6 +114,12 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                 .body(ErrorResponse.of("INTERNAL_ERROR",
                         "Ocorreu um erro inesperado. Tente novamente mais tarde."));
+    }
+
+    @ExceptionHandler(UnauthorizedException.class)
+    @ResponseStatus(HttpStatus.UNAUTHORIZED)
+    public ResponseEntity<ErrorResponse> handleUnauthorized(UnauthorizedException ex) {
+        return build(HttpStatus.UNAUTHORIZED, ex);               // 401
     }
 
     // Evita repetir código.
