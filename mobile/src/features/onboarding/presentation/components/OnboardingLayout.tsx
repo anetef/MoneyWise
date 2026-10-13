@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react';
+import { Button } from '../../../../core/components/Button';
 import { Pressable, SafeAreaView, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { colors, radius, spacing, typography } from '../../../../core/theme';
 
@@ -49,14 +50,10 @@ export function OnboardingLayout({
                     <Text style={styles.description}>{description}</Text>
                 </View>
 
-                <Pressable
-                    accessibilityRole="button"
-                    onPress={onNext}
-                    style={({ pressed }) => [styles.button, pressed && styles.pressed]}
-                >
-                    <Text style={styles.buttonText}>{step === 3 ? 'Começar agora' : 'Continuar'}</Text>
-                    <Text style={styles.arrow}>→</Text>
-                </Pressable>
+                            <Button
+                title={step === 3 ? 'Começar agora' : 'Continuar'}
+                onPress={onNext}
+            />
             </ScrollView>
         </SafeAreaView>
     );
@@ -73,9 +70,20 @@ const styles = StyleSheet.create({
         maxWidth: 480,
         alignSelf: 'center',
     },
-    topRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-    topAction: { minHeight: 44, minWidth: 72, justifyContent: 'center' },
-    topActionText: { ...typography.caption, color: colors.text.secondary },
+    topRow: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+    },
+    topAction: {
+        minHeight: 44,
+        minWidth: 72,
+        justifyContent: 'center',
+    },
+    topActionText: {
+        ...typography.caption,
+        color: colors.text.secondary,
+    },
     skipText: { textAlign: 'right' },
     illustration: {
         flex: 1,
@@ -85,23 +93,34 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         marginVertical: spacing.xxl,
     },
-    body: { alignItems: 'center', marginBottom: spacing.xxxl },
-    dots: { flexDirection: 'row', gap: spacing.sm, marginBottom: spacing.xxl },
-    dot: { width: 8, height: 8, backgroundColor: colors.border.default, borderRadius: radius.full },
-    activeDot: { width: 27, backgroundColor: colors.primary },
-    title: { ...typography.heading, color: colors.text.primary, textAlign: 'center', marginBottom: spacing.md },
-    description: { ...typography.body, color: colors.text.secondary, textAlign: 'center' },
-    button: {
-        backgroundColor: colors.primary,
-        borderRadius: radius.lg,
-        minHeight: 56,
-        paddingHorizontal: spacing.xl,
-        flexDirection: 'row',
+    body: {
         alignItems: 'center',
-        justifyContent: 'center',
-        gap: spacing.md,
+        marginBottom: spacing.xxxl,
     },
-    buttonText: { ...typography.button, color: colors.white },
-    arrow: { ...typography.title, color: colors.white },
-    pressed: { opacity: 0.8 },
+    dots: {
+        flexDirection: 'row',
+        gap: spacing.sm,
+        marginBottom: spacing.xxl,
+    },
+    dot: {
+        width: 8,
+        height: 8,
+        backgroundColor: colors.border.default,
+        borderRadius: radius.full,
+    },
+    activeDot: {
+        width: 27,
+        backgroundColor: colors.primary,
+    },
+    title: {
+        ...typography.heading,
+        color: colors.text.primary,
+        textAlign: 'center',
+        marginBottom: spacing.md,
+    },
+    description: {
+        ...typography.body,
+        color: colors.text.secondary,
+        textAlign: 'center',
+    },
 });
