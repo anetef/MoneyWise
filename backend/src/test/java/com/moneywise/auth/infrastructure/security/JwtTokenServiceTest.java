@@ -18,6 +18,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.security.oauth2.jwt.JwtDecoder;
 
+import com.moneywise.auth.infrastructure.persistence.RefreshTokenEntity;
 
 class JwtTokenServiceTest {
 
@@ -26,17 +27,20 @@ class JwtTokenServiceTest {
     private static final Duration TTL = Duration.ofMinutes(15);
 
     private final JwtConfig config = new JwtConfig();
+    private final InMemoryRefreshTokenStore store = new InMemoryRefreshTokenStore();
 
     /** Monta um serviço com o segredo e o relógio escolhidos, sem precisar do Spring. */
     private JwtTokenService service(String secret, Clock clock) {
-            JwtProperties properties = new JwtProperties(secret, TTL);
+        JwtProperties properties = new JwtProperties(secret, TTL, null);
         SecretKey key = config.jwtSecretKey(properties);
-        return new JwtTokenService(config.jwtEncoder(key), config.jwtDecoder(key), properties, clock);
+        return new JwtTokenService(config.jwtEncoder(key), config.jwtDecoder(key), properties, store, clock);
     }
 
     private JwtTokenService service() {
         return service(SECRET, Clock.systemUTC());
     }
+
+    // ---------- Access token (parte A) ----------
 
     @Test
     @DisplayName("Emite um token válido que devolve o id do usuário")
@@ -53,7 +57,7 @@ class JwtTokenServiceTest {
     void shouldUseConfiguredDuration() {
         String token = service().issueAccessToken(UUID.randomUUID());
 
-        JwtDecoder decoder = config.jwtDecoder(config.jwtSecretKey(new JwtProperties(SECRET, TTL)));
+        JwtDecoder decoder = config.jwtDecoder(config.jwtSecretKey(new JwtProperties(SECRET, TTL, null)));
         Jwt jwt = decoder.decode(token);
 
         assertThat(Duration.between(jwt.getIssuedAt(), jwt.getExpiresAt())).isEqualTo(TTL);
@@ -62,7 +66,6 @@ class JwtTokenServiceTest {
     @Test
     @DisplayName("Rejeita token expirado")
     void shouldRejectExpiredToken() {
-        // Um relógio parado 1 hora no passado: o token já nasce vencido há 45 minutos
         Clock oneHourAgo = Clock.fixed(Instant.now().minus(1, ChronoUnit.HOURS), ZoneOffset.UTC);
         String expiredToken = service(SECRET, oneHourAgo).issueAccessToken(UUID.randomUUID());
 
@@ -76,7 +79,6 @@ class JwtTokenServiceTest {
         UUID attacker = UUID.randomUUID();
         String token = service().issueAccessToken(attacker);
 
-        // O atacante troca o próprio id pelo da vítima no conteúdo, mas mantém a assinatura original
         String[] parts = token.split("\\.");
         String payload = new String(Base64.getUrlDecoder().decode(parts[1]), StandardCharsets.UTF_8);
         String forgedPayload = payload.replace(attacker.toString(), victim.toString());
@@ -106,5 +108,89 @@ class JwtTokenServiceTest {
     void shouldRejectNullOrBlank() {
         assertThat(service().validateAccessToken(null)).isEmpty();
         assertThat(service().validateAccessToken("   ")).isEmpty();
+    }
+
+    // ---------- Refresh token (parte B) ----------
+
+    @Test
+    @DisplayName("Emite um refresh token válido que devolve o id do usuário")
+    void shouldIssueAndValidateRefreshToken() {
+        UUID userId = UUID.randomUUID();
+
+        String refreshToken = service().issueRefreshToken(userId);
+
+        assertThat(service().validateRefreshToken(refreshToken)).hasValue(userId);
+    }
+
+    @Test
+    @DisplayName("Guarda só o hash do refresh token, nunca o valor")
+    void shouldStoreOnlyTheHash() {
+        String refreshToken = service().issueRefreshToken(UUID.randomUUID());
+
+        assertThat(store.all()).hasSize(1);
+        RefreshTokenEntity saved = store.all().values().iterator().next();
+        assertThat(saved.getTokenHash())
+                .isNotEqualTo(refreshToken)
+                .isEqualTo(JwtTokenService.sha256(refreshToken))
+                .hasSize(64);
+    }
+
+    @Test
+    @DisplayName("Cada refresh token emitido é diferente")
+    void shouldIssueDifferentRefreshTokens() {
+        UUID userId = UUID.randomUUID();
+
+        assertThat(service().issueRefreshToken(userId)).isNotEqualTo(service().issueRefreshToken(userId));
+    }
+
+    @Test
+    @DisplayName("O refresh token vence depois da duração configurada (30 dias)")
+    void shouldRejectExpiredRefreshToken() {
+        Clock thirtyOneDaysAgo = Clock.fixed(Instant.now().minus(31, ChronoUnit.DAYS), ZoneOffset.UTC);
+        String refreshToken = service(SECRET, thirtyOneDaysAgo).issueRefreshToken(UUID.randomUUID());
+
+        assertThat(service().validateRefreshToken(refreshToken)).isEmpty();
+    }
+
+    @Test
+    @DisplayName("Refresh token revogado não é mais aceito")
+    void shouldRejectRevokedRefreshToken() {
+        String refreshToken = service().issueRefreshToken(UUID.randomUUID());
+
+        service().revokeRefreshToken(refreshToken);
+
+        assertThat(service().validateRefreshToken(refreshToken)).isEmpty();
+    }
+
+    @Test
+    @DisplayName("Rotação: o refresh token antigo deixa de valer e o novo vale")
+    void shouldRotateRefreshToken() {
+        UUID userId = UUID.randomUUID();
+        String oldToken = service().issueRefreshToken(userId);
+
+        // o que o endpoint /auth/refresh vai fazer na SEC-05
+        UUID owner = service().validateRefreshToken(oldToken).orElseThrow();
+        service().revokeRefreshToken(oldToken);
+        String newToken = service().issueRefreshToken(owner);
+
+        assertThat(service().validateRefreshToken(oldToken)).isEmpty();
+        assertThat(service().validateRefreshToken(newToken)).hasValue(userId);
+    }
+
+    @Test
+    @DisplayName("Rejeita refresh token desconhecido, nulo ou vazio")
+    void shouldRejectUnknownRefreshToken() {
+        assertThat(service().validateRefreshToken("token-que-nunca-foi-emitido")).isEmpty();
+        assertThat(service().validateRefreshToken(null)).isEmpty();
+        assertThat(service().validateRefreshToken("  ")).isEmpty();
+    }
+
+    @Test
+    @DisplayName("Revogar um token desconhecido não lança erro")
+    void shouldIgnoreRevokeOfUnknownToken() {
+        service().revokeRefreshToken("token-que-nunca-foi-emitido");
+        service().revokeRefreshToken(null);
+
+        assertThat(store.all()).isEmpty();
     }
 }

@@ -20,6 +20,7 @@ import javax.crypto.SecretKey;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.mockito.internal.matchers.Null;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Import;
@@ -65,6 +66,9 @@ class SecurityIntegrationTest {
     @Autowired
     private JwtProperties properties;
 
+    @Autowired
+    private RefreshTokenStore refreshTokenStore;
+
     private MockMvc mockMvc;
 
     @BeforeEach
@@ -101,7 +105,7 @@ class SecurityIntegrationTest {
     @DisplayName("Token expirado retorna 401")
     void shouldReturn401WithExpiredToken() throws Exception {
         Clock oneHourAgo = Clock.fixed(Instant.now().minus(1, ChronoUnit.HOURS), ZoneOffset.UTC);
-        String expired = new JwtTokenService(encoder, decoder, properties, oneHourAgo)
+        String expired = new JwtTokenService(encoder, decoder, properties, refreshTokenStore, oneHourAgo)
                 .issueAccessToken(UUID.randomUUID());
 
         mockMvc.perform(get(PROTECTED_URL).header("Authorization", bearer(expired)))
@@ -113,10 +117,11 @@ class SecurityIntegrationTest {
     void shouldReturn401WithTokenFromAnotherSecret() throws Exception {
         JwtConfig config = new JwtConfig();
         JwtProperties otherProperties = new JwtProperties(
-                "um-segredo-completamente-diferente-com-32-caracteres", Duration.ofMinutes(15));
+                "um-segredo-completamente-diferente-com-32-caracteres", Duration.ofMinutes(15), null);
         SecretKey otherKey = config.jwtSecretKey(otherProperties);
         String foreign = new JwtTokenService(
-                config.jwtEncoder(otherKey), config.jwtDecoder(otherKey), otherProperties, Clock.systemUTC())
+                config.jwtEncoder(otherKey), config.jwtDecoder(otherKey), otherProperties,
+                refreshTokenStore, Clock.systemUTC())
                 .issueAccessToken(UUID.randomUUID());
 
         mockMvc.perform(get(PROTECTED_URL).header("Authorization", bearer(foreign)))

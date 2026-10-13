@@ -10,7 +10,7 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
  * O segredo vem sempre do ambiente (JWT_SECRET), nunca do repositório.
  */
 @ConfigurationProperties(prefix = "moneywise.security.jwt")
-public record JwtProperties(String secret, Duration accessTokenTtl) {
+public record JwtProperties(String secret, Duration accessTokenTtl, Duration refreshTokenTtl) {
 
     /** O HS256 exige uma chave de pelo menos 256 bits (32 bytes). */
     public static final int MIN_SECRET_BYTES = 32;
@@ -23,5 +23,10 @@ public record JwtProperties(String secret, Duration accessTokenTtl) {
         if (accessTokenTtl == null) {
             accessTokenTtl = Duration.ofMinutes(15);
         }
+        if (refreshTokenTtl == null) {
+            refreshTokenTtl = Duration.ofDays(30);
+        }
     }
+
+   
 }
