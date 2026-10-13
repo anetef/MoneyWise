@@ -65,7 +65,7 @@ Exemplo: `V1__create_users.sql`.
 | Versão | Tarefa | Descrição |
 |---|---|---|
 | V1 | DB-02 / SEC-01 | `create_users` |
-| V2 | | |
+| V2 | SEC-03 | `create_refresh_tokens` |
 | V3 | | |
 
 ### Começar com o banco limpo
