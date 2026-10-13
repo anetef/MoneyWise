@@ -13,6 +13,12 @@ springdoc:
 server:
   port: 8080
 
+moneywise:
+  security:
+    jwt:
+      secret: ${JWT_SECRET}
+      access-token-ttl: ${JWT_ACCESS_TOKEN_TTL:15m}
+
 ---
 spring:
   config:
@@ -33,3 +39,9 @@ springdoc:
     enabled: true
   swagger-ui:
     enabled: true
+
+# Configuração usada SOMENTE nos testes. Não é o segredo real.
+moneywise:
+  security:
+    jwt:
+      secret: segredo-de-teste-com-pelo-menos-32-caracteres
