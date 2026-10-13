@@ -7,7 +7,7 @@ import java.util.UUID;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 /** Repositório do Spring Data. Usado só pelo JpaUserRepository. */
-interface SpringDataUserRepository extends JpaRepository<UserEntity, UUID> {
+public interface SpringDataUserRepository extends JpaRepository<UserEntity, UUID> {
 
     Optional<UserEntity> findByEmail(String email);
 
