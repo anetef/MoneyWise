@@ -1,16 +1,11 @@
-package com.moneywise.auth.infrastructure.persistence;
+package com.moneywise.auth.infrastructure;
+
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import java.util.Currency;
 import java.util.UUID;
-
-import com.moneywise.auth.application.port.UserRepository;
-import com.moneywise.auth.infrastructure.UserEntity;
-import com.moneywise.auth.infrastructure.SpringDataUserRepository;
-import com.moneywise.auth.domain.Email;
-import com.moneywise.auth.domain.User;
 
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -20,9 +15,13 @@ import org.springframework.context.annotation.Import;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.moneywise.TestcontainersConfiguration;
+import com.moneywise.auth.application.port.UserRepository;
+import com.moneywise.auth.domain.Email;
+import com.moneywise.auth.domain.User;
+import com.moneywise.auth.infrastructure.UserEntity;
+import com.moneywise.shared.exception.ConflictException;
 
 import jakarta.persistence.EntityManager;
-import jakarta.persistence.PersistenceException;
 
 @SpringBootTest
 @Import(TestcontainersConfiguration.class)
@@ -64,6 +63,7 @@ class JpaUserRepositoryIntegrationTest {
         assertThat(found.getEmail()).isEqualTo(Email.of("maria@gmail.com"));
         assertThat(found.getPasswordHash()).isEqualTo("hash-da-senha");
         assertThat(found.getCurrency()).isEqualTo(BRL);
+        assertThat(found.isEmailVerified()).isFalse();
     }
 
     @Test
@@ -106,12 +106,12 @@ class JpaUserRepositoryIntegrationTest {
     }
 
     @Test
-    @DisplayName("O banco recusa dois usuários com o mesmo e-mail (RN06)")
+    @DisplayName("O banco recusa dois usuários com o mesmo e-mail e o erro vira 409 (RN06)")
     void shouldRejectDuplicateEmail() {
         userRepository.save(newUser("maria@gmail.com"));
-        userRepository.save(newUser("maria@gmail.com"));
 
-        assertThatThrownBy(() -> entityManager.flush())
-                .isInstanceOf(PersistenceException.class);
+        assertThatThrownBy(() -> userRepository.save(newUser("maria@gmail.com")))
+                .isInstanceOf(ConflictException.class)
+                .hasFieldOrPropertyWithValue("code", "EMAIL_ALREADY_IN_USE");
     }
 }
