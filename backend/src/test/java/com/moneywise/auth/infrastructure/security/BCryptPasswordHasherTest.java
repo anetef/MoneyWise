@@ -1,4 +1,4 @@
-package com.moneywise.auth.infra.secutiry;
+package com.moneywise.auth.infrastructure.security;
 
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;

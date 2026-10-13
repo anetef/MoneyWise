@@ -1,4 +1,4 @@
-package com.moneywise.auth.infrastructure.security.config;
+package com.moneywise.auth.infrastructure.security;
 
 import java.nio.charset.StandardCharsets;
 import java.time.Clock;

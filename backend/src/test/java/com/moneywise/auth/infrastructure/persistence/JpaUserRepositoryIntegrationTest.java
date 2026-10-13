@@ -1,4 +1,4 @@
-package com.moneywise.auth.infra.persistence;
+package com.moneywise.auth.infrastructure.persistence;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
