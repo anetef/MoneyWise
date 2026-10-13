@@ -1,0 +1,5 @@
+# Configuração usada SOMENTE nos testes. Não é o segredo real.
+moneywise:
+  security:
+    jwt:
+      secret: segredo-de-teste-com-pelo-menos-32-caracteres
