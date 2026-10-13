@@ -292,6 +292,31 @@ cd backend
 
 A API fica disponível em `http://localhost:8080`, e as migrations do Flyway são aplicadas automaticamente.
 
+### Subir banco e API pelo Docker
+
+Na raiz do projeto, com o `.env` preenchido:
+
+    docker compose up --build
+
+A API fica disponível em `http://localhost:8080` e aplica as migrations do Flyway ao subir.
+O Swagger fica em `http://localhost:8080/swagger-ui.html`.
+Para desligar: `Ctrl+C` e depois `docker compose down`.
+
+### Desenvolver o backend localmente
+
+Para rodar a API pela IDE ou pelo Maven, suba **só o banco**
+(senão a API do Docker ocupa a porta 8080):
+
+    docker compose up -d postgres
+    set -a; source .env; set +a
+    cd backend
+    ./mvnw spring-boot:run
+
+### Variáveis novas
+
+O `.env` agora precisa também de `API_PORT` e `JWT_SECRET`
+(veja o `.env.example`). Para gerar o segredo: `openssl rand -base64 48`.
+
 ### 4. Rodar o aplicativo
 
 ```bash
