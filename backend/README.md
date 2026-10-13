@@ -76,3 +76,20 @@ Para apagar o banco local e reaplicar todas as migrations do zero (na raiz do pr
     docker compose up -d
 
 **Atenção:** o `-v` apaga todos os dados do banco local.
+
+6. **Toda tabela tem `created_at` e `updated_at`** (decisão L-08):
+   `TIMESTAMPTZ NOT NULL DEFAULT now()`. Na entidade JPA, são preenchidas com
+   `@CreationTimestamp` e `@UpdateTimestamp`.
+   
+ ## Testes
+
+    ./mvnw clean verify
+
+Os testes de integração usam **Testcontainers** (decisão L-15): sobem um PostgreSQL 17
+temporário no Docker, aplicam as migrations do Flyway e o descartam no final.
+O banco de desenvolvimento não é usado nem alterado.
+
+**O Docker precisa estar rodando** para executar os testes.
+
+Para um novo teste de integração, use `@SpringBootTest` com
+`@Import(TestcontainersConfiguration.class)`.
