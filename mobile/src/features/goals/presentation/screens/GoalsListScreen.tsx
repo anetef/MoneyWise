@@ -9,7 +9,6 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import {
     ActivityIndicator,
-    Alert,
     Pressable,
     ScrollView,
     StyleSheet,
@@ -86,15 +85,6 @@ export function GoalsListScreen({ navigation, route }: Props) {
     }, [createdGoalType, navigation, setSelectedType]);
 
     function openGoalDetails(goal: Goal) {
-        // Os detalhes da Caixinha compartilhada entram na próxima entrega (MGO-05).
-        if (goal.type === 'shared') {
-            Alert.alert(
-                goal.name,
-                'Os detalhes de caixinhas compartilhadas serão conectados na próxima etapa.',
-            );
-            return;
-        }
-
         navigation.navigate('GoalDetails', { goalId: goal.id });
     }
 

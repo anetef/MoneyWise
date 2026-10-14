@@ -17,6 +17,7 @@ import { colors, spacing } from '../../../../core/theme';
 import { DetailsHeader } from '../components/DetailsHeader';
 import { EmptyState } from '../components/EmptyState';
 import { IndividualGoalDetails } from '../components/IndividualGoalDetails';
+import { SharedGoalDetails } from '../components/SharedGoalDetails';
 import { useGoalDetails } from '../viewmodels/useGoalDetails';
 
 type Props = NativeStackScreenProps<MainStackParamList, 'GoalDetails'>;
@@ -54,12 +55,38 @@ export function GoalDetailsScreen({ navigation, route }: Props) {
             );
         }
 
-        // Os detalhes da Caixinha compartilhada entram na próxima entrega (MGO-05).
+        const openSettings = () =>
+            showComingSoon(
+                'Configurações',
+                'As configurações da caixinha estarão disponíveis em breve.',
+            );
+
+        const seeAllRecords = () =>
+            showComingSoon(
+                'Todos os registros',
+                'O extrato da caixinha será conectado na próxima etapa.',
+            );
+
         if (goal.type === 'shared') {
+            const inviteMembers = () =>
+                showComingSoon(
+                    'Convidar membros',
+                    'O convite de membros será conectado em uma próxima etapa.',
+                );
+
             return (
-                <EmptyState
-                    title={goal.name}
-                    description="Os detalhes de caixinhas compartilhadas estarão disponíveis em breve."
+                <SharedGoalDetails
+                    goal={goal}
+                    onRegisterContribution={() =>
+                        showComingSoon(
+                            'Registrar aporte',
+                            'O registro de aportes estará disponível em breve.',
+                        )
+                    }
+                    onShare={inviteMembers}
+                    onInvite={inviteMembers}
+                    onOpenSettings={openSettings}
+                    onSeeAllRecords={seeAllRecords}
                 />
             );
         }
@@ -79,18 +106,8 @@ export function GoalDetailsScreen({ navigation, route }: Props) {
                         'O registro de retiradas estará disponível em breve.',
                     )
                 }
-                onOpenSettings={() =>
-                    showComingSoon(
-                        'Configurações',
-                        'As configurações da caixinha estarão disponíveis em breve.',
-                    )
-                }
-                onSeeAllRecords={() =>
-                    showComingSoon(
-                        'Todos os registros',
-                        'O extrato da caixinha será conectado na próxima etapa.',
-                    )
-                }
+                onOpenSettings={openSettings}
+                onSeeAllRecords={seeAllRecords}
             />
         );
     }

@@ -55,8 +55,31 @@ export type GoalRecord = {
     id: string;
     kind: GoalRecordKind;
     description: string;
+    /** Membro que registrou; usado nas Caixinhas compartilhadas. */
+    memberName: string | null;
     dateLabel: string;
     amount: number;
+};
+
+/**
+ * Papéis definidos na arquitetura (ADMIN e MEMBER).
+ */
+export type GoalMemberRole = 'admin' | 'member';
+
+/**
+ * Participante da Caixinha.
+ *
+ * Exibe somente o que foi aportado na Caixinha e a
+ * participação no total (RF-14), nunca o saldo pessoal
+ * do membro (RN08).
+ */
+export type GoalMember = {
+    id: string;
+    name: string;
+    role: GoalMemberRole;
+    isCurrentUser: boolean;
+    contributedAmount: number;
+    sharePercent: number;
 };
 
 /**
@@ -74,5 +97,6 @@ export type GoalPace = {
 export type GoalDetails = Goal & {
     remainingAmount: number;
     pace: GoalPace | null;
+    members: GoalMember[];
     records: GoalRecord[];
 };

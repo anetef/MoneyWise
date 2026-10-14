@@ -15,30 +15,47 @@ import { goalColors } from './goalColors';
 
 type Props = {
     record: GoalRecord;
+    /**
+     * `contribution` segue o frame da Caixinha compartilhada,
+     * com ícone de aporte em destaque.
+     */
+    variant?: 'history' | 'contribution';
 };
 
 /**
  * Item de registro (entrada ou retirada) da Caixinha.
  */
-export function GoalRecordItem({ record }: Props) {
+export function GoalRecordItem({ record, variant = 'history' }: Props) {
     const isDeposit = record.kind === 'deposit';
+    const isContribution = variant === 'contribution';
+    const icon = isContribution
+        ? (isDeposit ? '↓' : '↑')
+        : (isDeposit ? '↗' : '↙');
+    const subtitle = record.memberName
+        ? `${record.memberName} • ${record.dateLabel}`
+        : record.dateLabel;
     const signedAmount = isDeposit ? record.amount : -record.amount;
     const amountLabel = `${isDeposit ? '+ ' : ''}${formatCurrency(signedAmount)}`;
 
     return (
         <View
             style={styles.row}
-            accessibilityLabel={`${isDeposit ? 'Entrada' : 'Retirada'}: ${record.description}, ${record.dateLabel}, ${amountLabel}`}
+            accessibilityLabel={`${isDeposit ? 'Entrada' : 'Retirada'}: ${record.description}, ${subtitle}, ${amountLabel}`}
         >
-            <View style={styles.iconCircle}>
-                <Text style={styles.icon}>{isDeposit ? '↗' : '↙'}</Text>
+            <View
+                style={[
+                    styles.iconCircle,
+                    isContribution && styles.iconCircleContribution,
+                ]}
+            >
+                <Text style={styles.icon}>{icon}</Text>
             </View>
 
             <View style={styles.content}>
                 <Text style={styles.description} numberOfLines={2}>
                     {record.description}
                 </Text>
-                <Text style={styles.date}>{record.dateLabel}</Text>
+                <Text style={styles.date}>{subtitle}</Text>
             </View>
 
             <Text
@@ -68,6 +85,10 @@ const styles = StyleSheet.create({
         backgroundColor: goalColors.primarySoft,
         alignItems: 'center',
         justifyContent: 'center',
+    },
+
+    iconCircleContribution: {
+        backgroundColor: '#FFDCD0',
     },
 
     icon: {

@@ -1,7 +1,7 @@
 import type { CreateGoalInput, Goal, GoalDetails } from '../domain/Goal';
 import type { GoalRepository } from '../domain/GoalRepository';
 
-import { mockGoalDetails } from './mockGoalDetails';
+import { mockCurrentUser, mockGoalDetails } from './mockGoalDetails';
 import { mockGoals } from './mockGoals';
 
 const monthNames = [
@@ -51,9 +51,19 @@ export class MockGoalRepository implements GoalRepository {
 
         // Caixinhas sem detalhes simulados (ex.: criadas na sessão)
         // ainda não têm registros nem status de ritmo.
+        // O usuário que cria a Caixinha é o Admin (L-17).
         const details = mockGoalDetails[goalId] ?? {
             remainingAmount: goal.targetAmount - goal.accumulatedAmount,
             pace: null,
+            members: [
+                {
+                    ...mockCurrentUser,
+                    role: 'admin' as const,
+                    isCurrentUser: true,
+                    contributedAmount: 0,
+                    sharePercent: 0,
+                },
+            ],
             records: [],
         };
 
