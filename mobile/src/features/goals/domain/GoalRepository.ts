@@ -1,4 +1,4 @@
-import type { Goal } from './Goal';
+import type { CreateGoalInput, Goal } from './Goal';
 
 /**
  * Acesso aos dados das Caixinhas.
@@ -10,4 +10,7 @@ import type { Goal } from './Goal';
 export interface GoalRepository {
     /** Caixinhas de que o usuário participa. */
     listGoals(): Promise<Goal[]>;
+
+    /** Cria uma Caixinha; o usuário passa a ser o Admin (L-17). */
+    createGoal(input: CreateGoalInput): Promise<Goal>;
 }

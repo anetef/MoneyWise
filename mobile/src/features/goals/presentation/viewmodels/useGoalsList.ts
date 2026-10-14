@@ -1,10 +1,12 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 
 import { goalRepository } from '../../data/MockGoalRepository';
 import type { Goal, GoalType } from '../../domain/Goal';
 
 /**
  * ViewModel da lista de Caixinhas.
+ *
+ * A tela chama `reload` ao receber foco.
  */
 export function useGoalsList() {
     const [goals, setGoals] = useState<Goal[]>([]);
@@ -12,18 +14,12 @@ export function useGoalsList() {
     const [isLoading, setIsLoading] = useState(true);
 
     const loadGoals = useCallback(async () => {
-        setIsLoading(true);
-
         try {
             setGoals(await goalRepository.listGoals());
         } finally {
             setIsLoading(false);
         }
     }, []);
-
-    useEffect(() => {
-        loadGoals();
-    }, [loadGoals]);
 
     const visibleGoals = useMemo(
         () => goals.filter((goal) => goal.type === selectedType),

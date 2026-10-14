@@ -2,6 +2,8 @@
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 
+import { CreateGoalScreen } from '../../features/goals/presentation/screens/CreateGoalScreen';
+
 import { AuthStack } from './AuthStack';
 import { MainTabs } from './MainTabs';
 
@@ -27,6 +29,11 @@ function MainStack() {
             <Stack.Screen
                 name="MainTabs"
                 component={MainTabs}
+            />
+
+            <Stack.Screen
+                name="CreateGoal"
+                component={CreateGoalScreen}
             />
         </Stack.Navigator>
     );

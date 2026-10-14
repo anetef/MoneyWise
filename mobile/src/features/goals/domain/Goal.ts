@@ -32,3 +32,16 @@ export type Goal = {
     targetAmount: number;
     progress: GoalProgress;
 };
+
+/**
+ * Dados informados na criação de uma Caixinha.
+ *
+ * Contém apenas os campos já definidos; ícone, categoria,
+ * meta sem prazo, lembrete e marcos dependem de L-08.
+ */
+export type CreateGoalInput = {
+    name: string;
+    type: GoalType;
+    targetAmount: number;
+    deadline: Date | null;
+};

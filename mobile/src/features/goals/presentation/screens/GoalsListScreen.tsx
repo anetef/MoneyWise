@@ -1,6 +1,10 @@
 import type { BottomTabScreenProps } from '@react-navigation/bottom-tabs';
-import type { CompositeScreenProps } from '@react-navigation/native';
+import {
+    useFocusEffect,
+    type CompositeScreenProps,
+} from '@react-navigation/native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
+import { useCallback, useEffect } from 'react';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import {
@@ -54,13 +58,32 @@ const emptyMessages: Record<GoalType, { title: string; description: string }> = 
     },
 };
 
-export function GoalsListScreen(_props: Props) {
+export function GoalsListScreen({ navigation, route }: Props) {
     const {
         visibleGoals,
         selectedType,
         setSelectedType,
         isLoading,
+        reload,
     } = useGoalsList();
+
+    const createdGoalType = route.params?.createdGoalType;
+
+    // Atualiza a lista sempre que a aba volta a ficar visível,
+    // incluindo o retorno da criação de uma Caixinha.
+    useFocusEffect(
+        useCallback(() => {
+            reload();
+        }, [reload]),
+    );
+
+    // Após a criação, exibe a aba do tipo da Caixinha criada.
+    useEffect(() => {
+        if (createdGoalType) {
+            setSelectedType(createdGoalType);
+            navigation.setParams({ createdGoalType: undefined });
+        }
+    }, [createdGoalType, navigation, setSelectedType]);
 
     function openGoalDetails(goal: Goal) {
         Alert.alert(
@@ -70,10 +93,7 @@ export function GoalsListScreen(_props: Props) {
     }
 
     function openCreateGoal() {
-        Alert.alert(
-            'Nova Caixinha',
-            'A tela de criação será conectada na próxima etapa.',
-        );
+        navigation.navigate('CreateGoal');
     }
 
     return (
