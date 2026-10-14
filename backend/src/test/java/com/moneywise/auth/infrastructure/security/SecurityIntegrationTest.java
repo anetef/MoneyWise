@@ -162,10 +162,12 @@ class SecurityIntegrationTest {
 
     // ---------- Documentação ----------
 
-    @Test
-    @DisplayName("No perfil dev, a documentação da API abre sem token")
+     @Test
+    @DisplayName("No perfil dev, a documentação da API abre sem token (JSON e YAML)")
     void shouldExposeDocsWithoutTokenInDev() throws Exception {
         mockMvc.perform(get("/v3/api-docs"))
+                .andExpect(status().isOk());
+        mockMvc.perform(get("/v3/api-docs.yaml"))
                 .andExpect(status().isOk());
     }
 }

@@ -25,10 +25,11 @@ public class SecurityConfig {
     };
 
     /** Documentação da API: liberada sem token somente no perfil dev. */
-    private static final String[] DOCS_ENDPOINTS = {
+   private static final String[] DOCS_ENDPOINTS = {
             "/swagger-ui/**",
             "/swagger-ui.html",
-            "/v3/api-docs/**"
+            "/v3/api-docs/**",
+            "/v3/api-docs.yaml"
     };
 
     @Bean
