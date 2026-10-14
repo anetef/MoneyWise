@@ -1,8 +1,11 @@
-import type { CreateGoalInput, Goal, GoalDetails } from '../domain/Goal';
+import type { CreateGoalInput, Goal, GoalDetails, GoalRecord } from '../domain/Goal';
 import type { GoalRepository } from '../domain/GoalRepository';
 
 import { mockCurrentUser, mockGoalDetails } from './mockGoalDetails';
 import { mockGoals } from './mockGoals';
+
+/** Quantidade de registros exibidos nos detalhes. */
+const RECENT_RECORDS_LIMIT = 4;
 
 const monthNames = [
     'Janeiro',
@@ -67,7 +70,15 @@ export class MockGoalRepository implements GoalRepository {
             records: [],
         };
 
-        return { ...goal, ...details };
+        return {
+            ...goal,
+            ...details,
+            records: details.records.slice(0, RECENT_RECORDS_LIMIT),
+        };
+    }
+
+    async listGoalRecords(goalId: string): Promise<GoalRecord[]> {
+        return [...(mockGoalDetails[goalId]?.records ?? [])];
     }
 
     async createGoal(input: CreateGoalInput): Promise<Goal> {

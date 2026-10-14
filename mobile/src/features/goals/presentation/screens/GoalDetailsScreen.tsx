@@ -62,10 +62,7 @@ export function GoalDetailsScreen({ navigation, route }: Props) {
             );
 
         const seeAllRecords = () =>
-            showComingSoon(
-                'Todos os registros',
-                'O extrato da caixinha será conectado na próxima etapa.',
-            );
+            navigation.navigate('GoalStatement', { goalId: goal.id });
 
         if (goal.type === 'shared') {
             const inviteMembers = () =>

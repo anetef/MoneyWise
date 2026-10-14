@@ -1,9 +1,15 @@
-import type { GoalMember, GoalPace, GoalRecord } from '../domain/Goal';
+import type {
+    GoalMember,
+    GoalPace,
+    GoalRecord,
+    GoalRecordKind,
+} from '../domain/Goal';
 
 type MockGoalDetails = {
     remainingAmount: number;
     pace: GoalPace | null;
     members: GoalMember[];
+    /** Todos os registros, do mais recente para o mais antigo. */
     records: GoalRecord[];
 };
 
@@ -24,6 +30,31 @@ function owner(contributedAmount: number): GoalMember {
     };
 }
 
+/**
+ * Data relativa ao dia atual, para que os grupos
+ * "Hoje" e "Ontem" do extrato façam sentido no mock.
+ */
+function daysAgo(days: number, time: string): string {
+    const [hours, minutes] = time.split(':').map(Number);
+    const date = new Date();
+
+    date.setDate(date.getDate() - days);
+    date.setHours(hours, minutes, 0, 0);
+
+    return date.toISOString();
+}
+
+function record(
+    id: string,
+    kind: GoalRecordKind,
+    description: string,
+    memberName: string | null,
+    occurredAt: string,
+    amount: number,
+): GoalRecord {
+    return { id, kind, description, memberName, occurredAt, amount };
+}
+
 // Dados simulados para desenvolvimento, coerentes com mockGoals
 export const mockGoalDetails: Record<string, MockGoalDetails> = {
     'goal-japao': {
@@ -36,30 +67,10 @@ export const mockGoalDetails: Record<string, MockGoalDetails> = {
         },
         members: [owner(8500)],
         records: [
-            {
-                id: 'rec-japao-1',
-                kind: 'deposit',
-                memberName: null,
-                description: 'Economia mensal planejada',
-                dateLabel: '10 de Outubro',
-                amount: 1000,
-            },
-            {
-                id: 'rec-japao-2',
-                kind: 'deposit',
-                memberName: null,
-                description: 'Décimo terceiro',
-                dateLabel: '20 de Setembro',
-                amount: 1500,
-            },
-            {
-                id: 'rec-japao-3',
-                kind: 'withdrawal',
-                memberName: null,
-                description: 'Reserva da passagem',
-                dateLabel: '02 de Setembro',
-                amount: 300,
-            },
+            record('rec-japao-1', 'deposit', 'Economia mensal planejada', null, daysAgo(4, '20:10'), 1000),
+            record('rec-japao-2', 'deposit', 'Décimo terceiro', null, daysAgo(24, '12:00'), 1500),
+            record('rec-japao-3', 'withdrawal', 'Reserva da passagem', null, daysAgo(42, '16:45'), 300),
+            record('rec-japao-4', 'deposit', 'Economia mensal planejada', null, daysAgo(55, '09:30'), 1000),
         ],
     },
     'goal-emergencia': {
@@ -72,38 +83,11 @@ export const mockGoalDetails: Record<string, MockGoalDetails> = {
         },
         members: [owner(5000)],
         records: [
-            {
-                id: 'rec-emergencia-1',
-                kind: 'deposit',
-                memberName: null,
-                description: 'Economia mensal planejada',
-                dateLabel: '15 de Outubro',
-                amount: 200,
-            },
-            {
-                id: 'rec-emergencia-2',
-                kind: 'deposit',
-                memberName: null,
-                description: 'Sobra do mês',
-                dateLabel: '01 de Outubro',
-                amount: 500,
-            },
-            {
-                id: 'rec-emergencia-3',
-                kind: 'withdrawal',
-                memberName: null,
-                description: 'Retirada para imprevisto',
-                dateLabel: '22 de Setembro',
-                amount: 150,
-            },
-            {
-                id: 'rec-emergencia-4',
-                kind: 'deposit',
-                memberName: null,
-                description: 'Renda extra freela',
-                dateLabel: '05 de Setembro',
-                amount: 400,
-            },
+            record('rec-emergencia-1', 'deposit', 'Economia mensal planejada', null, daysAgo(2, '09:12'), 200),
+            record('rec-emergencia-2', 'deposit', 'Sobra do mês', null, daysAgo(13, '18:05'), 500),
+            record('rec-emergencia-3', 'withdrawal', 'Retirada para imprevisto', null, daysAgo(22, '14:30'), 150),
+            record('rec-emergencia-4', 'deposit', 'Renda extra freela', null, daysAgo(39, '11:00'), 400),
+            record('rec-emergencia-5', 'deposit', 'Economia mensal planejada', null, daysAgo(45, '08:30'), 200),
         ],
     },
     'goal-paris': {
@@ -127,30 +111,11 @@ export const mockGoalDetails: Record<string, MockGoalDetails> = {
             },
         ],
         records: [
-            {
-                id: 'rec-paris-1',
-                kind: 'deposit',
-                description: 'Aporte',
-                memberName: 'Bruno',
-                dateLabel: 'Hoje, 10:23',
-                amount: 500,
-            },
-            {
-                id: 'rec-paris-2',
-                kind: 'deposit',
-                description: 'Aporte',
-                memberName: 'Alice',
-                dateLabel: '15 de Outubro',
-                amount: 1000,
-            },
-            {
-                id: 'rec-paris-3',
-                kind: 'deposit',
-                description: 'Aporte',
-                memberName: 'Bruno',
-                dateLabel: '01 de Outubro',
-                amount: 1000,
-            },
+            record('rec-paris-1', 'deposit', 'Aporte', 'Bruno', daysAgo(0, '10:23'), 500),
+            record('rec-paris-2', 'deposit', 'Aporte', 'Alice', daysAgo(1, '18:40'), 250),
+            record('rec-paris-3', 'withdrawal', 'Retirada', 'Bruno', daysAgo(1, '09:15'), 100),
+            record('rec-paris-4', 'deposit', 'Aporte', 'Alice', daysAgo(13, '15:00'), 1000),
+            record('rec-paris-5', 'deposit', 'Aporte', 'Bruno', daysAgo(30, '19:20'), 1000),
         ],
     },
 };

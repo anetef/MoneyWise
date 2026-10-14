@@ -57,7 +57,8 @@ export type GoalRecord = {
     description: string;
     /** Membro que registrou; usado nas Caixinhas compartilhadas. */
     memberName: string | null;
-    dateLabel: string;
+    /** Data e hora do registro (ISO 8601). */
+    occurredAt: string;
     amount: number;
 };
 
