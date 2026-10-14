@@ -15,6 +15,8 @@ import {
 
 import type { MainTabsParamList } from './types';
 
+import { ProfileScreen } from '../../features/auth/presentation/screens/ProfileScreen';
+
 const Tab = createBottomTabNavigator<MainTabsParamList>();
 
 /**
@@ -40,31 +42,6 @@ function GoalsScreen() {
 
                 <Text style={styles.cardDescription}>
                     Meta simulada para desenvolvimento.
-                </Text>
-            </View>
-        </View>
-    );
-}
-
-/**
- * Placeholder temporário do Perfil.
- */
-function ProfileScreen() {
-    return (
-        <View style={styles.container}>
-            <Text style={styles.title}>Perfil</Text>
-
-            <Text style={styles.description}>
-                Gerencie suas informações e preferências.
-            </Text>
-
-            <View style={styles.card}>
-                <Text style={styles.cardLabel}>
-                    Usuário de demonstração
-                </Text>
-
-                <Text style={styles.cardDescription}>
-                    Configurações disponíveis em breve.
                 </Text>
             </View>
         </View>
