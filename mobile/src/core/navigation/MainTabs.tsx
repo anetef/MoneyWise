@@ -1,5 +1,5 @@
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
-import { DashboardScreen } from '../../features/reports/presentation/screens/DashboardScreen';
+import { DashboardStack } from './DashboardStack';
 import { GoalsListScreen } from '../../features/goals/presentation/screens/GoalsListScreen';
 import {
     StyleSheet,
@@ -73,7 +73,7 @@ export function MainTabs() {
         >
             <Tab.Screen
                 name="Dashboard"
-                component={DashboardScreen}
+                component={DashboardStack}
                 options={{
                     title: 'Painel',
                 }}
