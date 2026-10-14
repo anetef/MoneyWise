@@ -66,7 +66,8 @@ Exemplo: `V1__create_users.sql`.
 |---|---|---|
 | V1 | DB-02 / SEC-01 | `create_users` |
 | V2 | SEC-03 | `create_refresh_tokens` |
-| V3 | | |
+| V3 | SEC-05| `add_email_verified_at_to_users`|
+| V4 | email_verification_codes | confirmação de e-mail | Débora |
 
 ### Começar com o banco limpo
 

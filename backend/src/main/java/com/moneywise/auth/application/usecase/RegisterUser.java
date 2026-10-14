@@ -17,13 +17,16 @@ public class RegisterUser {
 
     public static final String EMAIL_ALREADY_IN_USE = "EMAIL_ALREADY_IN_USE";
     public static final String INVALID_CURRENCY = "INVALID_CURRENCY";
+    private final SendVerificationCode sendVerificationCode;
 
     private final UserRepository userRepository;
     private final PasswordHasher passwordHasher;
 
-    public RegisterUser(UserRepository userRepository, PasswordHasher passwordHasher) {
+     public RegisterUser(UserRepository userRepository, PasswordHasher passwordHasher,
+                        SendVerificationCode sendVerificationCode) {
         this.userRepository = userRepository;
         this.passwordHasher = passwordHasher;
+        this.sendVerificationCode = sendVerificationCode;
     }
 
     public User execute(RegisterUserCommand command) {
@@ -38,7 +41,9 @@ public class RegisterUser {
         String passwordHash = passwordHasher.hash(command.password());
 
         User user = User.register(command.name(), email, passwordHash, currency);
-        return userRepository.save(user);
+        User saved = userRepository.save(user);
+        sendVerificationCode.execute(saved);
+        return saved;
     }
 
     /** a moeda precisa ser um código ISO 4217 válido (ex.: BRL, USD). */

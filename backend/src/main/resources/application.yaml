@@ -19,6 +19,10 @@ moneywise:
       secret: ${JWT_SECRET}
       access-token-ttl: ${JWT_ACCESS_TOKEN_TTL:15m}
       refresh-token-ttl: ${JWT_REFRESH_TOKEN_TTL:30d}
+  mail:
+    provider: ${MAIL_PROVIDER:log}
+    from: ${MAIL_FROM:onboarding@resend.dev}
+    resend-api-key: ${RESEND_API_KEY:}
 
 ---
 spring:
@@ -35,14 +39,9 @@ spring:
       ddl-auto: validate
   flyway:
     enabled: true
+
 springdoc:
   api-docs:
     enabled: true
   swagger-ui:
     enabled: true
-
-# Configuração usada SOMENTE nos testes. Não é o segredo real.
-moneywise:
-  security:
-    jwt:
-      secret: segredo-de-teste-com-pelo-menos-32-caracteres

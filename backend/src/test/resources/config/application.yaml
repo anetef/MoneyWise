@@ -3,3 +3,7 @@ moneywise:
   security:
     jwt:
       secret: segredo-de-teste-com-pelo-menos-32-caracteres
+    mail:
+      provider: ${MAIL_PROVIDER:log}
+      from: ${MAIL_FROM:onboarding@resend.dev}
+      resend-api-key: ${RESEND_API_KEY:}

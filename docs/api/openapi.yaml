@@ -1,13 +1,434 @@
 openapi: 3.1.0
 info:
   title: MoneyWise API
-  description: API REST do MoneyWise.
+  description: |
+    API REST do MoneyWise.
+
+    ## Formato de erro
+    Todo erro segue o formato `ErrorResponse`:
+    `code` (identificador estável para o app), `message` (texto em português)
+    e `fields` (campos inválidos; vazio quando não se aplica).
+
+    | Status | Quando |
+    |---|---|
+    | 400 | Dados inválidos (Bean Validation) ou requisição mal formatada |
+    | 403 | O usuário não tem permissão para a operação |
+    | 404 | Recurso não encontrado |
+    | 409 | Conflito, como e-mail já cadastrado |
+    | 422 | Regra de negócio violada, como alterar transação de mês fechado |
+    | 500 | Erro inesperado no servidor |
+
+    O 422 é usado quando a requisição está bem formada, mas viola uma regra de
+    negócio (RN). O 400 fica reservado para dados mal formados ou inválidos.
   version: 1.0.0
 servers:
 - url: http://localhost:8080
   description: Generated server url
-paths: {}
+tags:
+- name: Autenticação
+  description: Cadastro e login
+paths:
+  /api/v1/auth/verify-email:
+    post:
+      tags:
+      - Autenticação
+      summary: Confirmar e-mail
+      description: |
+        Confere o código de 6 dígitos enviado por e-mail no cadastro. Se estiver certo, confirma o e-mail
+        e já devolve os tokens e os dados do usuário, no mesmo formato do login.
+
+        Erros: 400 (campos inválidos), 409 `EMAIL_ALREADY_VERIFIED`,
+        422 `INVALID_VERIFICATION_CODE` (código errado, ou e-mail sem código pendente),
+        422 `VERIFICATION_CODE_EXPIRED` (passou de 15 minutos),
+        422 `VERIFICATION_ATTEMPTS_EXCEEDED` (5 tentativas erradas; peça um novo código).
+      operationId: verifyEmail
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/VerifyEmailRequestDTO"
+        required: true
+      responses:
+        "404":
+          description: Not Found
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "403":
+          description: Forbidden
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "409":
+          description: Conflict
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "422":
+          description: Unprocessable Content
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "400":
+          description: Bad Request
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: Internal Server Error
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "401":
+          description: Unauthorized
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "429":
+          description: Too Many Requests
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/LoginResponseDTO"
+  /api/v1/auth/resend-verification:
+    post:
+      tags:
+      - Autenticação
+      summary: Reenviar código de confirmação
+      description: |
+        Gera um novo código e envia por e-mail. O código anterior deixa de valer.
+        Responde 204 também quando o e-mail não existe ou já foi confirmado, para não revelar
+        quais e-mails têm conta.
+
+        Erros: 400 (e-mail inválido), 429 `VERIFICATION_RESEND_TOO_SOON` (menos de 1 minuto desde o último envio).
+      operationId: resendVerification
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ResendVerificationRequestDTO"
+        required: true
+      responses:
+        "404":
+          description: Not Found
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "403":
+          description: Forbidden
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "409":
+          description: Conflict
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "422":
+          description: Unprocessable Content
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "400":
+          description: Bad Request
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: Internal Server Error
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "401":
+          description: Unauthorized
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "429":
+          description: Too Many Requests
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "204":
+          description: No Content
+  /api/v1/auth/register:
+    post:
+      tags:
+      - Autenticação
+      summary: Cadastrar usuário
+      description: |
+        Cria o usuário com o e-mail **não confirmado** e devolve os dados dele, **sem tokens**.
+        O app deve levar o usuário para a confirmação do e-mail; o login só é liberado depois dela.
+
+        Erros: 400 (campos inválidos), 409 `EMAIL_ALREADY_IN_USE` (e-mail já cadastrado),
+        422 `INVALID_CURRENCY` (moeda inexistente).
+      operationId: register
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RegisterRequestDTO"
+        required: true
+      responses:
+        "404":
+          description: Not Found
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "403":
+          description: Forbidden
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "409":
+          description: Conflict
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "422":
+          description: Unprocessable Content
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "400":
+          description: Bad Request
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: Internal Server Error
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "401":
+          description: Unauthorized
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "429":
+          description: Too Many Requests
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "201":
+          description: Created
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/UserResponseDTO"
+  /api/v1/auth/login:
+    post:
+      tags:
+      - Autenticação
+      summary: Login
+      description: |
+        Valida e-mail e senha e devolve o access token, o refresh token e os dados do usuário.
+
+        Erros: 400 (campos vazios), 401 `INVALID_CREDENTIALS` (e-mail inexistente ou senha errada,
+        sempre com a mesma mensagem), 403 `EMAIL_NOT_VERIFIED` (senha certa, e-mail não confirmado).
+      operationId: login
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LoginRequestDTO"
+        required: true
+      responses:
+        "404":
+          description: Not Found
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "403":
+          description: Forbidden
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "409":
+          description: Conflict
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "422":
+          description: Unprocessable Content
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "400":
+          description: Bad Request
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: Internal Server Error
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "401":
+          description: Unauthorized
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "429":
+          description: Too Many Requests
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/LoginResponseDTO"
 components:
+  schemas:
+    ErrorResponse:
+      type: object
+      properties:
+        code:
+          type: string
+        message:
+          type: string
+        fields:
+          type: array
+          items:
+            $ref: "#/components/schemas/InvalidField"
+    InvalidField:
+      type: object
+      properties:
+        field:
+          type: string
+        message:
+          type: string
+    VerifyEmailRequestDTO:
+      type: object
+      properties:
+        email:
+          type: string
+          format: email
+          minLength: 1
+        code:
+          type: string
+          minLength: 1
+          pattern: "\\d{6}"
+      required:
+      - code
+      - email
+    LoginResponseDTO:
+      type: object
+      properties:
+        accessToken:
+          type: string
+        refreshToken:
+          type: string
+        tokenType:
+          type: string
+        user:
+          $ref: "#/components/schemas/UserResponseDTO"
+    UserResponseDTO:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        email:
+          type: string
+        currency:
+          type: string
+        emailVerified:
+          type: boolean
+    ResendVerificationRequestDTO:
+      type: object
+      properties:
+        email:
+          type: string
+          format: email
+          minLength: 1
+      required:
+      - email
+    RegisterRequestDTO:
+      type: object
+      properties:
+        name:
+          type: string
+          example: Maria Silva
+          maxLength: 100
+          minLength: 0
+        email:
+          type: string
+          format: email
+          example: maria@gmail.com
+          maxLength: 254
+          minLength: 0
+        password:
+          type: string
+          example: senhaSegura123
+          maxLength: 72
+          minLength: 8
+        currency:
+          type: string
+          description: Código ISO 4217 da moeda (RN09)
+          example: BRL
+          minLength: 1
+          pattern: "^[A-Z]{3}$"
+      required:
+      - currency
+      - email
+      - name
+      - password
+    LoginRequestDTO:
+      type: object
+      properties:
+        email:
+          type: string
+          example: maria@gmail.com
+          minLength: 1
+        password:
+          type: string
+          example: senhaSegura123
+          minLength: 1
+      required:
+      - email
+      - password
   securitySchemes:
     BearerAuth:
       type: http

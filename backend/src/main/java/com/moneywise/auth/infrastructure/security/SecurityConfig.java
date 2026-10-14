@@ -18,10 +18,12 @@ import org.springframework.security.web.SecurityFilterChain;
 public class SecurityConfig {
 
     /** Rotas públicas: quem chama ainda não tem access token. */
-    private static final String[] PUBLIC_AUTH_ENDPOINTS = {
+        private static final String[] PUBLIC_AUTH_ENDPOINTS = {
             "/api/v1/auth/register",
             "/api/v1/auth/login",
-            "/api/v1/auth/refresh"
+            "/api/v1/auth/refresh",
+            "/api/v1/auth/verify-email",
+            "/api/v1/auth/resend-verification"
     };
 
     /** Documentação da API: liberada sem token somente no perfil dev. */

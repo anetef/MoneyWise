@@ -20,6 +20,7 @@ import com.moneywise.shared.exception.ConflictException;
 import com.moneywise.shared.exception.DomainException;
 import com.moneywise.shared.exception.ForbiddenOperationException;
 import com.moneywise.shared.exception.ResourceNotFoundException;
+import com.moneywise.shared.exception.TooManyRequestsException;
 import com.moneywise.shared.exception.UnauthorizedException;
 /**
  * Converte as exceções da API em respostas HTTP no formato ErrorResponse.
@@ -120,6 +121,12 @@ public class GlobalExceptionHandler {
     @ResponseStatus(HttpStatus.UNAUTHORIZED)
     public ResponseEntity<ErrorResponse> handleUnauthorized(UnauthorizedException ex) {
         return build(HttpStatus.UNAUTHORIZED, ex);               // 401
+    }
+    
+    @ExceptionHandler(TooManyRequestsException.class)
+    @ResponseStatus(HttpStatus.TOO_MANY_REQUESTS)
+    public ResponseEntity<ErrorResponse> handleTooManyRequests(TooManyRequestsException ex) {
+        return build(HttpStatus.TOO_MANY_REQUESTS, ex);          // 429
     }
 
     // Evita repetir código.

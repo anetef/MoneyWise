@@ -3,6 +3,9 @@ package com.moneywise.auth.application.usecase;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import java.time.Clock;
+import java.time.Instant;
+import java.time.ZoneOffset;
 import java.util.Currency;
 
 import org.junit.jupiter.api.DisplayName;
@@ -16,7 +19,13 @@ import com.moneywise.shared.exception.ConflictException;
 class RegisterUserTest {
 
     private final FakeUserRepository userRepository = new FakeUserRepository();
-    private final RegisterUser registerUser = new RegisterUser(userRepository, new FakePasswordHasher());
+    private final FakePasswordHasher passwordHasher = new FakePasswordHasher();
+    private final FakeEmailSender emailSender = new FakeEmailSender();
+    private final FakeEmailVerificationCodeRepository codes = new FakeEmailVerificationCodeRepository();
+    private final Clock clock = Clock.fixed(Instant.parse("2026-10-13T12:00:00Z"), ZoneOffset.UTC);
+
+    private final RegisterUser registerUser = new RegisterUser(
+            userRepository, passwordHasher, new SendVerificationCode(codes, emailSender, clock));
 
     private RegisterUserCommand command(String email) {
         return new RegisterUserCommand("Maria", email, "senha12345", "BRL");
@@ -82,5 +91,26 @@ class RegisterUserTest {
                 .isInstanceOf(BusinessRuleException.class)
                 .hasFieldOrPropertyWithValue("code", Email.INVALID_CODE);
         assertThat(userRepository.count()).isZero();
+    }
+
+    @Test
+    @DisplayName("Envia o código de confirmação depois de cadastrar")
+    void shouldSendVerificationCodeAfterRegister() {
+        User user = registerUser.execute(command("maria@gmail.com"));
+
+        assertThat(emailSender.sentCount).isEqualTo(1);
+        assertThat(emailSender.lastTo).isEqualTo("maria@gmail.com");
+        assertThat(emailSender.lastCode).matches("\\d{6}");
+        assertThat(codes.findByUserId(user.getId())).isPresent();
+    }
+
+    @Test
+    @DisplayName("Não envia código quando o cadastro é recusado")
+    void shouldNotSendCodeWhenRegisterFails() {
+        registerUser.execute(command("maria@gmail.com"));
+
+        assertThatThrownBy(() -> registerUser.execute(command("maria@gmail.com")))
+                .isInstanceOf(ConflictException.class);
+        assertThat(emailSender.sentCount).isEqualTo(1);
     }
 }
