@@ -1,5 +1,6 @@
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { DashboardScreen } from '../../features/reports/presentation/screens/DashboardScreen';
+import { GoalsListScreen } from '../../features/goals/presentation/screens/GoalsListScreen';
 import {
     StyleSheet,
     Text,
@@ -16,35 +17,6 @@ import {
 import type { MainTabsParamList } from './types';
 
 const Tab = createBottomTabNavigator<MainTabsParamList>();
-
-/**
- * Placeholder temporário de Caixinhas.
- */
-function GoalsScreen() {
-    return (
-        <View style={styles.container}>
-            <Text style={styles.title}>Caixinhas</Text>
-
-            <Text style={styles.description}>
-                Acompanhe suas metas financeiras.
-            </Text>
-
-            <View style={styles.card}>
-                <Text style={styles.cardLabel}>
-                    Reserva de emergência
-                </Text>
-
-                <Text style={styles.cardValue}>
-                    R$ 7.500,00
-                </Text>
-
-                <Text style={styles.cardDescription}>
-                    Meta simulada para desenvolvimento.
-                </Text>
-            </View>
-        </View>
-    );
-}
 
 /**
  * Placeholder temporário do Perfil.
@@ -109,7 +81,7 @@ export function MainTabs() {
 
             <Tab.Screen
                 name="Goals"
-                component={GoalsScreen}
+                component={GoalsListScreen}
                 options={{
                     title: 'Caixinhas',
                 }}
@@ -160,10 +132,6 @@ const styles = StyleSheet.create({
         color: colors.text.primary,
     },
 
-    cardValue: {
-        ...typography.title,
-        color: colors.primary,
-    },
 
     cardDescription: {
         ...typography.caption,
