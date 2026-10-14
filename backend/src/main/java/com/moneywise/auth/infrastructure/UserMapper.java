@@ -17,7 +17,8 @@ final class UserMapper {
                 user.getEmail().value(),
                 user.getPasswordHash(),
                 user.getName(),
-                user.getCurrency().getCurrencyCode());
+                user.getCurrency().getCurrencyCode(),
+                user.getEmailVerifiedAt());
     }
 
     static User toDomain(UserEntity entity) {
@@ -26,6 +27,7 @@ final class UserMapper {
                 entity.getName(),
                 Email.of(entity.getEmail()),
                 entity.getPasswordHash(),
-                Currency.getInstance(entity.getCurrency()));
+                Currency.getInstance(entity.getCurrency()),
+                entity.getEmailVerifiedAt());
     }
 }
