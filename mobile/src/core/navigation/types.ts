@@ -60,3 +60,9 @@ export type RootStackParamList = {
     Auth: NavigatorScreenParams<AuthStackParamList>;
     Main: NavigatorScreenParams<MainStackParamList>;
 };
+
+export type DashboardStackParamList = {
+    DashboardHome: undefined;
+    Statement: undefined;
+    AddTransaction: undefined;
+};

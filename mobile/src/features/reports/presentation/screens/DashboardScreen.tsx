@@ -1,162 +1,212 @@
 import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import Svg, { Circle } from 'react-native-svg';
+import { Feather, MaterialCommunityIcons } from '@expo/vector-icons';
 
-import {
-    colors,
-    fontFamily,
-    fontSize,
-    radius,
-    spacing,
-    typography,
-} from '../../../../core/theme';
+import { useNavigation } from '@react-navigation/native';
+import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import type { DashboardStackParamList } from '../../../../core/navigation/types';
 
-// Dados simulados para desenvolvimento
-const transactions = [
+// 🎨 Cores do Figma (depois trocamos pelos tokens do core/theme)
+const C = {
+    primary: '#823B18',
+    primarySoft: '#FBDCCF',
+    background: '#F7F6FA',
+    surface: '#FFFFFF',
+    text: '#1E1E24',
+    textSecondary: '#6B6A73',
+    iconBg: '#ECEBF1',
+    divider: '#EFEEF2',
+    track: '#EADCD3',
+    taupe: '#CBBDB3',
+    lightGray: '#E2E0E4',
+};
+
+// 🔤 Nomes das fontes: confira no useFonts do App.tsx
+const F = {
+    regular: 'Inter_400Regular',
+    medium: 'Inter_500Medium',
+    semibold: 'Inter_600SemiBold',
+    bold: 'Inter_700Bold',
+};
+
+// 📊 Dados mockados
+type Category = { id: string; label: string; amount: string; color: string };
+
+type TransactionIcon = 'shopping' | 'income' | 'food';
+
+type Transaction = {
+    id: string;
+    title: string;
+    subtitle: string;
+    amount: string;
+    type: 'income' | 'expense';
+    icon: TransactionIcon;
+};
+
+const MOCK = {
+    balance: 'R$ 14.529,80',
+    income: 'R$ 8.450,00',
+    expenses: 'R$ 6.337,50',
+    spentPercent: 75,
+};
+
+const CATEGORIES: Category[] = [
+    { id: '1', label: 'Moradia', amount: 'R$ 3.100,00', color: C.primary },
+    { id: '2', label: 'Alimentação', amount: 'R$ 1.850,50', color: C.taupe },
+    { id: '3', label: 'Transporte', amount: 'R$ 850,00', color: C.lightGray },
+];
+
+const TRANSACTIONS: Transaction[] = [
     {
         id: '1',
-        icon: '▣',
         title: 'Mercado Livre',
-        description: 'Cartão final 4021 • Hoje, 14:30',
+        subtitle: 'Cartão final 4021 • Hoje, 14:30',
         amount: '- R$ 149,90',
-        positive: false,
+        type: 'expense',
+        icon: 'shopping',
     },
     {
         id: '2',
-        icon: '↓',
         title: 'Pix Recebido',
-        description: 'João Silva • Ontem, 09:15',
+        subtitle: 'João Silva • Ontem, 09:15',
         amount: '+ R$ 450,00',
-        positive: true,
+        type: 'income',
+        icon: 'income',
     },
     {
         id: '3',
-        icon: '♜',
         title: 'Ifood',
-        description: 'Cartão final 4021 • 24 Out, 20:45',
+        subtitle: 'Cartão final 4021 • 24 Out, 20:45',
         amount: '- R$ 68,50',
-        positive: false,
+        type: 'expense',
+        icon: 'food',
     },
 ];
 
-const categories = [
-    {
-        name: 'Moradia',
-        amount: 'R$ 3.100,00',
-        color: colors.primary,
-    },
-    {
-        name: 'Alimentação',
-        amount: 'R$ 1.850,50',
-        color: '#CFBBB0',
-    },
-    {
-        name: 'Transporte',
-        amount: 'R$ 850,00',
-        color: '#E3E3E8',
-    },
-];
+// 🍩 Gráfico de rosca
+function DonutChart({ percent }: { percent: number }) {
+    const size = 96;
+    const stroke = 12;
+    const radius = (size - stroke) / 2;
+    const circumference = 2 * Math.PI * radius;
+    const offset = circumference * (1 - percent / 100);
 
-export function DashboardScreen() {
-    function openTransactionList() {
-        Alert.alert(
-            'Extrato de transações',
-            'A navegação para o extrato será conectada na próxima etapa do MOB-04.',
-        );
-    }
+    return (
+        <View style={styles.donut}>
+            <Svg width={size} height={size}>
+                <Circle
+                    cx={size / 2}
+                    cy={size / 2}
+                    r={radius}
+                    stroke={C.track}
+                    strokeWidth={stroke}
+                    fill="none"
+                />
+                <Circle
+                    cx={size / 2}
+                    cy={size / 2}
+                    r={radius}
+                    stroke={C.primary}
+                    strokeWidth={stroke}
+                    fill="none"
+                    strokeDasharray={`${circumference} ${circumference}`}
+                    strokeDashoffset={offset}
+                />
+            </Svg>
+            <View style={styles.donutCenter}>
+                <Text style={styles.donutLabel}>Gastos</Text>
+                <Text style={styles.donutValue}>{percent}%</Text>
+            </View>
+        </View>
+    );
+}
 
-    function openAddTransaction() {
-        Alert.alert(
-            'Adicionar transação',
-            'A navegação para adicionar transações será conectada na próxima etapa do MOB-04.',
+// 🧾 Ícone de cada transação
+function TransactionIconBadge({ icon }: { icon: TransactionIcon }) {
+    if (icon === 'income') {
+        return (
+            <View style={[styles.txIcon, { backgroundColor: C.primarySoft }]}>
+                <Feather name="arrow-down" size={18} color={C.primary} />
+            </View>
         );
     }
 
     return (
-        <View style={styles.screen}>
+        <View style={styles.txIcon}>
+            {icon === 'shopping' ? (
+                <Feather name="shopping-bag" size={17} color={C.text} />
+            ) : (
+                <MaterialCommunityIcons name="silverware-fork-knife" size={18} color={C.text} />
+            )}
+        </View>
+    );
+}
+
+export function DashboardScreen() {
+    const navigation =
+        useNavigation<NativeStackNavigationProp<DashboardStackParamList>>();
+
+    function handleFullStatement() {
+        navigation.navigate('Statement');
+    }
+
+    function handleAddTransaction() {
+        navigation.navigate('AddTransaction');
+    }
+
+    return (
+        <SafeAreaView style={styles.safeArea} edges={['top']}>
             <ScrollView
+                contentContainerStyle={styles.content}
                 showsVerticalScrollIndicator={false}
-                contentContainerStyle={styles.container}
             >
-                {/* Cabeçalho */}
-                <Text style={styles.headerTitle}>
-                    Dashboard
-                </Text>
+                {/* Título */}
+                <Text style={styles.title}>Dashboard</Text>
 
-                {/* Saldo principal */}
-                <View style={styles.balanceCard}>
-                    <Text style={styles.balanceLabel}>
-                        Saldo Atual
-                    </Text>
-
-                    <Text style={styles.balanceValue}>
-                        R$ 14.529,80
-                    </Text>
+                {/* Saldo */}
+                <View style={[styles.card, styles.balanceCard]}>
+                    <Text style={styles.balanceLabel}>Saldo Atual</Text>
+                    <Text style={styles.balanceValue}>{MOCK.balance}</Text>
                 </View>
 
-                {/* Entradas e saídas */}
-                <View style={styles.summaryRow}>
-                    <View style={styles.summaryCard}>
-                        <Text style={styles.summaryLabel}>
-                            ↓ Entradas
-                        </Text>
-
-                        <Text style={styles.incomeValue}>
-                            R$ 8.450,00
-                        </Text>
-                    </View>
-
-                    <View style={styles.summaryCard}>
-                        <Text style={styles.summaryLabel}>
-                            ↑ Saídas
-                        </Text>
-
-                        <Text style={styles.expenseValue}>
-                            R$ 6.337,50
-                        </Text>
-                    </View>
-                </View>
-
-                {/* Resumo por categoria */}
-                <View style={styles.categoriesCard}>
-                    <View style={styles.sectionHeader}>
-                        <Text style={styles.cardTitle}>
-                            Resumo de Categorias
-                        </Text>
-
-                        <Text style={styles.moreIcon}>•••</Text>
-                    </View>
-
-                    <View style={styles.categoriesContent}>
-                        <View style={styles.chartCircle}>
-                            <View style={styles.chartInner}>
-                                <Text style={styles.chartLabel}>
-                                    Gastos
-                                </Text>
-                                <Text style={styles.chartPercentage}>
-                                    75%
-                                </Text>
-                            </View>
+                {/* Entradas e Saídas */}
+                <View style={styles.row}>
+                    <View style={[styles.card, styles.smallCard]}>
+                        <View style={styles.smallCardHeader}>
+                            <Feather name="arrow-down" size={16} color={C.text} />
+                            <Text style={styles.smallCardLabel}>Entradas</Text>
                         </View>
+                        <Text style={[styles.smallCardValue, { color: C.primary }]}>
+                            {MOCK.income}
+                        </Text>
+                    </View>
 
-                        <View style={styles.categoryList}>
-                            {categories.map((category) => (
-                                <View
-                                    key={category.name}
-                                    style={styles.categoryRow}
-                                >
-                                    <View
-                                        style={[
-                                            styles.categoryDot,
-                                            { backgroundColor: category.color },
-                                        ]}
-                                    />
+                    <View style={[styles.card, styles.smallCard]}>
+                        <View style={styles.smallCardHeader}>
+                            <Feather name="arrow-up" size={16} color={C.text} />
+                            <Text style={styles.smallCardLabel}>Saídas</Text>
+                        </View>
+                        <Text style={styles.smallCardValue}>{MOCK.expenses}</Text>
+                    </View>
+                </View>
 
-                                    <Text style={styles.categoryName}>
-                                        {category.name}
-                                    </Text>
+                {/* Resumo de Categorias */}
+                <View style={[styles.card, styles.categoriesCard]}>
+                    <View style={styles.categoriesHeader}>
+                        <Text style={styles.categoriesTitle}>Resumo de Categorias</Text>
+                        <Feather name="more-horizontal" size={18} color={C.text} />
+                    </View>
 
-                                    <Text style={styles.categoryAmount}>
-                                        {category.amount}
-                                    </Text>
+                    <View style={styles.categoriesBody}>
+                        <DonutChart percent={MOCK.spentPercent} />
+
+                        <View style={styles.legend}>
+                            {CATEGORIES.map((category) => (
+                                <View key={category.id} style={styles.legendRow}>
+                                    <View style={[styles.legendDot, { backgroundColor: category.color }]} />
+                                    <Text style={styles.legendLabel}>{category.label}</Text>
+                                    <Text style={styles.legendAmount}>{category.amount}</Text>
                                 </View>
                             ))}
                         </View>
@@ -164,382 +214,258 @@ export function DashboardScreen() {
                 </View>
 
                 {/* Últimas transações */}
-                <Text style={styles.transactionsHeading}>
-                    ÚLTIMAS TRANSAÇÕES
-                </Text>
+                <Text style={styles.sectionTitle}>ÚLTIMAS TRANSAÇÕES</Text>
 
-                <View style={styles.transactionsCard}>
-                    {transactions.map((transaction, index) => (
+                <View style={styles.card}>
+                    {TRANSACTIONS.map((tx, index) => (
                         <View
-                            key={transaction.id}
-                            style={[
-                                styles.transactionRow,
-                                index < transactions.length - 1 &&
-                                styles.transactionDivider,
-                            ]}
+                            key={tx.id}
+                            style={[styles.txRow, index > 0 && styles.txRowDivider]}
                         >
-                            <View
-                                style={[
-                                    styles.transactionIcon,
-                                    transaction.positive
-                                        ? styles.positiveIcon
-                                        : styles.neutralIcon,
-                                ]}
-                            >
-                                <Text
-                                    style={[
-                                        styles.transactionIconText,
-                                        transaction.positive &&
-                                        styles.positiveIconText,
-                                    ]}
-                                >
-                                    {transaction.icon}
-                                </Text>
-                            </View>
+                            <TransactionIconBadge icon={tx.icon} />
 
-                            <View style={styles.transactionInfo}>
-                                <Text style={styles.transactionTitle}>
-                                    {transaction.title}
-                                </Text>
-
-                                <Text style={styles.transactionDescription}>
-                                    {transaction.description}
-                                </Text>
+                            <View style={styles.txInfo}>
+                                <Text style={styles.txTitle}>{tx.title}</Text>
+                                <Text style={styles.txSubtitle}>{tx.subtitle}</Text>
                             </View>
 
                             <Text
                                 style={[
-                                    styles.transactionAmount,
-                                    transaction.positive &&
-                                    styles.positiveAmount,
+                                    styles.txAmount,
+                                    tx.type === 'income' && { color: C.primary },
                                 ]}
                             >
-                                {transaction.amount}
+                                {tx.amount}
                             </Text>
                         </View>
                     ))}
 
-                    <Pressable
-                        onPress={openTransactionList}
-                        accessibilityRole="button"
-                        style={styles.statementButton}
-                    >
-                        <Text style={styles.statementText}>
-                            Ver extrato completo
-                        </Text>
+                    <Pressable onPress={handleFullStatement} style={styles.statementButton}>
+                        <Text style={styles.statementText}>Ver extrato completo</Text>
                     </Pressable>
                 </View>
             </ScrollView>
 
             {/* Botão flutuante */}
             <Pressable
-                style={({ pressed }) => [
-                    styles.floatingButton,
-                    pressed && styles.pressed,
-                ]}
-                onPress={openAddTransaction}
-                accessibilityRole="button"
-                accessibilityLabel="Adicionar transação"
+                onPress={handleAddTransaction}
+                style={({ pressed }) => [styles.fab, pressed && { opacity: 0.85 }]}
             >
-                <Text style={styles.floatingButtonText}>
-                    +
-                </Text>
+                <Feather name="plus" size={26} color={C.surface} />
             </Pressable>
-        </View>
+        </SafeAreaView>
     );
 }
 
 const styles = StyleSheet.create({
-    screen: {
+    safeArea: {
         flex: 1,
-        backgroundColor: colors.background,
+        backgroundColor: C.background,
     },
-
-    container: {
-        flexGrow: 1,
-        paddingHorizontal: spacing.lg,
-        paddingTop: spacing.xxl,
+    content: {
+        padding: 16,
         paddingBottom: 100,
-        gap: spacing.xl,
-        width: '100%',
-        maxWidth: 480,
-        alignSelf: 'center',
+    },
+    title: {
+        fontFamily: F.bold,
+        fontSize: 22,
+        color: C.primary,
+        marginBottom: 16,
+    },
+    card: {
+        backgroundColor: C.surface,
+        borderRadius: 16,
     },
 
-    headerTitle: {
-        fontFamily: fontFamily.bold,
-        fontSize: fontSize.xl,
-        color: colors.primary,
-        marginBottom: spacing.xs,
-    },
-
+    // Saldo
     balanceCard: {
-        backgroundColor: colors.white,
-        borderRadius: radius.xxl,
-        padding: spacing.xxxl,
-        minHeight: 170,
         alignItems: 'center',
-        justifyContent: 'center',
-        gap: spacing.md,
+        paddingVertical: 36,
+        marginBottom: 16,
     },
-
     balanceLabel: {
-        fontFamily: fontFamily.semiBold,
-        fontSize: fontSize.md,
-        color: colors.text.primary,
+        fontFamily: F.medium,
+        fontSize: 14,
+        color: C.text,
+        marginBottom: 8,
     },
-
     balanceValue: {
-        fontFamily: fontFamily.bold,
-        fontSize: 36,
-        lineHeight: 44,
-        color: '#202124',
-        letterSpacing: -1,
-        textAlign: 'center',
+        fontFamily: F.bold,
+        fontSize: 34,
+        color: C.text,
     },
 
-    summaryRow: {
+    // Entradas / Saídas
+    row: {
         flexDirection: 'row',
-        gap: spacing.md,
+        gap: 10,
+        marginBottom: 16,
     },
-
-    summaryCard: {
+    smallCard: {
         flex: 1,
-        backgroundColor: colors.white,
-        borderRadius: radius.lg,
-        padding: spacing.lg,
-        gap: spacing.md,
-        minHeight: 92,
-        justifyContent: 'center',
+        padding: 14,
+    },
+    smallCardHeader: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 6,
+        marginBottom: 12,
+    },
+    smallCardLabel: {
+        fontFamily: F.regular,
+        fontSize: 13,
+        color: C.text,
+    },
+    smallCardValue: {
+        fontFamily: F.medium,
+        fontSize: 16,
+        color: C.text,
     },
 
-    summaryLabel: {
-        fontFamily: fontFamily.regular,
-        fontSize: fontSize.sm,
-        color: colors.text.secondary,
-    },
-
-    incomeValue: {
-        fontFamily: fontFamily.medium,
-        fontSize: fontSize.lg,
-        color: colors.primary,
-    },
-
-    expenseValue: {
-        fontFamily: fontFamily.medium,
-        fontSize: fontSize.lg,
-        color: colors.text.primary,
-    },
-
+    // Categorias
     categoriesCard: {
-        backgroundColor: colors.white,
-        borderRadius: radius.lg,
-        padding: spacing.lg,
-        gap: spacing.xxl,
+        padding: 16,
     },
-
-    sectionHeader: {
+    categoriesHeader: {
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'center',
+        marginBottom: 14,
     },
-
-    cardTitle: {
-        fontFamily: fontFamily.semiBold,
-        fontSize: fontSize.md,
-        color: colors.text.primary,
+    categoriesTitle: {
+        fontFamily: F.semibold,
+        fontSize: 14,
+        color: C.text,
     },
-
-    moreIcon: {
-        fontSize: fontSize.lg,
-        color: colors.text.primary,
-    },
-
-    categoriesContent: {
+    categoriesBody: {
         flexDirection: 'row',
         alignItems: 'center',
-        gap: spacing.lg,
     },
-
-    chartCircle: {
-        width: 102,
-        height: 102,
-        borderRadius: radius.full,
-        borderWidth: 11,
-        borderColor: colors.primary,
-        borderTopColor: '#EBDDD4',
-        justifyContent: 'center',
-        alignItems: 'center',
+    donut: {
+        width: 96,
+        height: 96,
     },
-
-    chartInner: {
-        alignItems: 'center',
-    },
-
-    chartLabel: {
-        fontFamily: fontFamily.regular,
-        fontSize: fontSize.xs,
-        color: colors.text.secondary,
-    },
-
-    chartPercentage: {
-        fontFamily: fontFamily.bold,
-        fontSize: fontSize.lg,
-        color: colors.text.primary,
-    },
-
-    categoryList: {
-        flex: 1,
-        gap: spacing.md,
-    },
-
-    categoryRow: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: spacing.sm,
-    },
-
-    categoryDot: {
-        width: 11,
-        height: 11,
-        borderRadius: radius.full,
-    },
-
-    categoryName: {
-        flex: 1,
-        fontFamily: fontFamily.regular,
-        fontSize: fontSize.xs,
-        color: colors.text.secondary,
-    },
-
-    categoryAmount: {
-        fontFamily: fontFamily.semiBold,
-        fontSize: fontSize.xs,
-        color: colors.text.primary,
-    },
-
-    transactionsHeading: {
-        fontFamily: fontFamily.semiBold,
-        fontSize: fontSize.xs,
-        color: colors.text.secondary,
-        letterSpacing: 1,
-        marginTop: spacing.sm,
-    },
-
-    transactionsCard: {
-        backgroundColor: colors.white,
-        borderRadius: radius.lg,
-        overflow: 'hidden',
-        marginTop: -spacing.md,
-    },
-
-    transactionRow: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        padding: spacing.lg,
-        gap: spacing.md,
-        minHeight: 78,
-    },
-
-    transactionDivider: {
-        borderBottomWidth: 1,
-        borderBottomColor: colors.border.subtle,
-    },
-
-    transactionIcon: {
-        width: 42,
-        height: 42,
-        borderRadius: radius.full,
-        alignItems: 'center',
-        justifyContent: 'center',
-    },
-
-    neutralIcon: {
-        backgroundColor: '#F3EBE8',
-    },
-
-    positiveIcon: {
-        backgroundColor: '#FFDED1',
-    },
-
-    transactionIconText: {
-        fontSize: fontSize.xl,
-        color: colors.text.primary,
-    },
-
-    positiveIconText: {
-        color: colors.primary,
-    },
-
-    transactionInfo: {
-        flex: 1,
-        gap: spacing.xs,
-    },
-
-    transactionTitle: {
-        fontFamily: fontFamily.semiBold,
-        fontSize: fontSize.sm,
-        color: colors.text.primary,
-    },
-
-    transactionDescription: {
-        fontFamily: fontFamily.regular,
-        fontSize: 10,
-        color: colors.text.secondary,
-    },
-
-    transactionAmount: {
-        fontFamily: fontFamily.semiBold,
-        fontSize: fontSize.xs,
-        color: colors.text.primary,
-    },
-
-    positiveAmount: {
-        color: colors.primary,
-    },
-
-    statementButton: {
-        minHeight: 48,
-        borderTopWidth: 1,
-        borderTopColor: colors.border.subtle,
-        alignItems: 'center',
-        justifyContent: 'center',
-    },
-
-    statementText: {
-        fontFamily: fontFamily.semiBold,
-        fontSize: fontSize.sm,
-        color: colors.primary,
-    },
-
-    floatingButton: {
+    donutCenter: {
         position: 'absolute',
-        bottom: spacing.xl,
-        right: spacing.lg,
-        width: 58,
-        height: 58,
-        borderRadius: radius.full,
-        backgroundColor: colors.primary,
-        justifyContent: 'center',
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
         alignItems: 'center',
-        elevation: 5,
+        justifyContent: 'center',
+    },
+    donutLabel: {
+        fontFamily: F.regular,
+        fontSize: 11,
+        color: C.textSecondary,
+    },
+    donutValue: {
+        fontFamily: F.semibold,
+        fontSize: 15,
+        color: C.text,
+    },
+    legend: {
+        flex: 1,
+        marginLeft: 16,
+        gap: 12,
+    },
+    legendRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+    },
+    legendDot: {
+        width: 10,
+        height: 10,
+        borderRadius: 5,
+        marginRight: 8,
+    },
+    legendLabel: {
+        flex: 1,
+        fontFamily: F.regular,
+        fontSize: 13,
+        color: C.text,
+    },
+    legendAmount: {
+        fontFamily: F.semibold,
+        fontSize: 13,
+        color: C.text,
+    },
+
+    // Transações
+    sectionTitle: {
+        fontFamily: F.semibold,
+        fontSize: 11,
+        letterSpacing: 0.8,
+        color: C.text,
+        marginTop: 24,
+        marginBottom: 10,
+        marginLeft: 4,
+    },
+    txRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        paddingHorizontal: 14,
+        paddingVertical: 14,
+    },
+    txRowDivider: {
+        borderTopWidth: 1,
+        borderTopColor: C.divider,
+    },
+    txIcon: {
+        width: 36,
+        height: 36,
+        borderRadius: 18,
+        backgroundColor: C.iconBg,
+        alignItems: 'center',
+        justifyContent: 'center',
+        marginRight: 12,
+    },
+    txInfo: {
+        flex: 1,
+    },
+    txTitle: {
+        fontFamily: F.semibold,
+        fontSize: 14,
+        color: C.text,
+        marginBottom: 2,
+    },
+    txSubtitle: {
+        fontFamily: F.regular,
+        fontSize: 11,
+        color: C.textSecondary,
+    },
+    txAmount: {
+        fontFamily: F.semibold,
+        fontSize: 13,
+        color: C.text,
+    },
+    statementButton: {
+        borderTopWidth: 1,
+        borderTopColor: C.divider,
+        paddingVertical: 14,
+        alignItems: 'center',
+    },
+    statementText: {
+        fontFamily: F.medium,
+        fontSize: 13,
+        color: C.primary,
+    },
+
+    // Botão flutuante
+    fab: {
+        position: 'absolute',
+        right: 16,
+        bottom: 16,
+        width: 56,
+        height: 56,
+        borderRadius: 28,
+        backgroundColor: C.primary,
+        alignItems: 'center',
+        justifyContent: 'center',
         shadowColor: '#000',
-        shadowOpacity: 0.15,
+        shadowOpacity: 0.2,
         shadowRadius: 8,
-        shadowOffset: {
-            width: 0,
-            height: 4,
-        },
-    },
-
-    floatingButtonText: {
-        fontFamily: fontFamily.regular,
-        fontSize: 34,
-        lineHeight: 40,
-        color: colors.white,
-    },
-
-    pressed: {
-        opacity: 0.8,
+        shadowOffset: { width: 0, height: 4 },
+        elevation: 6,
     },
 });
