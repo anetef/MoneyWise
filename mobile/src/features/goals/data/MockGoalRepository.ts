@@ -1,6 +1,7 @@
-import type { CreateGoalInput, Goal } from '../domain/Goal';
+import type { CreateGoalInput, Goal, GoalDetails } from '../domain/Goal';
 import type { GoalRepository } from '../domain/GoalRepository';
 
+import { mockGoalDetails } from './mockGoalDetails';
 import { mockGoals } from './mockGoals';
 
 const monthNames = [
@@ -39,6 +40,24 @@ export class MockGoalRepository implements GoalRepository {
 
     async listGoals(): Promise<Goal[]> {
         return [...this.goals];
+    }
+
+    async getGoalDetails(goalId: string): Promise<GoalDetails | null> {
+        const goal = this.goals.find((item) => item.id === goalId);
+
+        if (!goal) {
+            return null;
+        }
+
+        // Caixinhas sem detalhes simulados (ex.: criadas na sessão)
+        // ainda não têm registros nem status de ritmo.
+        const details = mockGoalDetails[goalId] ?? {
+            remainingAmount: goal.targetAmount - goal.accumulatedAmount,
+            pace: null,
+            records: [],
+        };
+
+        return { ...goal, ...details };
     }
 
     async createGoal(input: CreateGoalInput): Promise<Goal> {

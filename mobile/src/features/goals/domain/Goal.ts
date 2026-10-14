@@ -45,3 +45,34 @@ export type CreateGoalInput = {
     targetAmount: number;
     deadline: Date | null;
 };
+
+/**
+ * Tipo de movimento da Caixinha: entrada ou retirada (L-07).
+ */
+export type GoalRecordKind = 'deposit' | 'withdrawal';
+
+export type GoalRecord = {
+    id: string;
+    kind: GoalRecordKind;
+    description: string;
+    dateLabel: string;
+    amount: number;
+};
+
+/**
+ * Ritmo da Caixinha em relação ao planejado.
+ *
+ * Status devolvido pelo backend (RN01); o aplicativo
+ * não calcula projeções.
+ */
+export type GoalPace = {
+    title: string;
+    message: string;
+    tone: GoalProgressTone;
+};
+
+export type GoalDetails = Goal & {
+    remainingAmount: number;
+    pace: GoalPace | null;
+    records: GoalRecord[];
+};
