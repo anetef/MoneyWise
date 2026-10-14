@@ -66,10 +66,7 @@ export function GoalDetailsScreen({ navigation, route }: Props) {
 
         if (goal.type === 'shared') {
             const inviteMembers = () =>
-                showComingSoon(
-                    'Convidar membros',
-                    'O convite de membros será conectado em uma próxima etapa.',
-                );
+                navigation.navigate('InviteMembers', { groupId: goal.groupId });
 
             return (
                 <SharedGoalDetails
