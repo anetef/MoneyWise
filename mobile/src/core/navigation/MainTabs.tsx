@@ -1,47 +1,13 @@
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
+
 import { DashboardStack } from './DashboardStack';
 import { GoalsListScreen } from '../../features/goals/presentation/screens/GoalsListScreen';
-import {
-    StyleSheet,
-    Text,
-    View,
-} from 'react-native';
+import { ProfileScreen } from '../../features/auth/presentation/screens/ProfileScreen';
 
-import {
-    colors,
-    radius,
-    spacing,
-    typography,
-} from '../theme';
-
+import { colors, typography } from '../theme';
 import type { MainTabsParamList } from './types';
 
 const Tab = createBottomTabNavigator<MainTabsParamList>();
-
-/**
- * Placeholder temporário do Perfil.
- */
-function ProfileScreen() {
-    return (
-        <View style={styles.container}>
-            <Text style={styles.title}>Perfil</Text>
-
-            <Text style={styles.description}>
-                Gerencie suas informações e preferências.
-            </Text>
-
-            <View style={styles.card}>
-                <Text style={styles.cardLabel}>
-                    Usuário de demonstração
-                </Text>
-
-                <Text style={styles.cardDescription}>
-                    Configurações disponíveis em breve.
-                </Text>
-            </View>
-        </View>
-    );
-}
 
 /**
  * Navegação principal por abas.
@@ -97,44 +63,3 @@ export function MainTabs() {
         </Tab.Navigator>
     );
 }
-
-const styles = StyleSheet.create({
-    container: {
-        flex: 1,
-        backgroundColor: colors.background,
-        padding: spacing.xxl,
-        paddingTop: spacing.massive,
-    },
-
-    title: {
-        ...typography.heading,
-        color: colors.text.primary,
-        marginBottom: spacing.sm,
-    },
-
-    description: {
-        ...typography.body,
-        color: colors.text.secondary,
-        marginBottom: spacing.xxl,
-    },
-
-    card: {
-        backgroundColor: colors.surface.primary,
-        borderRadius: radius.xl,
-        borderWidth: 1,
-        borderColor: colors.border.default,
-        padding: spacing.xxl,
-        gap: spacing.sm,
-    },
-
-    cardLabel: {
-        ...typography.subtitle,
-        color: colors.text.primary,
-    },
-
-
-    cardDescription: {
-        ...typography.caption,
-        color: colors.text.secondary,
-    },
-});
