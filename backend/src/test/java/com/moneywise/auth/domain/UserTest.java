@@ -7,6 +7,8 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import com.moneywise.shared.exception.BusinessRuleException;
+
+import java.time.Instant;
 import java.util.Currency;
 import java.util.UUID;
 
@@ -136,7 +138,8 @@ public class UserTest {
             "Maria",
             email,
             "hash-da-senha",
-            currency
+            currency,
+            null
         );
 
         assertEquals(id, user.getId());
@@ -154,7 +157,8 @@ public class UserTest {
             "Maria",
             email,
             "hash-da-senha",
-            currency
+            currency,
+            null
         );
 
         User secondUser = User.restore(
@@ -162,7 +166,8 @@ public class UserTest {
             "João",
             email,
             "outro-hash",
-            currency
+            currency,
+            null
         );
 
         assertEquals(firstUser, secondUser);
@@ -181,4 +186,37 @@ public class UserTest {
         assertThat(user.toString()).doesNotContain("hash-da-senha");
     }
 
+    @Test
+    @Description("Um usuário recém-cadastrado começa com o e-mail não confirmado")
+    void shouldStartWithEmailNotVerified() {
+        User user = User.register("Maria", Email.of("maria@gmail.com"), "hash-da-senha", Currency.getInstance("BRL"));
+
+        assertThat(user.isEmailVerified()).isFalse();
+        assertThat(user.getEmailVerifiedAt()).isNull();
+    }
+
+    @Test
+    @Description("Marca o e-mail como confirmado com a data informada")
+    void shouldMarkEmailAsVerified() {
+        User user = User.register("Maria", Email.of("maria@gmail.com"), "hash-da-senha", Currency.getInstance("BRL"));
+        Instant now = Instant.parse("2026-10-13T12:00:00Z");
+
+        user.markEmailVerified(now);
+
+        assertThat(user.isEmailVerified()).isTrue();
+        assertThat(user.getEmailVerifiedAt()).isEqualTo(now);
+    }
+
+    @Test
+    @Description ("Confirmar de novo mantém a data da primeira confirmação")
+    void shouldKeepFirstVerificationDate() {
+        User user = User.register("Maria", Email.of("maria@gmail.com"), "hash-da-senha", Currency.getInstance("BRL"));
+        Instant first = Instant.parse("2026-10-13T12:00:00Z");
+        Instant second = Instant.parse("2026-10-14T12:00:00Z");
+
+        user.markEmailVerified(first);
+        user.markEmailVerified(second);
+
+        assertThat(user.getEmailVerifiedAt()).isEqualTo(first);
+    }
 }

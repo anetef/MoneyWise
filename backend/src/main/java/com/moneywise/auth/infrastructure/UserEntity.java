@@ -41,16 +41,20 @@ public class UserEntity {
     @Column(name = "updated_at", nullable = false)
     private Instant updatedAt;
 
+    @Column(name = "email_verified_at")
+    private Instant emailVerifiedAt;
+
     /** Exigido pela JPA. Não use diretamente. */
     protected UserEntity() {
     }
 
-    public UserEntity(UUID id, String email, String passwordHash, String name, String currency) {
+    public UserEntity(UUID id, String email, String passwordHash, String name, String currency,  Instant emailVerifiedAt) {
         this.id = id;
         this.email = email;
         this.passwordHash = passwordHash;
         this.name = name;
         this.currency = currency;
+        this.emailVerifiedAt = emailVerifiedAt;
     }
 
     public UUID getId() {
@@ -79,5 +83,9 @@ public class UserEntity {
 
     public Instant getUpdatedAt() {
         return updatedAt;
+    }
+
+    public Instant getEmailVerifiedAt() {
+        return emailVerifiedAt;
     }
 }

@@ -15,7 +15,13 @@ export type AuthStackParamList = {
 /** Abas principais do aplicativo. */
 export type MainTabsParamList = {
     Dashboard: undefined;
-    Goals: undefined;
+
+    /**
+     * Ao voltar da criação, abre a aba
+     * do tipo da Caixinha criada.
+     */
+    Goals: { createdGoalType?: 'individual' | 'shared' } | undefined;
+
     Profile: undefined;
 };
 
