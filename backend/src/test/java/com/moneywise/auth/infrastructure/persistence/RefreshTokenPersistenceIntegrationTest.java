@@ -18,6 +18,7 @@ import com.moneywise.auth.application.port.TokenService;
 import com.moneywise.auth.application.port.UserRepository;
 import com.moneywise.auth.domain.Email;
 import com.moneywise.auth.domain.User;
+import com.moneywise.auth.infrastructure.persistence.refreshtoken.SpringDataRefreshTokenRepository;
 
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceException;

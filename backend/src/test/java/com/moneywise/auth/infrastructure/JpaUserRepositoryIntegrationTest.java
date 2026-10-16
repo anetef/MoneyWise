@@ -18,7 +18,8 @@ import com.moneywise.TestcontainersConfiguration;
 import com.moneywise.auth.application.port.UserRepository;
 import com.moneywise.auth.domain.Email;
 import com.moneywise.auth.domain.User;
-import com.moneywise.auth.infrastructure.UserEntity;
+import com.moneywise.auth.infrastructure.persistence.user.SpringDataUserRepository;
+import com.moneywise.auth.infrastructure.persistence.user.UserEntity;
 import com.moneywise.shared.exception.ConflictException;
 
 import jakarta.persistence.EntityManager;

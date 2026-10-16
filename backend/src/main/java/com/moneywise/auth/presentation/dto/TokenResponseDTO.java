@@ -1,6 +1,6 @@
 package com.moneywise.auth.presentation.dto;
 
-import com.moneywise.auth.application.usecase.AuthTokens;
+import com.moneywise.auth.application.usecase.session.AuthTokens;
 
 public record TokenResponseDTO(String accessToken, String refreshToken, String tokenType) {
 

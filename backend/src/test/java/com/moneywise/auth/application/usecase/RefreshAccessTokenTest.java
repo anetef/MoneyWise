@@ -8,6 +8,8 @@ import java.util.UUID;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
+import com.moneywise.auth.application.usecase.session.AuthTokens;
+import com.moneywise.auth.application.usecase.session.RefreshAccessToken;
 import com.moneywise.shared.exception.UnauthorizedException;
 
 class RefreshAccessTokenTest {

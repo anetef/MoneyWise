@@ -10,13 +10,13 @@ import com.moneywise.auth.application.port.EmailVerificationCodeRepository;
 import com.moneywise.auth.application.port.PasswordHasher;
 import com.moneywise.auth.application.port.TokenService;
 import com.moneywise.auth.application.port.UserRepository;
-import com.moneywise.auth.application.usecase.Login;
-import com.moneywise.auth.application.usecase.Logout;
-import com.moneywise.auth.application.usecase.RefreshAccessToken;
-import com.moneywise.auth.application.usecase.RegisterUser;
-import com.moneywise.auth.application.usecase.ResendVerificationCode;
-import com.moneywise.auth.application.usecase.SendVerificationCode;
-import com.moneywise.auth.application.usecase.VerifyEmail;
+import com.moneywise.auth.application.usecase.login.Login;
+import com.moneywise.auth.application.usecase.register.RegisterUser;
+import com.moneywise.auth.application.usecase.session.Logout;
+import com.moneywise.auth.application.usecase.session.RefreshAccessToken;
+import com.moneywise.auth.application.usecase.verification.ResendVerificationCode;
+import com.moneywise.auth.application.usecase.verification.SendVerificationCode;
+import com.moneywise.auth.application.usecase.verification.VerifyEmail;
 
 /** Cria os casos de uso de auth com as implementações reais dos ports. */
 @Configuration
