@@ -11,6 +11,8 @@ import com.moneywise.auth.application.port.PasswordHasher;
 import com.moneywise.auth.application.port.TokenService;
 import com.moneywise.auth.application.port.UserRepository;
 import com.moneywise.auth.application.usecase.Login;
+import com.moneywise.auth.application.usecase.Logout;
+import com.moneywise.auth.application.usecase.RefreshAccessToken;
 import com.moneywise.auth.application.usecase.RegisterUser;
 import com.moneywise.auth.application.usecase.ResendVerificationCode;
 import com.moneywise.auth.application.usecase.SendVerificationCode;
@@ -49,5 +51,15 @@ public class AuthUseCaseConfig {
     VerifyEmail verifyEmail(UserRepository userRepository, EmailVerificationCodeRepository codes,
                             TokenService tokenService, Clock clock) {
         return new VerifyEmail(userRepository, codes, tokenService, clock);
+    }
+
+    @Bean
+    RefreshAccessToken refreshAccessToken(TokenService tokenService) {
+        return new RefreshAccessToken(tokenService);
+    }
+
+    @Bean
+    Logout logout(TokenService tokenService) {
+        return new Logout(tokenService);
     }
 }

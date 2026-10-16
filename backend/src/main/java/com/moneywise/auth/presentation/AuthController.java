@@ -9,6 +9,8 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.moneywise.auth.application.usecase.Login;
 import com.moneywise.auth.application.usecase.LoginCommand;
+import com.moneywise.auth.application.usecase.Logout;
+import com.moneywise.auth.application.usecase.RefreshAccessToken;
 import com.moneywise.auth.application.usecase.RegisterUser;
 import com.moneywise.auth.application.usecase.RegisterUserCommand;
 import com.moneywise.auth.application.usecase.ResendVerificationCode;
@@ -16,8 +18,10 @@ import com.moneywise.auth.application.usecase.VerifyEmail;
 import com.moneywise.auth.application.usecase.VerifyEmailCommand;
 import com.moneywise.auth.presentation.dto.LoginRequestDTO;
 import com.moneywise.auth.presentation.dto.LoginResponseDTO;
+import com.moneywise.auth.presentation.dto.RefreshTokenRequestDTO;
 import com.moneywise.auth.presentation.dto.RegisterRequestDTO;
 import com.moneywise.auth.presentation.dto.ResendVerificationRequestDTO;
+import com.moneywise.auth.presentation.dto.TokenResponseDTO;
 import com.moneywise.auth.presentation.dto.UserResponseDTO;
 import com.moneywise.auth.presentation.dto.VerifyEmailRequestDTO;
 
@@ -35,13 +39,18 @@ public class AuthController {
     private final Login login;
     private final VerifyEmail verifyEmail;
     private final ResendVerificationCode resendVerificationCode;
+     private final RefreshAccessToken refreshAccessToken;
+    private final Logout logout;
 
     public AuthController(RegisterUser registerUser, Login login,
-                          VerifyEmail verifyEmail, ResendVerificationCode resendVerificationCode) {
+                          VerifyEmail verifyEmail, ResendVerificationCode resendVerificationCode,
+                          RefreshAccessToken refreshAccessToken, Logout logout) {
         this.registerUser = registerUser;
         this.login = login;
         this.verifyEmail = verifyEmail;
         this.resendVerificationCode = resendVerificationCode;
+        this.refreshAccessToken = refreshAccessToken;
+        this.logout = logout;
     }
 
     @PostMapping("/register")
@@ -103,5 +112,34 @@ public class AuthController {
                     """)
     public void resendVerification(@Valid @RequestBody ResendVerificationRequestDTO request) {
         resendVerificationCode.execute(request.email());
+    }
+
+        @PostMapping("/refresh")
+    @Operation(
+            summary = "Renovar access token",
+            description = """
+                    Troca um refresh token válido por um novo access token **e** um novo refresh token (rotação, L-01).
+                    O refresh token enviado deixa de valer; o app deve guardar o novo.
+
+                    Erros: 400 (campo vazio), 401 `INVALID_REFRESH_TOKEN` (token inválido, vencido ou revogado:
+                    o app deve mandar o usuário para o login).
+                    """)
+    public TokenResponseDTO refresh(@Valid @RequestBody RefreshTokenRequestDTO request) {
+        return TokenResponseDTO.from(refreshAccessToken.execute(request.refreshToken()));
+    }
+
+    @PostMapping("/logout")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    @Operation(
+            summary = "Logout",
+            description = """
+                    Revoga o refresh token informado: depois disso, ele não gera novos access tokens.
+                    Responde 204 mesmo se o token já estiver revogado ou não existir.
+                    O access token atual continua válido até vencer (no máximo 15 min); o app deve apagar os dois.
+
+                    Erros: 400 (campo vazio).
+                    """)
+    public void logout(@Valid @RequestBody RefreshTokenRequestDTO request) {
+        logout.execute(request.refreshToken());
     }
 }
