@@ -11,6 +11,8 @@ import java.util.Currency;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
+import com.moneywise.auth.application.usecase.verification.ResendVerificationCode;
+import com.moneywise.auth.application.usecase.verification.SendVerificationCode;
 import com.moneywise.auth.domain.Email;
 import com.moneywise.auth.domain.EmailVerificationCode;
 import com.moneywise.auth.domain.User;
