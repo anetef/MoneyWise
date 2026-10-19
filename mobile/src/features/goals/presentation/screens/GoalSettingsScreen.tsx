@@ -16,6 +16,7 @@ import { colors, spacing } from '../../../../core/theme';
 import { DetailsHeader } from '../components/DetailsHeader';
 import { EmptyState } from '../components/EmptyState';
 import { IndividualGoalSettings } from '../components/IndividualGoalSettings';
+import { SharedGoalSettings } from '../components/SharedGoalSettings';
 import { useGoalSettings } from '../viewmodels/useGoalSettings';
 
 type Props = NativeStackScreenProps<MainStackParamList, 'GoalSettings'>;
@@ -24,7 +25,10 @@ type Props = NativeStackScreenProps<MainStackParamList, 'GoalSettings'>;
  * Configurações da Caixinha (MGO-09).
  *
  * Uma única tela que exibe o conteúdo conforme o tipo.
- * Nesta etapa, apenas a Caixinha individual está disponível.
+ *
+ * A tela não aplica regras de permissão: quem pode editar a
+ * meta ou gerenciar membros (RN04, L-10, L-17) será validado
+ * pelo backend. No mock, o usuário simulado é o Admin.
  */
 export function GoalSettingsScreen({ navigation, route }: Props) {
     const {
@@ -41,7 +45,7 @@ export function GoalSettingsScreen({ navigation, route }: Props) {
         save,
     } = useGoalSettings(route.params.goalId);
 
-    const canSave = !!goal && goal.type === 'individual';
+    const canSave = !!goal;
 
     async function handleSave() {
         if (await save()) {
@@ -49,7 +53,7 @@ export function GoalSettingsScreen({ navigation, route }: Props) {
         }
     }
 
-    // Arquivar e excluir dependem de L-09: não alteram nenhum dado.
+    // Ações pendentes de L-09 e L-10: não alteram nenhum dado.
     function showComingSoon(title: string) {
         Alert.alert(title, 'Esta ação estará disponível em breve.');
     }
@@ -68,12 +72,26 @@ export function GoalSettingsScreen({ navigation, route }: Props) {
             );
         }
 
-        // As Configurações da Caixinha compartilhada entram na próxima entrega.
         if (goal.type === 'shared') {
             return (
-                <EmptyState
-                    title={goal.name}
-                    description="As configurações de caixinhas compartilhadas estarão disponíveis em breve."
+                <SharedGoalSettings
+                    goal={goal}
+                    name={name}
+                    amountText={amountText}
+                    deadlineText={deadlineText}
+                    errors={errors}
+                    onChangeName={changeName}
+                    onChangeAmount={changeAmount}
+                    onChangeDeadline={changeDeadline}
+                    onInvite={() =>
+                        navigation.navigate('InviteMembers', { groupId: goal.groupId })
+                    }
+                    onManageMember={(member) => showComingSoon(`Gerenciar ${member.name}`)}
+                    onManageInvites={() =>
+                        showComingSoon('Gerenciar convites e permissões')
+                    }
+                    onLeave={() => showComingSoon('Sair desta Caixinha')}
+                    onArchive={() => showComingSoon('Encerrar e Arquivar Caixinha')}
                 />
             );
         }

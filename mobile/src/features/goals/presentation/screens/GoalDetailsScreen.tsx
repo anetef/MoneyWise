@@ -55,12 +55,8 @@ export function GoalDetailsScreen({ navigation, route }: Props) {
             );
         }
 
-        // As Configurações da Caixinha compartilhada entram na próxima entrega.
         const openSettings = () =>
-            showComingSoon(
-                'Configurações',
-                'As configurações da caixinha estarão disponíveis em breve.',
-            );
+            navigation.navigate('GoalSettings', { goalId: goal.id });
 
         const seeAllRecords = () =>
             navigation.navigate('GoalStatement', { goalId: goal.id });
@@ -101,9 +97,7 @@ export function GoalDetailsScreen({ navigation, route }: Props) {
                         'O registro de retiradas estará disponível em breve.',
                     )
                 }
-                onOpenSettings={() =>
-                    navigation.navigate('GoalSettings', { goalId: goal.id })
-                }
+                onOpenSettings={openSettings}
                 onSeeAllRecords={seeAllRecords}
             />
         );
