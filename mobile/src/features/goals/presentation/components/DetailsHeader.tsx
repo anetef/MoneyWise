@@ -8,15 +8,23 @@ import {
     spacing,
 } from '../../../../core/theme';
 
+type HeaderAction = {
+    label: string;
+    onPress: () => void;
+    disabled?: boolean;
+};
+
 type Props = {
     title: string;
     onBack: () => void;
+    /** Ação de texto opcional à direita (ex.: "Salvar"). */
+    action?: HeaderAction;
 };
 
 /**
- * Cabeçalho com botão de voltar e título.
+ * Cabeçalho com botão de voltar, título e ação opcional.
  */
-export function DetailsHeader({ title, onBack }: Props) {
+export function DetailsHeader({ title, onBack, action }: Props) {
     return (
         <View style={styles.header}>
             <Pressable
@@ -32,6 +40,19 @@ export function DetailsHeader({ title, onBack }: Props) {
             <Text style={styles.title} numberOfLines={1}>
                 {title}
             </Text>
+
+            {action && (
+                <Pressable
+                    onPress={action.onPress}
+                    disabled={action.disabled}
+                    accessibilityRole="button"
+                    accessibilityState={{ disabled: action.disabled }}
+                    hitSlop={spacing.md}
+                    style={({ pressed }) => (pressed || action.disabled) && styles.actionPressed}
+                >
+                    <Text style={styles.actionText}>{action.label}</Text>
+                </Pressable>
+            )}
         </View>
     );
 }
@@ -65,5 +86,15 @@ const styles = StyleSheet.create({
         fontFamily: fontFamily.semiBold,
         fontSize: fontSize.md,
         color: colors.text.primary,
+    },
+
+    actionText: {
+        fontFamily: fontFamily.semiBold,
+        fontSize: fontSize.md,
+        color: colors.primary,
+    },
+
+    actionPressed: {
+        opacity: 0.6,
     },
 });

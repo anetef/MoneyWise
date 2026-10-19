@@ -7,7 +7,6 @@ import {
     Pressable,
     ScrollView,
     StyleSheet,
-    Switch,
     Text,
     TextInput,
     View,
@@ -26,6 +25,7 @@ import {
 } from '../../../../core/theme';
 
 import type { GoalType } from '../../domain/Goal';
+import { DisabledSwitch } from '../components/DisabledSwitch';
 import { FormRow } from '../components/FormRow';
 import { FormSection } from '../components/FormSection';
 import { SegmentedTabs } from '../components/SegmentedTabs';
@@ -37,20 +37,6 @@ const typeOptions: { value: GoalType; label: string }[] = [
     { value: 'individual', label: 'Individual' },
     { value: 'shared', label: 'Compartilhada' },
 ];
-
-/**
- * Interruptor ainda indisponível (campos pendentes de L-08).
- */
-function DisabledSwitch() {
-    return (
-        <Switch
-            value={false}
-            disabled
-            trackColor={{ false: colors.border.default, true: colors.primary }}
-            thumbColor={colors.white}
-        />
-    );
-}
 
 export function CreateGoalScreen({ navigation }: Props) {
     const {
