@@ -49,6 +49,11 @@ export type MainStackParamList = {
         goalId: string;
     };
 
+    /** Registrar Aporte (MGO-06), "Entrada" na Caixinha individual. */
+    GoalContribution: {
+        goalId: string;
+    };
+
     InviteMembers: {
         groupId: string;
     };

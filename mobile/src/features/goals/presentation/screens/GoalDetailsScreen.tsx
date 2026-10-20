@@ -61,6 +61,10 @@ export function GoalDetailsScreen({ navigation, route }: Props) {
         const seeAllRecords = () =>
             navigation.navigate('GoalStatement', { goalId: goal.id });
 
+        // Aporte na compartilhada e entrada na individual usam a mesma tela.
+        const registerContribution = () =>
+            navigation.navigate('GoalContribution', { goalId: goal.id });
+
         if (goal.type === 'shared') {
             const inviteMembers = () =>
                 navigation.navigate('InviteMembers', { groupId: goal.groupId });
@@ -68,12 +72,7 @@ export function GoalDetailsScreen({ navigation, route }: Props) {
             return (
                 <SharedGoalDetails
                     goal={goal}
-                    onRegisterContribution={() =>
-                        showComingSoon(
-                            'Registrar aporte',
-                            'O registro de aportes estará disponível em breve.',
-                        )
-                    }
+                    onRegisterContribution={registerContribution}
                     onShare={inviteMembers}
                     onInvite={inviteMembers}
                     onOpenSettings={openSettings}
@@ -85,12 +84,7 @@ export function GoalDetailsScreen({ navigation, route }: Props) {
         return (
             <IndividualGoalDetails
                 goal={goal}
-                onRegisterDeposit={() =>
-                    showComingSoon(
-                        'Registrar entrada',
-                        'O registro de entradas estará disponível em breve.',
-                    )
-                }
+                onRegisterDeposit={registerContribution}
                 onRegisterWithdrawal={() =>
                     showComingSoon(
                         'Registrar retirada',

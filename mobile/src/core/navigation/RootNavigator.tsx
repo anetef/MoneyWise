@@ -3,6 +3,7 @@ import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 
 import { CreateGoalScreen } from '../../features/goals/presentation/screens/CreateGoalScreen';
+import { GoalContributionScreen } from '../../features/goals/presentation/screens/GoalContributionScreen';
 import { GoalDetailsScreen } from '../../features/goals/presentation/screens/GoalDetailsScreen';
 import { GoalSettingsScreen } from '../../features/goals/presentation/screens/GoalSettingsScreen';
 import { GoalStatementScreen } from '../../features/goals/presentation/screens/GoalStatementScreen';
@@ -53,6 +54,11 @@ function MainStack() {
             <Stack.Screen
                 name="GoalStatement"
                 component={GoalStatementScreen}
+            />
+
+            <Stack.Screen
+                name="GoalContribution"
+                component={GoalContributionScreen}
             />
 
             <Stack.Screen
