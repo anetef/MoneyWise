@@ -1,3 +1,4 @@
+import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 
 import { DashboardStack } from './DashboardStack';
@@ -42,6 +43,13 @@ export function MainTabs() {
                 component={DashboardStack}
                 options={{
                     title: 'Painel',
+                    tabBarIcon: ({ color, size }) => (
+                        <MaterialCommunityIcons
+                            name="view-dashboard-outline"
+                            color={color}
+                            size={size}
+                        />
+                    ),
                 }}
             />
 
@@ -50,6 +58,13 @@ export function MainTabs() {
                 component={GoalsListScreen}
                 options={{
                     title: 'Caixinhas',
+                    tabBarIcon: ({ color, size }) => (
+                        <MaterialCommunityIcons
+                            name="piggy-bank-outline"
+                            color={color}
+                            size={size}
+                        />
+                    ),
                 }}
             />
 
@@ -58,6 +73,13 @@ export function MainTabs() {
                 component={ProfileScreen}
                 options={{
                     title: 'Perfil',
+                    tabBarIcon: ({ color, size }) => (
+                        <MaterialCommunityIcons
+                            name="account-outline"
+                            color={color}
+                            size={size}
+                        />
+                    ),
                 }}
             />
         </Tab.Navigator>
