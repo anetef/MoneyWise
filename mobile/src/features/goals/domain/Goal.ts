@@ -27,6 +27,8 @@ export type Goal = {
     groupId: string;
     type: GoalType;
     name: string;
+    /** Data limite (AAAA-MM-DD), ou null quando não há prazo. */
+    deadline: string | null;
     deadlineLabel: string | null;
     accumulatedAmount: number;
     targetAmount: number;
@@ -42,6 +44,18 @@ export type Goal = {
 export type CreateGoalInput = {
     name: string;
     type: GoalType;
+    targetAmount: number;
+    deadline: Date | null;
+};
+
+/**
+ * Dados editáveis nas Configurações da Caixinha.
+ *
+ * Mesmos campos já definidos da criação; os demais
+ * dependem de L-08.
+ */
+export type UpdateGoalInput = {
+    name: string;
     targetAmount: number;
     deadline: Date | null;
 };

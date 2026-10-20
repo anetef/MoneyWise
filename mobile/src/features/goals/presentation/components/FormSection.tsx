@@ -1,5 +1,5 @@
 import { Children, Fragment, type ReactNode } from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import {
     colors,
@@ -10,10 +10,17 @@ import {
     spacing,
 } from '../../../../core/theme';
 
+type AsideAction = {
+    label: string;
+    onPress: () => void;
+};
+
 type Props = {
     title: string;
     aside?: string;
     asideTone?: 'muted' | 'primary';
+    /** Ação de texto ao lado do título (ex.: "+ Convidar"). */
+    asideAction?: AsideAction;
     children: ReactNode;
 };
 
@@ -24,6 +31,7 @@ export function FormSection({
     title,
     aside,
     asideTone = 'muted',
+    asideAction,
     children,
 }: Props) {
     const rows = Children.toArray(children);
@@ -42,6 +50,17 @@ export function FormSection({
                     >
                         {aside}
                     </Text>
+                )}
+
+                {asideAction && (
+                    <Pressable
+                        onPress={asideAction.onPress}
+                        accessibilityRole="button"
+                        hitSlop={spacing.sm}
+                        style={({ pressed }) => pressed && styles.pressed}
+                    >
+                        <Text style={styles.asideAction}>{asideAction.label}</Text>
+                    </Pressable>
                 )}
             </View>
 
@@ -85,6 +104,16 @@ const styles = StyleSheet.create({
 
     asidePrimary: {
         color: colors.primary,
+    },
+
+    asideAction: {
+        fontFamily: fontFamily.semiBold,
+        fontSize: fontSize.xs,
+        color: colors.primary,
+    },
+
+    pressed: {
+        opacity: 0.7,
     },
 
     card: {

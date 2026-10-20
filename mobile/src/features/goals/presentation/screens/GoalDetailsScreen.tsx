@@ -56,10 +56,7 @@ export function GoalDetailsScreen({ navigation, route }: Props) {
         }
 
         const openSettings = () =>
-            showComingSoon(
-                'Configurações',
-                'As configurações da caixinha estarão disponíveis em breve.',
-            );
+            navigation.navigate('GoalSettings', { goalId: goal.id });
 
         const seeAllRecords = () =>
             navigation.navigate('GoalStatement', { goalId: goal.id });

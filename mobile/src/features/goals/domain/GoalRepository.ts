@@ -1,4 +1,10 @@
-import type { CreateGoalInput, Goal, GoalDetails, GoalRecord } from './Goal';
+import type {
+    CreateGoalInput,
+    Goal,
+    GoalDetails,
+    GoalRecord,
+    UpdateGoalInput,
+} from './Goal';
 
 /**
  * Acesso aos dados das Caixinhas.
@@ -26,4 +32,10 @@ export interface GoalRepository {
 
     /** Cria uma Caixinha; o usuário passa a ser o Admin (L-17). */
     createGoal(input: CreateGoalInput): Promise<Goal>;
+
+    /**
+     * Atualiza nome, valor objetivo e data limite.
+     * Devolve null se a Caixinha não for encontrada.
+     */
+    updateGoal(goalId: string, input: UpdateGoalInput): Promise<Goal | null>;
 }

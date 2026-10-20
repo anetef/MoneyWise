@@ -1,4 +1,10 @@
-import type { CreateGoalInput, Goal, GoalDetails, GoalRecord } from '../domain/Goal';
+import type {
+    CreateGoalInput,
+    Goal,
+    GoalDetails,
+    GoalRecord,
+    UpdateGoalInput,
+} from '../domain/Goal';
 import type { GoalRepository } from '../domain/GoalRepository';
 
 import { mockCurrentUser, mockGoalDetails } from './mockGoalDetails';
@@ -28,6 +34,30 @@ function formatDeadline(deadline: Date | null): string | null {
     }
 
     return `${monthNames[deadline.getMonth()]} ${deadline.getFullYear()}`;
+}
+
+/** Data local no formato AAAA-MM-DD. */
+function toIsoDate(date: Date | null): string | null {
+    if (!date) {
+        return null;
+    }
+
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+
+    return `${date.getFullYear()}-${month}-${day}`;
+}
+
+/**
+ * Percentual da meta, simulando o que o backend devolveria
+ * após uma alteração do valor objetivo.
+ */
+function progressPercent(accumulatedAmount: number, targetAmount: number): number {
+    if (targetAmount <= 0) {
+        return 0;
+    }
+
+    return Math.min(Math.round((accumulatedAmount / targetAmount) * 100), 100);
 }
 
 /**
@@ -73,6 +103,8 @@ export class MockGoalRepository implements GoalRepository {
         return {
             ...goal,
             ...details,
+            // Acompanha alterações do valor objetivo feitas nas Configurações.
+            remainingAmount: Math.max(goal.targetAmount - goal.accumulatedAmount, 0),
             records: details.records.slice(0, RECENT_RECORDS_LIMIT),
         };
     }
@@ -92,6 +124,7 @@ export class MockGoalRepository implements GoalRepository {
             groupId,
             type: input.type,
             name: input.name,
+            deadline: toIsoDate(input.deadline),
             deadlineLabel: formatDeadline(input.deadline),
             accumulatedAmount: 0,
             targetAmount: input.targetAmount,
@@ -105,6 +138,32 @@ export class MockGoalRepository implements GoalRepository {
         this.goals = [goal, ...this.goals];
 
         return goal;
+    }
+
+    async updateGoal(goalId: string, input: UpdateGoalInput): Promise<Goal | null> {
+        const current = this.goals.find((item) => item.id === goalId);
+
+        if (!current) {
+            return null;
+        }
+
+        // Simula a resposta do backend: o status do progresso (RN01)
+        // é mantido; só o percentual acompanha o novo valor objetivo.
+        const updated: Goal = {
+            ...current,
+            name: input.name,
+            targetAmount: input.targetAmount,
+            deadline: toIsoDate(input.deadline),
+            deadlineLabel: formatDeadline(input.deadline),
+            progress: {
+                ...current.progress,
+                percent: progressPercent(current.accumulatedAmount, input.targetAmount),
+            },
+        };
+
+        this.goals = this.goals.map((item) => (item.id === goalId ? updated : item));
+
+        return updated;
     }
 }
 
