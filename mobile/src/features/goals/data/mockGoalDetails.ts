@@ -71,6 +71,8 @@ export const mockGoalDetails: Record<string, MockGoalDetails> = {
             record('rec-japao-2', 'deposit', 'Décimo terceiro', null, daysAgo(24, '12:00'), 1500),
             record('rec-japao-3', 'withdrawal', 'Reserva da passagem', null, daysAgo(42, '16:45'), 300),
             record('rec-japao-4', 'deposit', 'Economia mensal planejada', null, daysAgo(55, '09:30'), 1000),
+            // Fictício: reconcilia o histórico com o acumulado (R$ 8.500).
+            record('rec-japao-5', 'deposit', 'Saldo inicial', null, daysAgo(90, '10:00'), 5300),
         ],
     },
     'goal-emergencia': {
@@ -78,7 +80,7 @@ export const mockGoalDetails: Record<string, MockGoalDetails> = {
         pace: {
             title: 'Ritmo acelerado!',
             message:
-                'Você está no ritmo planejado! Mantendo esse valor, a meta será alcançada 1 mês antes do previsto.',
+                'Você está acima do ritmo planejado! Mantendo esse valor, a meta será alcançada antes do previsto.',
             tone: 'positive',
         },
         members: [owner(5000)],
@@ -88,6 +90,8 @@ export const mockGoalDetails: Record<string, MockGoalDetails> = {
             record('rec-emergencia-3', 'withdrawal', 'Retirada para imprevisto', null, daysAgo(22, '14:30'), 150),
             record('rec-emergencia-4', 'deposit', 'Renda extra freela', null, daysAgo(39, '11:00'), 400),
             record('rec-emergencia-5', 'deposit', 'Economia mensal planejada', null, daysAgo(45, '08:30'), 200),
+            // Fictício: reconcilia o histórico com o acumulado (R$ 5.000).
+            record('rec-emergencia-6', 'deposit', 'Saldo inicial', null, daysAgo(60, '10:00'), 3850),
         ],
     },
     'goal-paris': {
@@ -99,7 +103,7 @@ export const mockGoalDetails: Record<string, MockGoalDetails> = {
                 role: 'admin',
                 isCurrentUser: true,
                 contributedAmount: 3000,
-                sharePercent: 66,
+                sharePercent: 67,
             },
             {
                 id: 'user-bruno',
@@ -107,14 +111,13 @@ export const mockGoalDetails: Record<string, MockGoalDetails> = {
                 role: 'member',
                 isCurrentUser: false,
                 contributedAmount: 1500,
-                sharePercent: 34,
+                sharePercent: 33,
             },
         ],
         records: [
             record('rec-paris-1', 'deposit', 'Aporte', 'Bruno', daysAgo(0, '10:23'), 500),
             record('rec-paris-2', 'deposit', 'Aporte', 'Alice', daysAgo(1, '18:40'), 250),
-            record('rec-paris-3', 'withdrawal', 'Retirada', 'Bruno', daysAgo(1, '09:15'), 100),
-            record('rec-paris-4', 'deposit', 'Aporte', 'Alice', daysAgo(13, '15:00'), 1000),
+            record('rec-paris-4', 'deposit', 'Aporte', 'Alice', daysAgo(13, '15:00'), 2750),
             record('rec-paris-5', 'deposit', 'Aporte', 'Bruno', daysAgo(30, '19:20'), 1000),
         ],
     },
