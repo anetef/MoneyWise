@@ -2,7 +2,6 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import {
     ActivityIndicator,
-    Alert,
     Pressable,
     ScrollView,
     StyleSheet,
@@ -20,7 +19,6 @@ import {
 } from '../../../../core/theme';
 
 import { ConfirmDialog } from '../components/ConfirmDialog';
-import { ProfileMenuItem } from '../components/ProfileMenuItem';
 import { useProfile } from '../viewmodels/useProfile';
 
 function getInitials(name: string): string {
@@ -32,19 +30,15 @@ function getInitials(name: string): string {
         .join('');
 }
 
-// Itens sem requisito ou tela definidos ficam "em breve" (L-12)
-const menuItems = [
-    { icon: '☆', label: 'Plano Pro' },
-    { icon: '👤', label: 'Dados Pessoais' },
-    { icon: '🔔', label: 'Notificações' },
-];
-
 /**
  * Tela Meu Perfil (MAU-05, incorporando MST-01).
  *
  * Usa dados simulados e o logout simulado do MockAuthContext.
  * O logout completo (revogação no backend e limpeza local)
  * continua pendente do MAU-05.
+ *
+ * Plano Pro, Dados Pessoais e Notificações foram removidos
+ * do menu pela decisão L-12 (parte 2, 18/10).
  */
 export function ProfileScreen() {
     const {
@@ -57,10 +51,6 @@ export function ProfileScreen() {
         cancelSignOut,
         confirmSignOut,
     } = useProfile();
-
-    function showComingSoon(label: string) {
-        Alert.alert(label, 'Esta funcionalidade estará disponível em breve.');
-    }
 
     return (
         <SafeAreaView style={styles.safeArea} edges={['top']}>
@@ -87,20 +77,6 @@ export function ProfileScreen() {
 
                             <Text style={styles.name}>{user.name}</Text>
                             <Text style={styles.email}>{user.email}</Text>
-                        </View>
-
-                        {/* Menu */}
-                        <View style={styles.card}>
-                            {menuItems.map((item, index) => (
-                                <View key={item.label}>
-                                    {index > 0 && <View style={styles.divider} />}
-                                    <ProfileMenuItem
-                                        icon={item.icon}
-                                        label={item.label}
-                                        onPress={() => showComingSoon(item.label)}
-                                    />
-                                </View>
-                            ))}
                         </View>
 
                         {/* Sair da conta */}
@@ -199,19 +175,6 @@ const styles = StyleSheet.create({
         fontFamily: fontFamily.regular,
         fontSize: fontSize.md,
         color: colors.text.secondary,
-    },
-
-    card: {
-        backgroundColor: colors.surface.primary,
-        borderRadius: radius.lg,
-        paddingHorizontal: spacing.lg,
-        ...shadows.sm,
-    },
-
-    divider: {
-        height: 1,
-        marginLeft: 56,
-        backgroundColor: colors.border.default,
     },
 
     signOutButton: {
