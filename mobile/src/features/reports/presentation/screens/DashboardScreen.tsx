@@ -195,7 +195,8 @@ export function DashboardScreen() {
                 <View style={[styles.card, styles.categoriesCard]}>
                     <View style={styles.categoriesHeader}>
                         <Text style={styles.categoriesTitle}>Resumo de Categorias</Text>
-                        <Feather name="more-horizontal" size={18} color={C.text} />
+                        {/* Só decorativo: sem ação e fora da leitura de acessibilidade */}
+                        <Feather name="more-horizontal" size={18} color={C.text} aria-hidden />
                     </View>
 
                     <View style={styles.categoriesBody}>

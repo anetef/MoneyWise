@@ -1,5 +1,6 @@
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
+import { Platform } from 'react-native';
 
 import { DashboardStack } from './DashboardStack';
 import { GoalsListScreen } from '../../features/goals/presentation/screens/GoalsListScreen';
@@ -31,6 +32,9 @@ export function MainTabs() {
                     backgroundColor: colors.surface.primary,
                     borderTopColor: colors.border.default,
                     borderTopWidth: 1,
+                    // No Web não há área segura embaixo e a altura
+                    // padrão (49) corta o rótulo; no celular não muda.
+                    ...(Platform.OS === 'web' && { height: 60 }),
                 },
 
                 sceneStyle: {
