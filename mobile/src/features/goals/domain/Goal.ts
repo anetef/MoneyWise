@@ -61,6 +61,19 @@ export type UpdateGoalInput = {
 };
 
 /**
+ * Dados de um aporte (entrada) na Caixinha (MGO-06).
+ *
+ * Provisório: o contrato de `POST /goals/{id}/contributions`
+ * ainda não está no OpenAPI e poderá ser adaptado na
+ * integração. A descrição existe apenas nos dados simulados;
+ * `contributions` no ER não tem essa coluna.
+ */
+export type AddContributionInput = {
+    amount: number;
+    description?: string;
+};
+
+/**
  * Tipo de movimento da Caixinha: entrada ou retirada (L-07).
  */
 export type GoalRecordKind = 'deposit' | 'withdrawal';

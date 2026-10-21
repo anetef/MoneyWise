@@ -1,4 +1,5 @@
 import type {
+    AddContributionInput,
     CreateGoalInput,
     Goal,
     GoalDetails,
@@ -38,4 +39,14 @@ export interface GoalRepository {
      * Devolve null se a Caixinha não for encontrada.
      */
     updateGoal(goalId: string, input: UpdateGoalInput): Promise<Goal | null>;
+
+    /**
+     * Registra um aporte (entrada) do usuário na Caixinha.
+     *
+     * Provisório: será adaptado ao contrato real da API
+     * (`POST /goals/{id}/contributions`). Saldo, progresso e
+     * contribuições atualizados vêm do backend e são lidos
+     * depois com getGoalDetails. Falha se a Caixinha não existir.
+     */
+    addContribution(goalId: string, input: AddContributionInput): Promise<void>;
 }
