@@ -31,15 +31,14 @@ type Props = {
     onChangeName: (value: string) => void;
     onChangeAmount: (value: string) => void;
     onChangeDeadline: (value: string) => void;
-    onArchive: () => void;
-    onDelete: () => void;
 };
 
 /**
  * Conteúdo das Configurações de uma Caixinha individual
  * (frame "Caixinha - Configurações (Individual)").
  *
- * Os campos comuns ficam em GoalBasicsFields.
+ * Os campos comuns ficam em GoalBasicsFields. Arquivar e
+ * excluir aparecem desativados, com "Em breve" (L-09).
  */
 export function IndividualGoalSettings({
     goal,
@@ -50,8 +49,6 @@ export function IndividualGoalSettings({
     onChangeName,
     onChangeAmount,
     onChangeDeadline,
-    onArchive,
-    onDelete,
 }: Props) {
     return (
         <View style={styles.container}>
@@ -95,27 +92,35 @@ export function IndividualGoalSettings({
             {/* Arquivar e excluir dependem de L-09 */}
             <View style={styles.actionsCard}>
                 <Pressable
-                    onPress={onArchive}
+                    disabled
                     accessibilityRole="button"
-                    style={({ pressed }) => [styles.actionRow, pressed && styles.pressed]}
+                    accessibilityLabel="Arquivar Caixinha, em breve"
+                    accessibilityState={{ disabled: true }}
+                    style={[styles.actionRow, styles.disabled]}
                 >
                     <Text style={styles.actionIcon}>⊡</Text>
                     <Text style={styles.actionLabel}>Arquivar Caixinha</Text>
-                    <Text style={styles.chevron}>›</Text>
+                    <View style={styles.soonBadge}>
+                        <Text style={styles.soonBadgeText}>Em breve</Text>
+                    </View>
                 </Pressable>
 
                 <View style={styles.divider} />
 
                 <Pressable
-                    onPress={onDelete}
+                    disabled
                     accessibilityRole="button"
-                    style={({ pressed }) => [styles.actionRow, pressed && styles.pressed]}
+                    accessibilityLabel="Excluir Meta Cadastrada, em breve"
+                    accessibilityState={{ disabled: true }}
+                    style={[styles.actionRow, styles.disabled]}
                 >
                     <Text style={[styles.actionIcon, styles.dangerText]}>🗑</Text>
                     <Text style={[styles.actionLabel, styles.dangerText]}>
                         Excluir Meta Cadastrada
                     </Text>
-                    <Text style={[styles.chevron, styles.dangerText]}>›</Text>
+                    <View style={styles.soonBadge}>
+                        <Text style={styles.soonBadgeText}>Em breve</Text>
+                    </View>
                 </Pressable>
             </View>
 
@@ -141,8 +146,22 @@ const styles = StyleSheet.create({
         gap: spacing.xxl,
     },
 
-    pressed: {
-        opacity: 0.7,
+    // Mesmo visual das linhas "Em breve" do FormRow.
+    disabled: {
+        opacity: 0.55,
+    },
+
+    soonBadge: {
+        backgroundColor: colors.surface.secondary,
+        borderRadius: radius.full,
+        paddingHorizontal: spacing.sm,
+        paddingVertical: spacing.xxs,
+    },
+
+    soonBadgeText: {
+        fontFamily: fontFamily.medium,
+        fontSize: 10,
+        color: colors.text.secondary,
     },
 
     actionsCard: {
@@ -171,11 +190,6 @@ const styles = StyleSheet.create({
         fontFamily: fontFamily.semiBold,
         fontSize: fontSize.sm,
         color: colors.text.primary,
-    },
-
-    chevron: {
-        fontSize: fontSize.lg,
-        color: colors.text.secondary,
     },
 
     dangerText: {
