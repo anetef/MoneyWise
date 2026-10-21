@@ -36,6 +36,9 @@ type Props = NativeStackScreenProps<MainStackParamList, 'InviteMembers'>;
  * Segue a decisão L-05: código de convite compartilhado como
  * link, WhatsApp ou QR Code. E-mail e "Sugestões de Contatos"
  * ficam fora do MVP. Nenhum convite é enviado de verdade.
+ *
+ * Como o formato do link ainda não foi definido, a tela mostra,
+ * copia e compartilha somente o código do convite simulado.
  */
 export function InviteMembersScreen({ navigation, route }: Props) {
     const {
@@ -44,28 +47,15 @@ export function InviteMembersScreen({ navigation, route }: Props) {
         expiresInDays,
         isLoading,
         isCopied,
+        feedback,
         load,
-        markAsCopied,
+        copyCode,
+        shareInvitation,
     } = useInviteMembers(route.params.groupId);
 
     useEffect(() => {
         load();
     }, [load]);
-
-    function handleCopy() {
-        markAsCopied();
-        Alert.alert(
-            'Link copiado',
-            'Simulação: nesta versão o link não é copiado para a área de transferência.',
-        );
-    }
-
-    function handleWhatsApp() {
-        Alert.alert(
-            'WhatsApp',
-            'Simulação: o envio do convite pelo WhatsApp estará disponível em breve.',
-        );
-    }
 
     function handleQrCode() {
         Alert.alert(
@@ -100,9 +90,9 @@ export function InviteMembersScreen({ navigation, route }: Props) {
                     )}
                 </View>
 
-                {/* Link de convite */}
+                {/* Código de convite (o link ainda não foi definido na L-05) */}
                 <View style={styles.linkCard}>
-                    <Text style={styles.linkTitle}>🔗  Link de Convite</Text>
+                    <Text style={styles.linkTitle}>🔗  Código de Convite</Text>
 
                     <Text style={styles.linkDescription}>
                         Quem receber o convite poderá ver a caixinha e
@@ -111,18 +101,18 @@ export function InviteMembersScreen({ navigation, route }: Props) {
 
                     <View style={styles.linkField}>
                         <Text
-                            style={styles.linkText}
+                            style={styles.codeText}
                             numberOfLines={1}
                             selectable
-                            accessibilityLabel={`Link de convite: ${invitation.link}`}
+                            accessibilityLabel={`Código de convite: ${invitation.code}`}
                         >
-                            {invitation.link}
+                            {invitation.code}
                         </Text>
 
                         <Pressable
-                            onPress={handleCopy}
+                            onPress={copyCode}
                             accessibilityRole="button"
-                            accessibilityLabel="Copiar link de convite"
+                            accessibilityLabel="Copiar código de convite"
                             style={({ pressed }) => [
                                 styles.copyButton,
                                 pressed && styles.pressed,
@@ -135,20 +125,37 @@ export function InviteMembersScreen({ navigation, route }: Props) {
                     </View>
 
                     <Text style={styles.expiration}>
-                        Código {invitation.code} · expira em {expiresInDays}{' '}
-                        {expiresInDays === 1 ? 'dia' : 'dias'}
+                        Válido por {expiresInDays}{' '}
+                        {expiresInDays === 1 ? 'dia' : 'dias'} · Convite simulado nesta
+                        versão: o código ainda não permite entrar na caixinha.
                     </Text>
                 </View>
+
+                {/* Retorno da cópia ou do compartilhamento */}
+                {feedback && (
+                    <Text
+                        style={[
+                            styles.feedback,
+                            feedback.tone === 'success' && styles.feedbackSuccess,
+                            feedback.tone === 'error' && styles.feedbackError,
+                        ]}
+                        accessibilityRole="alert"
+                        accessibilityLiveRegion="polite"
+                    >
+                        {feedback.message}
+                    </Text>
+                )}
 
                 {/* Compartilhamento rápido (L-05: sem e-mail no MVP) */}
                 <View style={styles.section}>
                     <Text style={styles.sectionTitle}>Compartilhamento Rápido</Text>
 
                     <View style={styles.shareRow}>
+                        {/* Abre o compartilhamento nativo; o app é escolhido pela pessoa */}
                         <Pressable
-                            onPress={handleWhatsApp}
+                            onPress={shareInvitation}
                             accessibilityRole="button"
-                            accessibilityLabel="Compartilhar convite pelo WhatsApp"
+                            accessibilityLabel="Compartilhar convite. Abre as opções de compartilhamento, como o WhatsApp"
                             style={({ pressed }) => [
                                 styles.shareTile,
                                 pressed && styles.pressed,
@@ -264,11 +271,12 @@ const styles = StyleSheet.create({
         ...shadows.sm,
     },
 
-    linkText: {
+    codeText: {
         flex: 1,
-        fontFamily: fontFamily.regular,
-        fontSize: fontSize.xs,
-        color: colors.text.secondary,
+        fontFamily: fontFamily.semiBold,
+        fontSize: fontSize.md,
+        letterSpacing: 1,
+        color: colors.text.primary,
     },
 
     copyButton: {
@@ -287,7 +295,23 @@ const styles = StyleSheet.create({
     expiration: {
         fontFamily: fontFamily.regular,
         fontSize: 11,
+        lineHeight: 16,
         color: colors.text.secondary,
+    },
+
+    feedback: {
+        fontFamily: fontFamily.medium,
+        fontSize: fontSize.sm,
+        color: colors.text.secondary,
+        textAlign: 'center',
+    },
+
+    feedbackSuccess: {
+        color: colors.status.success,
+    },
+
+    feedbackError: {
+        color: colors.status.error,
     },
 
     section: {
