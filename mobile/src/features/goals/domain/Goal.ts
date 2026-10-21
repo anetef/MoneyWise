@@ -61,7 +61,8 @@ export type UpdateGoalInput = {
 };
 
 /**
- * Dados de um aporte (entrada) na Caixinha (MGO-06).
+ * Dados de um movimento na Caixinha (MGO-06): aporte (entrada)
+ * ou retirada (L-07).
  *
  * Provisório: o contrato de `POST /goals/{id}/contributions`
  * ainda não está no OpenAPI e poderá ser adaptado na
@@ -71,6 +72,8 @@ export type UpdateGoalInput = {
 export type AddContributionInput = {
     amount: number;
     description?: string;
+    /** Tipo do movimento; quando omitido, é uma entrada. */
+    kind?: GoalRecordKind;
 };
 
 /**

@@ -41,12 +41,14 @@ export interface GoalRepository {
     updateGoal(goalId: string, input: UpdateGoalInput): Promise<Goal | null>;
 
     /**
-     * Registra um aporte (entrada) do usuário na Caixinha.
+     * Registra um movimento do usuário na Caixinha: entrada
+     * (padrão) ou retirada (L-07).
      *
      * Provisório: será adaptado ao contrato real da API
      * (`POST /goals/{id}/contributions`). Saldo, progresso e
      * contribuições atualizados vêm do backend e são lidos
-     * depois com getGoalDetails. Falha se a Caixinha não existir.
+     * depois com getGoalDetails. Falha se a Caixinha não existir
+     * ou se a retirada for maior que o saldo acumulado.
      */
     addContribution(goalId: string, input: AddContributionInput): Promise<void>;
 }
