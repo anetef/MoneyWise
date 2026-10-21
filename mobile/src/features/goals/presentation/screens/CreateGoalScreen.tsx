@@ -58,11 +58,14 @@ export function CreateGoalScreen({ navigation }: Props) {
         const goal = await submit();
 
         if (goal) {
-            // Fecha o formulário e retorna à lista já existente na pilha.
+            // Fecha o formulário na lista, já na aba do tipo criado, e
+            // abre os detalhes por cima dela (MGO-03): o "Voltar" dos
+            // detalhes retorna à lista, e não ao formulário.
             navigation.popTo('MainTabs', {
                 screen: 'Goals',
                 params: { createdGoalType: goal.type },
             });
+            navigation.navigate('GoalDetails', { goalId: goal.id });
         }
     }
 
