@@ -1,10 +1,8 @@
 
-import { useState } from 'react';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import {
-    Alert,
     KeyboardAvoidingView,
     Platform,
     Pressable,
@@ -31,38 +29,14 @@ type Props = NativeStackScreenProps<
     'ForgotPassword'
 >;
 
+/**
+ * Recuperar Senha (MAU-07).
+ *
+ * A recuperação está fora do MVP (L-03): não há endpoint nem
+ * envio de e-mail. A tela mantém o visual do Figma, com o campo
+ * e o botão desativados, e não simula nenhum envio.
+ */
 export function ForgotPasswordScreen({ navigation }: Props) {
-    const [email, setEmail] = useState('');
-    const [error, setError] = useState('');
-
-    function handleRecovery() {
-        setError('');
-
-        if (!email.trim()) {
-            setError('Informe seu e-mail cadastrado.');
-            return;
-        }
-
-        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-
-        if (!emailRegex.test(email.trim())) {
-            setError('Digite um e-mail válido.');
-            return;
-        }
-
-        // Simulação: nenhuma solicitação é enviada ao backend.
-        Alert.alert(
-            'Recuperação simulada',
-            'O e-mail foi validado. Nesta versão de demonstração, nenhum link foi enviado.',
-            [
-                {
-                    text: 'Entendi',
-                    onPress: () => navigation.navigate('Login'),
-                },
-            ],
-        );
-    }
-
     return (
         <SafeAreaView style={styles.safeArea}>
             <KeyboardAvoidingView
@@ -97,12 +71,12 @@ export function ForgotPasswordScreen({ navigation }: Props) {
                         </Text>
 
                         <Text style={styles.description}>
-                            Digite seu e-mail cadastrado e enviaremos
-                            um link seguro para redefinir sua senha.
+                            A recuperação de senha ainda não está
+                            disponível nesta versão do MoneyWise.
                         </Text>
                     </View>
 
-                    {/* Formulário */}
+                    {/* Formulário desativado até a recuperação existir (L-03) */}
                     <View style={styles.formCard}>
                         <View style={styles.fieldHeading}>
                             <Text style={styles.fieldLabel}>
@@ -114,51 +88,35 @@ export function ForgotPasswordScreen({ navigation }: Props) {
                             </Text>
                         </View>
 
-                        <View style={styles.inputContainer}>
+                        <View style={[styles.inputContainer, styles.disabled]}>
                             <Text style={styles.mailIcon}>✉</Text>
 
                             <TextInput
                                 style={styles.input}
                                 placeholder="seu.email@provedor.com"
                                 placeholderTextColor={colors.text.secondary}
-                                value={email}
-                                onChangeText={(value) => {
-                                    setEmail(value);
-                                    if (error) setError('');
-                                }}
-                                keyboardType="email-address"
-                                autoCapitalize="none"
-                                autoCorrect={false}
-                                autoComplete="email"
-                                textContentType="emailAddress"
-                                returnKeyType="send"
-                                onSubmitEditing={handleRecovery}
-                                accessibilityLabel="E-mail cadastrado"
+                                editable={false}
+                                accessibilityLabel="E-mail cadastrado, indisponível"
+                                accessibilityState={{ disabled: true }}
                             />
                         </View>
 
-                        {error ? (
-                            <Text
-                                style={styles.errorText}
-                                accessibilityRole="alert"
-                            >
-                                {error}
-                            </Text>
-                        ) : null}
-
                         <Pressable
-                            onPress={handleRecovery}
+                            disabled
                             accessibilityRole="button"
-                            style={({ pressed }) => [
-                                styles.primaryButton,
-                                pressed && styles.pressed,
-                            ]}
+                            accessibilityLabel="Enviar link de recuperação, em breve"
+                            accessibilityState={{ disabled: true }}
+                            style={[styles.primaryButton, styles.disabled]}
                         >
                             <Text style={styles.sendIcon}>➤</Text>
 
                             <Text style={styles.primaryButtonText}>
                                 Enviar link de recuperação
                             </Text>
+
+                            <View style={styles.soonBadge}>
+                                <Text style={styles.soonBadgeText}>Em breve</Text>
+                            </View>
                         </Pressable>
                     </View>
 
@@ -314,9 +272,8 @@ const styles = StyleSheet.create({
         color: colors.text.primary,
     },
 
-    errorText: {
-        ...typography.caption,
-        color: colors.status.error,
+    disabled: {
+        opacity: 0.55,
     },
 
     primaryButton: {
@@ -341,6 +298,19 @@ const styles = StyleSheet.create({
         color: colors.white,
         textAlign: 'center',
         flexShrink: 1,
+    },
+
+    soonBadge: {
+        backgroundColor: 'rgba(255, 255, 255, 0.2)',
+        borderRadius: radius.full,
+        paddingHorizontal: spacing.sm,
+        paddingVertical: 2,
+    },
+
+    soonBadgeText: {
+        fontFamily: fontFamily.medium,
+        fontSize: fontSize.xs,
+        color: colors.white,
     },
 
     backToLoginButton: {
