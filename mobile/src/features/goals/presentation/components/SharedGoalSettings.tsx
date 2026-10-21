@@ -103,19 +103,6 @@ export function SharedGoalSettings({
             </FormSection>
 
             <FormSection title="Regras & Governança">
-                {/*
-                 * Texto mantido como no Figma. Pendente para o grupo:
-                 * na caixinha os registros são aportes e retiradas,
-                 * não gastos ou despesas.
-                 */}
-                <FormRow
-                    label="Permitir registro de gastos"
-                    description="Todos os membros podem lançar despesas"
-                    comingSoon
-                >
-                    <DisabledSwitch />
-                </FormRow>
-
                 <FormRow label="Notificar novos registros no grupo" comingSoon>
                     <DisabledSwitch />
                 </FormRow>
