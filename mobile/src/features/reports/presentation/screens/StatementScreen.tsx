@@ -134,10 +134,6 @@ export function StatementScreen() {
         items: group.items.filter((item) => filter === 'all' || item.type === filter),
     })).filter((group) => group.items.length > 0);
 
-    function handleDownload() {
-        Alert.alert('Em breve', 'O download do extrato será implementado em breve.');
-    }
-
     function handleFilters() {
         Alert.alert('Em breve', 'Os filtros avançados serão implementados em breve.');
     }
@@ -179,16 +175,19 @@ export function StatementScreen() {
 
                 {/* Baixar / Filtros */}
                 <View style={styles.actions}>
+                    {/* Exportação em PDF fica para a Release 2 (REP-03) */}
                     <Pressable
-                        onPress={handleDownload}
-                        style={({ pressed }) => [
-                            styles.actionButton,
-                            styles.downloadButton,
-                            pressed && { opacity: 0.85 },
-                        ]}
+                        disabled
+                        accessibilityRole="button"
+                        accessibilityLabel="Baixar extrato, em breve"
+                        accessibilityState={{ disabled: true }}
+                        style={[styles.actionButton, styles.downloadButton, styles.downloadDisabled]}
                     >
                         <Feather name="download" size={16} color={C.surface} />
                         <Text style={styles.downloadText}>Baixar</Text>
+                        <View style={styles.soonBadge}>
+                            <Text style={styles.soonBadgeText}>Em breve</Text>
+                        </View>
                     </Pressable>
 
                     <Pressable
@@ -334,6 +333,20 @@ const styles = StyleSheet.create({
     downloadText: {
         fontFamily: F.semibold,
         fontSize: 14,
+        color: C.surface,
+    },
+    downloadDisabled: {
+        opacity: 0.6,
+    },
+    soonBadge: {
+        backgroundColor: 'rgba(255, 255, 255, 0.2)',
+        borderRadius: 999,
+        paddingHorizontal: 4,
+        paddingVertical: 1,
+    },
+    soonBadgeText: {
+        fontFamily: F.medium,
+        fontSize: 10,
         color: C.surface,
     },
     filterButton: {
