@@ -25,6 +25,8 @@ import {
     typography,
 } from '../../../../core/theme';
 
+import type { GoalRecordKind } from '../../domain/Goal';
+
 import { DetailsHeader } from '../components/DetailsHeader';
 import { EmptyState } from '../components/EmptyState';
 import { goalColors } from '../components/goalColors';
@@ -38,6 +40,12 @@ type Props = NativeStackScreenProps<MainStackParamList, 'GoalContribution'>;
 const whiteSoft = 'rgba(255, 255, 255, 0.8)';
 const whiteGlass = 'rgba(255, 255, 255, 0.18)';
 
+/** Opções do seletor da Caixinha individual, na ordem do Figma. */
+const kindOptions: { kind: GoalRecordKind; label: string }[] = [
+    { kind: 'withdrawal', label: '↓ Retirada' },
+    { kind: 'deposit', label: '↑ Entrada' },
+];
+
 /** Largura aproximada do valor, para "R$ + valor" ficar centralizado. */
 function amountInputWidth(text: string): number {
     return Math.min(Math.max(text.length, 4) * 20 + 8, 280);
@@ -47,26 +55,30 @@ function amountInputWidth(text: string): number {
  * Registrar Aporte (MGO-06), frame "Adicionar Transação (Variante)"
  * conforme a decisão L-20.
  *
- * Na Caixinha individual, o mesmo aporte aparece como "Entrada",
- * com a retirada (L-07) visível e desabilitada nesta entrega.
- * Na compartilhada, a tela mostra apenas o aporte.
+ * Na Caixinha individual, o aporte aparece como "Entrada" e o
+ * seletor permite registrar uma retirada (L-07). Na compartilhada,
+ * a tela mostra apenas o aporte nesta etapa.
  * Categoria e anexos não fazem parte do aporte e foram omitidos.
  */
 export function GoalContributionScreen({ navigation, route }: Props) {
     const {
         goal,
         isLoading,
+        kind,
+        canWithdraw,
         amountText,
         description,
         errors,
         isSaving,
+        changeKind,
         changeAmount,
         changeDescription,
         save,
-    } = useGoalContribution(route.params.goalId);
+    } = useGoalContribution(route.params.goalId, route.params.kind);
 
     const isShared = goal?.type !== 'individual';
-    const noun = isShared ? 'Aporte' : 'Entrada';
+    const isWithdrawal = kind === 'withdrawal';
+    const noun = isWithdrawal ? 'Retirada' : isShared ? 'Aporte' : 'Entrada';
 
     async function handleSave() {
         if (await save()) {
@@ -106,35 +118,32 @@ export function GoalContributionScreen({ navigation, route }: Props) {
                         </Text>
                     </View>
 
-                    {/* Retirada decidida em L-07, fora desta entrega */}
-                    {!isShared && (
+                    {/* Retirada (L-07): só na Caixinha individual nesta etapa */}
+                    {canWithdraw && (
                         <View style={styles.toggle}>
-                            <Pressable
-                                disabled
-                                style={[styles.toggleItem, styles.toggleItemDisabled]}
-                                accessibilityRole="button"
-                                accessibilityState={{ disabled: true }}
-                                accessibilityLabel="Retirada, em breve"
-                            >
-                                <Text style={styles.toggleText}>↓ Retirada</Text>
-                                <View style={styles.soonBadge}>
-                                    <Text style={styles.soonBadgeText}>Em breve</Text>
-                                </View>
-                            </Pressable>
+                            {kindOptions.map((option) => {
+                                const isActive = option.kind === kind;
 
-                            <View
-                                style={[styles.toggleItem, styles.toggleItemActive]}
-                                accessibilityState={{ selected: true }}
-                            >
-                                <Text style={[styles.toggleText, styles.toggleTextActive]}>
-                                    ↑ {noun}
-                                </Text>
-                            </View>
+                                return (
+                                    <Pressable
+                                        key={option.kind}
+                                        onPress={() => changeKind(option.kind)}
+                                        disabled={isSaving}
+                                        style={[styles.toggleItem, isActive && styles.toggleItemActive]}
+                                        accessibilityRole="button"
+                                        aria-selected={isActive}
+                                    >
+                                        <Text style={[styles.toggleText, isActive && styles.toggleTextActive]}>
+                                            {option.label}
+                                        </Text>
+                                    </Pressable>
+                                );
+                            })}
                         </View>
                     )}
 
                     <Text style={styles.amountLabel}>
-                        {isShared ? 'Valor do aporte' : 'Valor da entrada'}
+                        Valor {isWithdrawal ? 'da retirada' : isShared ? 'do aporte' : 'da entrada'}
                     </Text>
 
                     <View style={styles.amountRow}>
@@ -146,7 +155,7 @@ export function GoalContributionScreen({ navigation, route }: Props) {
                             placeholder="0,00"
                             placeholderTextColor={whiteSoft}
                             keyboardType="number-pad"
-                            accessibilityLabel={`Valor ${isShared ? 'do aporte' : 'da entrada'}`}
+                            accessibilityLabel={`Valor ${isWithdrawal ? 'da retirada' : isShared ? 'do aporte' : 'da entrada'}`}
                         />
                     </View>
                 </View>
@@ -177,7 +186,7 @@ export function GoalContributionScreen({ navigation, route }: Props) {
                                         style={styles.detailInput}
                                         value={description}
                                         onChangeText={changeDescription}
-                                        placeholder="Ex.: Economia do mês"
+                                        placeholder={isWithdrawal ? 'Ex.: Compra da passagem' : 'Ex.: Economia do mês'}
                                         placeholderTextColor={colors.text.secondary}
                                         maxLength={80}
                                         accessibilityLabel="Descrição, opcional"
@@ -319,16 +328,13 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         justifyContent: 'center',
         gap: spacing.xs,
+        minHeight: 44,
         borderRadius: radius.full,
         paddingVertical: spacing.sm,
     },
 
     toggleItemActive: {
         backgroundColor: colors.surface.primary,
-    },
-
-    toggleItemDisabled: {
-        opacity: 0.6,
     },
 
     toggleText: {
@@ -339,19 +345,6 @@ const styles = StyleSheet.create({
 
     toggleTextActive: {
         color: colors.primary,
-    },
-
-    soonBadge: {
-        backgroundColor: whiteGlass,
-        borderRadius: radius.full,
-        paddingHorizontal: spacing.xs,
-        paddingVertical: 1,
-    },
-
-    soonBadgeText: {
-        fontFamily: fontFamily.medium,
-        fontSize: 10,
-        color: colors.text.inverse,
     },
 
     amountLabel: {

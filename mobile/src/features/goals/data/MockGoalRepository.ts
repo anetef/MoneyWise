@@ -86,6 +86,16 @@ function progressPercent(accumulatedAmount: number, targetAmount: number): numbe
     return Math.min(Math.round((accumulatedAmount / targetAmount) * 100), 100);
 }
 
+/** Valor em centavos inteiros, para comparar e somar sem erro de arredondamento. */
+function toCents(amount: number): number {
+    return Math.round(amount * 100);
+}
+
+/** Soma de valores em reais, calculada em centavos. */
+function addAmounts(amount: number, delta: number): number {
+    return (toCents(amount) + toCents(delta)) / 100;
+}
+
 /**
  * Repository simulado das Caixinhas.
  *
@@ -209,25 +219,45 @@ export class MockGoalRepository implements GoalRepository {
             throw new Error('Caixinha não encontrada.');
         }
 
+        const isShared = goal.type === 'shared';
+        const isWithdrawal = input.kind === 'withdrawal';
+
+        // Limitação temporária desta simulação, não é regra de negócio:
+        // falta definir como a retirada afeta a contribuição de cada
+        // membro (RF-14). Os aportes da compartilhada seguem normais.
+        if (isWithdrawal && isShared) {
+            throw new Error(
+                'Simulação: retirada em Caixinha compartilhada não é suportada; aguarda a definição da regra financeira.',
+            );
+        }
+
+        // Retirada maior que o saldo acumulado é recusada (L-07).
+        if (isWithdrawal && toCents(input.amount) > toCents(goal.accumulatedAmount)) {
+            throw new Error('Saldo insuficiente na Caixinha');
+        }
+
         // Simula a resposta do backend apenas para a demonstração.
         // No aplicativo integrado, estes valores vêm da API.
         const details = this.detailsFor(goal);
         const currentUser = details.members.find((member) => member.isCurrentUser);
-        const isShared = goal.type === 'shared';
+        const delta = isWithdrawal ? -input.amount : input.amount;
 
         const record: GoalRecord = {
             id: `rec-local-${this.nextRecordId}`,
-            kind: 'deposit',
-            description: input.description?.trim() || (isShared ? 'Aporte' : 'Entrada'),
+            kind: isWithdrawal ? 'withdrawal' : 'deposit',
+            description: input.description?.trim()
+                || (isWithdrawal ? 'Retirada' : isShared ? 'Aporte' : 'Entrada'),
             memberName: isShared ? (currentUser?.name ?? mockCurrentUser.name) : null,
             occurredAt: new Date().toISOString(),
             amount: input.amount,
         };
         this.nextRecordId += 1;
 
+        // Na individual, a contribuição do dono acompanha o saldo
+        // e nunca fica negativa (a retirada não passa do saldo).
         const members = details.members.map((member) =>
             member.isCurrentUser
-                ? { ...member, contributedAmount: member.contributedAmount + input.amount }
+                ? { ...member, contributedAmount: addAmounts(member.contributedAmount, delta) }
                 : member,
         );
 
@@ -239,7 +269,7 @@ export class MockGoalRepository implements GoalRepository {
 
         // O status do progresso (RN01) é mantido; só o
         // percentual acompanha o novo valor acumulado.
-        const accumulatedAmount = goal.accumulatedAmount + input.amount;
+        const accumulatedAmount = addAmounts(goal.accumulatedAmount, delta);
 
         this.goals = this.goals.map((item) =>
             item.id === goalId
