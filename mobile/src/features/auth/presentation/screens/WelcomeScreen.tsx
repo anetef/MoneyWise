@@ -2,7 +2,6 @@
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import {
-    Alert,
     Image,
     Pressable,
     ScrollView,
@@ -31,13 +30,6 @@ const PREVIEW_BACKGROUND = '#E7EEFF';
 const HERO_BACKGROUND = '#F1F0EC';
 
 export function WelcomeScreen({ navigation }: Props) {
-    const socialLoginUnavailable = (provider: string) => {
-        Alert.alert(
-            'Em desenvolvimento',
-            `O login com ${provider} ainda não está disponível.`,
-        );
-    };
-
     return (
         <SafeAreaView style={styles.safeArea}>
             <ScrollView
@@ -132,46 +124,6 @@ export function WelcomeScreen({ navigation }: Props) {
                             Entrar na minha conta
                         </Text>
                     </Pressable>
-
-                    {/* Divisor social */}
-                    <View style={styles.dividerRow}>
-                        <View style={styles.dividerLine} />
-
-                        <Text style={styles.dividerText}>
-                            ou continue com
-                        </Text>
-
-                        <View style={styles.dividerLine} />
-                    </View>
-
-                    {/* Login social */}
-                    <View style={styles.socialRow}>
-                        <Pressable
-                            accessibilityRole="button"
-                            accessibilityLabel="Entrar com Apple"
-                            onPress={() => socialLoginUnavailable('Apple')}
-                            style={({ pressed }) => [
-                                styles.socialButton,
-                                pressed && styles.pressed,
-                            ]}
-                        >
-                            <Text style={styles.appleIcon}>●</Text>
-                            <Text style={styles.socialText}>Apple</Text>
-                        </Pressable>
-
-                        <Pressable
-                            accessibilityRole="button"
-                            accessibilityLabel="Entrar com Google"
-                            onPress={() => socialLoginUnavailable('Google')}
-                            style={({ pressed }) => [
-                                styles.socialButton,
-                                pressed && styles.pressed,
-                            ]}
-                        >
-                            <Text style={styles.googleIcon}>G</Text>
-                            <Text style={styles.socialText}>Google</Text>
-                        </Pressable>
-                    </View>
                 </View>
             </ScrollView>
         </SafeAreaView>
@@ -386,58 +338,6 @@ const styles = StyleSheet.create({
     secondaryButtonText: {
         ...typography.button,
         color: colors.text.primary,
-    },
-
-    dividerRow: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: spacing.md,
-        marginVertical: spacing.sm,
-    },
-
-    dividerLine: {
-        flex: 1,
-        height: 1,
-        backgroundColor: '#DCE6FF',
-    },
-
-    dividerText: {
-        fontFamily: fontFamily.medium,
-        fontSize: fontSize.xs,
-        color: colors.text.secondary,
-    },
-
-    socialRow: {
-        flexDirection: 'row',
-        gap: spacing.sm,
-    },
-
-    socialButton: {
-        flex: 1,
-        minHeight: 52,
-        backgroundColor: colors.surface.secondary,
-        borderRadius: radius.md,
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'center',
-        gap: spacing.sm,
-    },
-
-    socialText: {
-        fontFamily: fontFamily.medium,
-        fontSize: fontSize.sm,
-        color: colors.text.primary,
-    },
-
-    appleIcon: {
-        fontSize: 20,
-        color: colors.text.primary,
-    },
-
-    googleIcon: {
-        fontFamily: fontFamily.bold,
-        fontSize: 20,
-        color: '#4285F4',
     },
 
     pressed: {
