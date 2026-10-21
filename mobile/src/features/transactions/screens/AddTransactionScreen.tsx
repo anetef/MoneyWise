@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import {
     Alert,
     KeyboardAvoidingView,
@@ -16,6 +16,7 @@ import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 
 import type { DashboardStackParamList } from '../../../core/navigation/types';
+import { colors } from '../../../core/theme';
 
 // 🎨 Cores do Figma (depois trocamos pelos tokens do core/theme)
 const C = {
@@ -64,23 +65,108 @@ const CATEGORIES: Category[] = [
 
 type Navigation = NativeStackNavigationProp<DashboardStackParamList>;
 
+type FormErrors = {
+    amount?: string;
+    category?: string;
+};
+
+// Mesmo limite de dígitos do valor usado nos formulários de Caixinhas.
+const MAX_AMOUNT_DIGITS = 11;
+
+// Tempo em que a confirmação da simulação fica visível antes de voltar.
+const SIMULATION_FEEDBACK_MS = 1500;
+
+/** Mantém só os dígitos do valor digitado, em centavos. */
+function toAmountDigits(value: string): string {
+    return value
+        .replace(/\D/g, '')
+        .replace(/^0+/, '')
+        .slice(0, MAX_AMOUNT_DIGITS);
+}
+
+/** Ex.: "4590" → "45,90"; "123456" → "1.234,56". */
+function formatAmount(digits: string): string {
+    if (!digits) {
+        return '';
+    }
+
+    const padded = digits.padStart(3, '0');
+    const integerPart = padded.slice(0, -2).replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+
+    return `${integerPart},${padded.slice(-2)}`;
+}
+
+/** Largura aproximada do valor, para "R$ + valor" ficar centralizado. */
+function amountInputWidth(text: string): number {
+    const shown = text || '0,00';
+    const digits = shown.replace(/\D/g, '').length;
+    const separators = shown.length - digits;
+
+    return Math.min(digits * 27 + separators * 12 + 8, 270);
+}
+
 export function AddTransactionScreen() {
     const navigation = useNavigation<Navigation>();
 
     const [type, setType] = useState<TransactionType>('expense');
-    const [amount, setAmount] = useState('00,00');
-    const [categoryId, setCategoryId] = useState('food');
-    const [description, setDescription] = useState('Descrição');
+    const [amountDigits, setAmountDigits] = useState('');
+    const [categoryId, setCategoryId] = useState<string | null>(null);
+    const [description, setDescription] = useState('');
+    const [errors, setErrors] = useState<FormErrors>({});
+    const [isSimulated, setIsSimulated] = useState(false);
 
+    // Evita duas confirmações com toques seguidos.
+    const submittedRef = useRef(false);
+    const backTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+    // Cancela o retorno automático se a tela for fechada antes.
+    useEffect(() => () => {
+        if (backTimerRef.current) {
+            clearTimeout(backTimerRef.current);
+        }
+    }, []);
+
+    const amountText = formatAmount(amountDigits);
+
+    function changeAmount(value: string) {
+        setAmountDigits(toAmountDigits(value));
+        setErrors((current) => ({ ...current, amount: undefined }));
+    }
+
+    function selectCategory(id: string) {
+        setCategoryId(id);
+        setErrors((current) => ({ ...current, category: undefined }));
+    }
+
+    /**
+     * Correção intermediária da MTX-03: valida o formulário e mostra
+     * uma confirmação de simulação. Nada é gravado; o registro real
+     * depende da MTX-01 (useTransactions e Repository).
+     */
     function handleSave() {
-        if (!amount.trim()) {
-            Alert.alert('Atenção', 'Informe o valor da transação.');
+        if (submittedRef.current) {
             return;
         }
 
-        Alert.alert('Transação salva!', 'Salvamento simulado com sucesso.', [
-            { text: 'OK', onPress: () => navigation.goBack() },
-        ]);
+        const nextErrors: FormErrors = {};
+
+        if (Number(amountDigits || '0') <= 0) {
+            nextErrors.amount = 'Informe um valor maior que zero.';
+        }
+
+        if (!categoryId) {
+            nextErrors.category = 'Selecione uma categoria.';
+        }
+
+        setErrors(nextErrors);
+
+        if (Object.keys(nextErrors).length > 0) {
+            return;
+        }
+
+        submittedRef.current = true;
+        setIsSimulated(true);
+        backTimerRef.current = setTimeout(() => navigation.goBack(), SIMULATION_FEEDBACK_MS);
     }
 
     function handleDate() {
@@ -106,7 +192,7 @@ export function AddTransactionScreen() {
                     >
                         <Feather name="chevron-left" size={26} color={C.primary} />
                     </Pressable>
-                    <Text style={styles.headerTitle}>Add Transaction</Text>
+                    <Text style={styles.headerTitle}>Adicionar Transação</Text>
                 </View>
 
                 <ScrollView
@@ -155,16 +241,26 @@ export function AddTransactionScreen() {
                         <View style={styles.amountRow}>
                             <Text style={styles.currency}>R$</Text>
                             <TextInput
-                                value={amount}
-                                onChangeText={setAmount}
-                                keyboardType="decimal-pad"
+                                value={amountText}
+                                onChangeText={changeAmount}
+                                keyboardType="number-pad"
                                 placeholder="0,00"
                                 placeholderTextColor={C.whiteSoft}
                                 selectionColor={C.surface}
-                                style={styles.amountInput}
+                                accessibilityLabel="Valor da transação"
+                                style={[
+                                    styles.amountInput,
+                                    { width: amountInputWidth(amountText) },
+                                ]}
                             />
                         </View>
                     </View>
+
+                    {errors.amount && (
+                        <Text style={styles.errorText} accessibilityRole="alert">
+                            {errors.amount}
+                        </Text>
+                    )}
 
                     {/* Categoria */}
                     <Text style={styles.sectionTitle}>Categoria</Text>
@@ -179,7 +275,9 @@ export function AddTransactionScreen() {
                             return (
                                 <Pressable
                                     key={category.id}
-                                    onPress={() => setCategoryId(category.id)}
+                                    onPress={() => selectCategory(category.id)}
+                                    accessibilityRole="button"
+                                    aria-selected={isActive}
                                     style={styles.categoryItem}
                                 >
                                     <View
@@ -200,6 +298,12 @@ export function AddTransactionScreen() {
                             );
                         })}
                     </ScrollView>
+
+                    {errors.category && (
+                        <Text style={styles.errorText} accessibilityRole="alert">
+                            {errors.category}
+                        </Text>
+                    )}
 
                     {/* Detalhes */}
                     <Text style={styles.sectionTitle}>Detalhes</Text>
@@ -267,9 +371,29 @@ export function AddTransactionScreen() {
 
                 {/* Botão salvar fixo */}
                 <View style={styles.footer}>
+                    {isSimulated && (
+                        <View
+                            style={styles.simulationNotice}
+                            accessibilityRole="alert"
+                            accessibilityLiveRegion="polite"
+                        >
+                            <Feather name="info" size={16} color={C.primary} />
+                            <Text style={styles.simulationText}>
+                                Simulação: os dados são válidos, mas a transação
+                                ainda não é gravada nesta versão.
+                            </Text>
+                        </View>
+                    )}
+
                     <Pressable
                         onPress={handleSave}
-                        style={({ pressed }) => [styles.saveButton, pressed && { opacity: 0.85 }]}
+                        disabled={isSimulated}
+                        accessibilityRole="button"
+                        accessibilityState={{ disabled: isSimulated }}
+                        style={({ pressed }) => [
+                            styles.saveButton,
+                            (pressed || isSimulated) && { opacity: 0.85 },
+                        ]}
                     >
                         <Feather name="check-circle" size={20} color={C.surface} />
                         <Text style={styles.saveText}>Salvar Transação</Text>
@@ -368,8 +492,15 @@ const styles = StyleSheet.create({
         fontFamily: F.bold,
         fontSize: 44,
         color: C.surface,
-        minWidth: 120,
         padding: 0,
+    },
+    errorText: {
+        fontFamily: F.regular,
+        fontSize: 12,
+        color: colors.status.error,
+        textAlign: 'center',
+        marginTop: 8,
+        marginHorizontal: 24,
     },
 
     // Seções
@@ -536,6 +667,22 @@ const styles = StyleSheet.create({
         paddingHorizontal: 16,
         paddingTop: 8,
         paddingBottom: 12,
+        gap: 8,
+    },
+    simulationNotice: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 8,
+        backgroundColor: C.detailIconBg,
+        borderRadius: 12,
+        paddingHorizontal: 12,
+        paddingVertical: 10,
+    },
+    simulationText: {
+        flex: 1,
+        fontFamily: F.medium,
+        fontSize: 13,
+        color: C.primary,
     },
     saveButton: {
         height: 56,
