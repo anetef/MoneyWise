@@ -34,9 +34,6 @@ export type MainTabsParamList = {
 export type MainStackParamList = {
     MainTabs: NavigatorScreenParams<MainTabsParamList>;
 
-    TransactionList: undefined;
-    AddTransaction: undefined;
-
     GoalDetails: {
         goalId: string;
     };
@@ -49,9 +46,13 @@ export type MainStackParamList = {
         goalId: string;
     };
 
-    /** Registrar Aporte (MGO-06), "Entrada" na Caixinha individual. */
+    /**
+     * Registrar Aporte (MGO-06), "Entrada" ou "Retirada" na
+     * Caixinha individual. Sem `kind`, abre como entrada.
+     */
     GoalContribution: {
         goalId: string;
+        kind?: 'deposit' | 'withdrawal';
     };
 
     InviteMembers: {

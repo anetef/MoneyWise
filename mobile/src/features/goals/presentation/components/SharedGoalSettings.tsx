@@ -9,7 +9,7 @@ import {
     spacing,
 } from '../../../../core/theme';
 
-import type { GoalDetails, GoalMember } from '../../domain/Goal';
+import type { GoalDetails } from '../../domain/Goal';
 
 import { DisabledSwitch } from './DisabledSwitch';
 import { FormRow } from './FormRow';
@@ -33,10 +33,6 @@ type Props = {
     onChangeAmount: (value: string) => void;
     onChangeDeadline: (value: string) => void;
     onInvite: () => void;
-    onManageMember: (member: GoalMember) => void;
-    onManageInvites: () => void;
-    onLeave: () => void;
-    onArchive: () => void;
 };
 
 /**
@@ -46,6 +42,7 @@ type Props = {
  * Os campos comuns ficam em GoalBasicsFields. Membros e papéis
  * vêm do mock e são apenas exibidos: gerenciar membros,
  * permissões e regras do grupo depende de L-09 e L-10.
+ * Essas ações aparecem desativadas, com "Em breve".
  */
 export function SharedGoalSettings({
     goal,
@@ -57,10 +54,6 @@ export function SharedGoalSettings({
     onChangeAmount,
     onChangeDeadline,
     onInvite,
-    onManageMember,
-    onManageInvites,
-    onLeave,
-    onArchive,
 }: Props) {
     return (
         <View style={styles.container}>
@@ -80,42 +73,28 @@ export function SharedGoalSettings({
                 asideAction={{ label: '+ Convidar', onPress: onInvite }}
             >
                 {goal.members.map((member) => (
-                    <MemberSettingsItem
-                        key={member.id}
-                        member={member}
-                        onOpenMenu={() => onManageMember(member)}
-                    />
+                    <MemberSettingsItem key={member.id} member={member} />
                 ))}
 
                 {/* Gerenciar convites e permissões depende de L-05 e L-10 */}
                 <Pressable
-                    onPress={onManageInvites}
+                    disabled
                     accessibilityRole="button"
                     accessibilityLabel="Gerenciar convites e permissões, em breve"
-                    style={({ pressed }) => [styles.manageRow, pressed && styles.pressed]}
+                    accessibilityState={{ disabled: true }}
+                    style={[styles.manageRow, styles.disabled]}
                 >
                     <Text style={styles.manageIcon}>⇄</Text>
                     <Text style={styles.manageLabel}>
                         Gerenciar convites e permissões
                     </Text>
-                    <Text style={styles.manageIcon}>→</Text>
+                    <View style={styles.soonBadge}>
+                        <Text style={styles.soonBadgeText}>Em breve</Text>
+                    </View>
                 </Pressable>
             </FormSection>
 
             <FormSection title="Regras & Governança">
-                {/*
-                 * Texto mantido como no Figma. Pendente para o grupo:
-                 * na caixinha os registros são aportes e retiradas,
-                 * não gastos ou despesas.
-                 */}
-                <FormRow
-                    label="Permitir registro de gastos"
-                    description="Todos os membros podem lançar despesas"
-                    comingSoon
-                >
-                    <DisabledSwitch />
-                </FormRow>
-
                 <FormRow label="Notificar novos registros no grupo" comingSoon>
                     <DisabledSwitch />
                 </FormRow>
@@ -146,27 +125,37 @@ export function SharedGoalSettings({
             {/* Sair do grupo e arquivar dependem de L-09 */}
             <View style={styles.actionsCard}>
                 <Pressable
-                    onPress={onLeave}
+                    disabled
                     accessibilityRole="button"
-                    style={({ pressed }) => [styles.actionRow, pressed && styles.pressed]}
+                    accessibilityLabel="Sair desta Caixinha, em breve"
+                    accessibilityState={{ disabled: true }}
+                    style={[styles.actionRow, styles.disabled]}
                 >
                     <Text style={[styles.actionIcon, styles.primaryText]}>⇥</Text>
                     <Text style={[styles.actionLabel, styles.primaryText]}>
                         Sair desta Caixinha
                     </Text>
+                    <View style={styles.soonBadge}>
+                        <Text style={styles.soonBadgeText}>Em breve</Text>
+                    </View>
                 </Pressable>
 
                 <View style={styles.divider} />
 
                 <Pressable
-                    onPress={onArchive}
+                    disabled
                     accessibilityRole="button"
-                    style={({ pressed }) => [styles.actionRow, pressed && styles.pressed]}
+                    accessibilityLabel="Encerrar e Arquivar Caixinha, em breve"
+                    accessibilityState={{ disabled: true }}
+                    style={[styles.actionRow, styles.disabled]}
                 >
                     <Text style={[styles.actionIcon, styles.dangerText]}>⊠</Text>
                     <Text style={[styles.actionLabel, styles.dangerText]}>
                         Encerrar e Arquivar Caixinha
                     </Text>
+                    <View style={styles.soonBadge}>
+                        <Text style={styles.soonBadgeText}>Em breve</Text>
+                    </View>
                 </Pressable>
             </View>
 
@@ -189,8 +178,22 @@ const styles = StyleSheet.create({
         gap: spacing.xxl,
     },
 
-    pressed: {
-        opacity: 0.7,
+    // Mesmo visual das linhas "Em breve" do FormRow.
+    disabled: {
+        opacity: 0.55,
+    },
+
+    soonBadge: {
+        backgroundColor: colors.surface.secondary,
+        borderRadius: radius.full,
+        paddingHorizontal: spacing.sm,
+        paddingVertical: spacing.xxs,
+    },
+
+    soonBadgeText: {
+        fontFamily: fontFamily.medium,
+        fontSize: 10,
+        color: colors.text.secondary,
     },
 
     manageRow: {

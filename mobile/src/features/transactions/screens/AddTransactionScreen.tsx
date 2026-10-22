@@ -1,6 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
 import {
-    Alert,
     KeyboardAvoidingView,
     Platform,
     Pressable,
@@ -30,8 +29,6 @@ const C = {
     categoryActiveBg: '#FCD3C4',
     detailIconBg: '#FBE7DF',
     divider: '#ECE6E3',
-    attachmentBg: '#F3E4DF',
-    attachmentBorder: '#D9C4BB',
     whiteSoft: 'rgba(255, 255, 255, 0.8)',
     whiteGlass: 'rgba(255, 255, 255, 0.2)',
 };
@@ -68,6 +65,7 @@ type Navigation = NativeStackNavigationProp<DashboardStackParamList>;
 type FormErrors = {
     amount?: string;
     category?: string;
+    date?: string;
 };
 
 // Mesmo limite de dígitos do valor usado nos formulários de Caixinhas.
@@ -96,6 +94,47 @@ function formatAmount(digits: string): string {
     return `${integerPart},${padded.slice(-2)}`;
 }
 
+/**
+ * Data local no formato DD/MM/AAAA. Usa os campos locais
+ * da data, sem conversão para UTC, para não mudar o dia.
+ */
+function formatDateInput(date: Date): string {
+    const day = String(date.getDate()).padStart(2, '0');
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+
+    return `${day}/${month}/${date.getFullYear()}`;
+}
+
+// Mesma máscara e validação de data dos formulários de Caixinhas.
+
+/** Aplica a máscara DD/MM/AAAA enquanto o usuário digita. */
+function maskDate(value: string): string {
+    const digits = value.replace(/\D/g, '').slice(0, 8);
+
+    return [digits.slice(0, 2), digits.slice(2, 4), digits.slice(4, 8)]
+        .filter(Boolean)
+        .join('/');
+}
+
+/** Converte DD/MM/AAAA em data local, ou null se a data não existir. */
+function parseDate(value: string): Date | null {
+    const match = /^(\d{2})\/(\d{2})\/(\d{4})$/.exec(value);
+
+    if (!match) {
+        return null;
+    }
+
+    const [, day, month, year] = match.map(Number);
+    const date = new Date(year, month - 1, day);
+
+    const isSameDate =
+        date.getFullYear() === year &&
+        date.getMonth() === month - 1 &&
+        date.getDate() === day;
+
+    return isSameDate ? date : null;
+}
+
 /** Largura aproximada do valor, para "R$ + valor" ficar centralizado. */
 function amountInputWidth(text: string): number {
     const shown = text || '0,00';
@@ -112,6 +151,8 @@ export function AddTransactionScreen() {
     const [amountDigits, setAmountDigits] = useState('');
     const [categoryId, setCategoryId] = useState<string | null>(null);
     const [description, setDescription] = useState('');
+    // Começa com a data de hoje no dispositivo.
+    const [dateText, setDateText] = useState(() => formatDateInput(new Date()));
     const [errors, setErrors] = useState<FormErrors>({});
     const [isSimulated, setIsSimulated] = useState(false);
 
@@ -138,6 +179,11 @@ export function AddTransactionScreen() {
         setErrors((current) => ({ ...current, category: undefined }));
     }
 
+    function changeDate(value: string) {
+        setDateText(maskDate(value));
+        setErrors((current) => ({ ...current, date: undefined }));
+    }
+
     /**
      * Correção intermediária da MTX-03: valida o formulário e mostra
      * uma confirmação de simulação. Nada é gravado; o registro real
@@ -158,6 +204,10 @@ export function AddTransactionScreen() {
             nextErrors.category = 'Selecione uma categoria.';
         }
 
+        if (!parseDate(dateText)) {
+            nextErrors.date = 'Digite uma data válida no formato DD/MM/AAAA.';
+        }
+
         setErrors(nextErrors);
 
         if (Object.keys(nextErrors).length > 0) {
@@ -167,14 +217,6 @@ export function AddTransactionScreen() {
         submittedRef.current = true;
         setIsSimulated(true);
         backTimerRef.current = setTimeout(() => navigation.goBack(), SIMULATION_FEEDBACK_MS);
-    }
-
-    function handleDate() {
-        Alert.alert('Em breve', 'A seleção de data será implementada em breve.');
-    }
-
-    function handleAttachment() {
-        Alert.alert('Em breve', 'Os anexos serão implementados em breve.');
     }
 
     return (
@@ -326,47 +368,33 @@ export function AddTransactionScreen() {
                             </View>
                         </View>
 
-                        <Pressable onPress={handleDate} style={styles.detailRow}>
+                        {/* Data digitada (DD/MM/AAAA), como nas Caixinhas */}
+                        <View style={styles.detailRow}>
                             <View style={styles.detailIcon}>
                                 <Feather name="calendar" size={19} color={C.text} />
                             </View>
                             <View style={[styles.detailContent, styles.detailContentDivider]}>
                                 <Text style={styles.detailLabel}>Data</Text>
-                                <View style={styles.dateRow}>
-                                    <Text style={styles.detailValue}>Hoje, 24 Out</Text>
-                                    <Feather name="chevron-right" size={20} color={C.textSecondary} />
-                                </View>
-                            </View>
-                        </Pressable>
-                    </View>
-
-                    {/* Anexos */}
-                    <View style={styles.attachmentsHeader}>
-                        <Text style={styles.sectionTitleInline}>Anexos</Text>
-                        <Pressable onPress={handleAttachment} hitSlop={8}>
-                            <Text style={styles.addLink}>Adicionar</Text>
-                        </Pressable>
-                    </View>
-
-                    <View style={styles.attachments}>
-                        {/* Comprovante (placeholder até termos a imagem) */}
-                        <View style={styles.receipt}>
-                            <MaterialCommunityIcons name="receipt" size={34} color={C.textSecondary} />
-                            <View style={styles.expandBadge}>
-                                <MaterialCommunityIcons name="arrow-expand" size={12} color={C.text} />
+                                <TextInput
+                                    value={dateText}
+                                    onChangeText={changeDate}
+                                    placeholder="DD/MM/AAAA"
+                                    placeholderTextColor={C.textSecondary}
+                                    selectionColor={C.primary}
+                                    keyboardType="number-pad"
+                                    maxLength={10}
+                                    accessibilityLabel="Data da transação"
+                                    style={styles.detailInput}
+                                />
                             </View>
                         </View>
-
-                        {/* Câmera */}
-                        <Pressable onPress={handleAttachment} style={styles.cameraBox}>
-                            <MaterialCommunityIcons
-                                name="camera-plus-outline"
-                                size={24}
-                                color={C.textSecondary}
-                            />
-                            <Text style={styles.cameraText}>Câmera</Text>
-                        </Pressable>
                     </View>
+
+                    {errors.date && (
+                        <Text style={styles.errorText} accessibilityRole="alert">
+                            {errors.date}
+                        </Text>
+                    )}
                 </ScrollView>
 
                 {/* Botão salvar fixo */}
@@ -512,12 +540,6 @@ const styles = StyleSheet.create({
         marginBottom: 12,
         marginHorizontal: 24,
     },
-    sectionTitleInline: {
-        fontFamily: F.medium,
-        fontSize: 15,
-        color: C.text,
-    },
-
     // Categorias
     categories: {
         paddingHorizontal: 20,
@@ -595,73 +617,6 @@ const styles = StyleSheet.create({
         color: C.text,
         padding: 0,
     },
-    detailValue: {
-        fontFamily: F.regular,
-        fontSize: 16,
-        color: C.text,
-    },
-    dateRow: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-    },
-
-    // Anexos
-    attachmentsHeader: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        marginTop: 28,
-        marginBottom: 12,
-        marginHorizontal: 24,
-    },
-    addLink: {
-        fontFamily: F.medium,
-        fontSize: 13,
-        color: C.primary,
-    },
-    attachments: {
-        flexDirection: 'row',
-        gap: 16,
-        paddingHorizontal: 16,
-    },
-    receipt: {
-        width: 96,
-        height: 96,
-        borderRadius: 8,
-        backgroundColor: '#DDD8D4',
-        alignItems: 'center',
-        justifyContent: 'center',
-    },
-    expandBadge: {
-        position: 'absolute',
-        right: 6,
-        bottom: 6,
-        width: 22,
-        height: 22,
-        borderRadius: 11,
-        backgroundColor: 'rgba(255, 255, 255, 0.9)',
-        alignItems: 'center',
-        justifyContent: 'center',
-    },
-    cameraBox: {
-        width: 96,
-        height: 96,
-        borderRadius: 8,
-        borderWidth: 1,
-        borderStyle: 'dashed',
-        borderColor: C.attachmentBorder,
-        backgroundColor: C.attachmentBg,
-        alignItems: 'center',
-        justifyContent: 'center',
-        gap: 6,
-    },
-    cameraText: {
-        fontFamily: F.regular,
-        fontSize: 11,
-        color: C.textSecondary,
-    },
-
     // Rodapé
     footer: {
         paddingHorizontal: 16,

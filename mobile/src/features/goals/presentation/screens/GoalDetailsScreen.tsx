@@ -5,7 +5,6 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import {
     ActivityIndicator,
-    Alert,
     ScrollView,
     StyleSheet,
     View,
@@ -36,10 +35,6 @@ export function GoalDetailsScreen({ navigation, route }: Props) {
             reload();
         }, [reload]),
     );
-
-    function showComingSoon(title: string, message: string) {
-        Alert.alert(title, message);
-    }
 
     function renderContent() {
         if (isLoading) {
@@ -86,10 +81,10 @@ export function GoalDetailsScreen({ navigation, route }: Props) {
                 goal={goal}
                 onRegisterDeposit={registerContribution}
                 onRegisterWithdrawal={() =>
-                    showComingSoon(
-                        'Registrar retirada',
-                        'O registro de retiradas estará disponível em breve.',
-                    )
+                    navigation.navigate('GoalContribution', {
+                        goalId: goal.id,
+                        kind: 'withdrawal',
+                    })
                 }
                 onOpenSettings={openSettings}
                 onSeeAllRecords={seeAllRecords}

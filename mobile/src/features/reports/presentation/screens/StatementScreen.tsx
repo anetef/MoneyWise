@@ -41,7 +41,9 @@ type StatementItem = {
 
 type StatementGroup = {
     id: string;
-    dateLabel: string;
+    /** Dia e mês do grupo; os dados simulados não têm ano. */
+    day: number;
+    month: number;
     items: StatementItem[];
 };
 
@@ -56,7 +58,8 @@ const BALANCE = 'R$ 14.529,80';
 const GROUPS: StatementGroup[] = [
     {
         id: 'today',
-        dateLabel: 'Hoje, 24 de Outubro',
+        day: 24,
+        month: 10,
         items: [
             {
                 id: '1',
@@ -78,7 +81,8 @@ const GROUPS: StatementGroup[] = [
     },
     {
         id: 'yesterday',
-        dateLabel: 'Ontem, 23 de Outubro',
+        day: 23,
+        month: 10,
         items: [
             {
                 id: '3',
@@ -99,6 +103,38 @@ const GROUPS: StatementGroup[] = [
         ],
     },
 ];
+
+const MONTH_NAMES = [
+    'Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho',
+    'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro',
+];
+
+// Mensagem quando a aba escolhida não tem transações
+const EMPTY_MESSAGES: Record<Filter, string> = {
+    all: 'Nenhuma transação registrada.',
+    income: 'Nenhuma entrada registrada.',
+    expense: 'Nenhuma saída registrada.',
+};
+
+/**
+ * Título do dia, ex.: "24 de Outubro". "Hoje" e "Ontem" só
+ * aparecem quando dia e mês coincidem com a data do aparelho.
+ */
+function formatGroupDate(day: number, month: number, now = new Date()): string {
+    const label = `${day} de ${MONTH_NAMES[month - 1]}`;
+    const yesterday = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 1);
+    const isSameDay = (date: Date) => date.getDate() === day && date.getMonth() + 1 === month;
+
+    if (isSameDay(now)) {
+        return `Hoje, ${label}`;
+    }
+
+    if (isSameDay(yesterday)) {
+        return `Ontem, ${label}`;
+    }
+
+    return label;
+}
 
 // 🧾 Ícone de cada transação
 function ItemIcon({ icon }: { icon: StatementIcon }) {
@@ -133,10 +169,6 @@ export function StatementScreen() {
         ...group,
         items: group.items.filter((item) => filter === 'all' || item.type === filter),
     })).filter((group) => group.items.length > 0);
-
-    function handleDownload() {
-        Alert.alert('Em breve', 'O download do extrato será implementado em breve.');
-    }
 
     function handleFilters() {
         Alert.alert('Em breve', 'Os filtros avançados serão implementados em breve.');
@@ -179,16 +211,19 @@ export function StatementScreen() {
 
                 {/* Baixar / Filtros */}
                 <View style={styles.actions}>
+                    {/* Exportação em PDF fica para a Release 2 (REP-03) */}
                     <Pressable
-                        onPress={handleDownload}
-                        style={({ pressed }) => [
-                            styles.actionButton,
-                            styles.downloadButton,
-                            pressed && { opacity: 0.85 },
-                        ]}
+                        disabled
+                        accessibilityRole="button"
+                        accessibilityLabel="Baixar extrato, em breve"
+                        accessibilityState={{ disabled: true }}
+                        style={[styles.actionButton, styles.downloadButton, styles.downloadDisabled]}
                     >
                         <Feather name="download" size={16} color={C.surface} />
                         <Text style={styles.downloadText}>Baixar</Text>
+                        <View style={styles.soonBadge}>
+                            <Text style={styles.soonBadgeText}>Em breve</Text>
+                        </View>
                     </Pressable>
 
                     <Pressable
@@ -207,7 +242,9 @@ export function StatementScreen() {
                 {/* Lista agrupada por dia */}
                 {visibleGroups.map((group) => (
                     <View key={group.id} style={styles.group}>
-                        <Text style={styles.groupTitle}>{group.dateLabel}</Text>
+                        <Text style={styles.groupTitle}>
+                            {formatGroupDate(group.day, group.month)}
+                        </Text>
 
                         <View style={styles.card}>
                             {group.items.map((item, index) => (
@@ -236,6 +273,12 @@ export function StatementScreen() {
                         </View>
                     </View>
                 ))}
+
+                {visibleGroups.length === 0 && (
+                    <View style={styles.empty}>
+                        <Text style={styles.emptyText}>{EMPTY_MESSAGES[filter]}</Text>
+                    </View>
+                )}
             </ScrollView>
         </SafeAreaView>
     );
@@ -336,6 +379,20 @@ const styles = StyleSheet.create({
         fontSize: 14,
         color: C.surface,
     },
+    downloadDisabled: {
+        opacity: 0.6,
+    },
+    soonBadge: {
+        backgroundColor: 'rgba(255, 255, 255, 0.2)',
+        borderRadius: 999,
+        paddingHorizontal: 4,
+        paddingVertical: 1,
+    },
+    soonBadgeText: {
+        fontFamily: F.medium,
+        fontSize: 10,
+        color: C.surface,
+    },
     filterButton: {
         backgroundColor: C.beige,
     },
@@ -398,5 +455,20 @@ const styles = StyleSheet.create({
         fontFamily: F.semibold,
         fontSize: 15,
         color: C.text,
+    },
+
+    // Estado vazio
+    empty: {
+        backgroundColor: C.surface,
+        borderRadius: 16,
+        paddingVertical: 32,
+        paddingHorizontal: 16,
+        alignItems: 'center',
+    },
+    emptyText: {
+        fontFamily: F.medium,
+        fontSize: 14,
+        color: C.textSecondary,
+        textAlign: 'center',
     },
 });

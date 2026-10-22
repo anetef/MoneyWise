@@ -16,7 +16,6 @@ import { goalColors } from './goalColors';
 
 type Props = {
     member: GoalMember;
-    onOpenMenu: () => void;
 };
 
 // Papéis da arquitetura; Criador/Editor/Leitor do Figma dependem de L-10.
@@ -27,9 +26,10 @@ const roleLabels: Record<GoalMember['role'], string> = {
 
 /**
  * Membro na lista das Configurações da Caixinha compartilhada:
- * papel e valor registrado. O menu ⋮ ainda não tem ações (L-10).
+ * papel e valor registrado. O menu ⋮ fica desativado até a
+ * gestão de membros existir (GRP-03, L-10).
  */
-export function MemberSettingsItem({ member, onOpenMenu }: Props) {
+export function MemberSettingsItem({ member }: Props) {
     const name = member.isCurrentUser ? `${member.name} (Você)` : member.name;
     const role = roleLabels[member.role];
     const amount = formatCurrency(member.contributedAmount);
@@ -65,11 +65,11 @@ export function MemberSettingsItem({ member, onOpenMenu }: Props) {
             </View>
 
             <Pressable
-                onPress={onOpenMenu}
+                disabled
                 accessibilityRole="button"
                 accessibilityLabel={`Opções de ${member.name}, em breve`}
-                hitSlop={spacing.md}
-                style={({ pressed }) => [styles.menuButton, pressed && styles.pressed]}
+                accessibilityState={{ disabled: true }}
+                style={[styles.menuButton, styles.disabled]}
             >
                 <Text style={styles.menuIcon}>⋮</Text>
             </Pressable>
@@ -85,8 +85,8 @@ const styles = StyleSheet.create({
         paddingVertical: spacing.md,
     },
 
-    pressed: {
-        opacity: 0.7,
+    disabled: {
+        opacity: 0.5,
     },
 
     avatar: {

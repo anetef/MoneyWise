@@ -3,7 +3,6 @@ import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import {
-    Alert,
     KeyboardAvoidingView,
     Platform,
     Pressable,
@@ -64,13 +63,6 @@ export function LoginScreen({ navigation }: Props) {
         // Autenticação simulada.
         // Não envia ou armazena credenciais.
         signIn();
-    }
-
-    function handleSocialLogin(provider: string) {
-        Alert.alert(
-            'Em desenvolvimento',
-            `O login com ${provider} estará disponível futuramente.`,
-        );
     }
 
     return (
@@ -231,37 +223,6 @@ export function LoginScreen({ navigation }: Props) {
                                 Entrar na conta →
                             </Text>
                         </Pressable>
-                    </View>
-
-                    {/* Login social */}
-                    <View style={styles.socialSection}>
-                        <View style={styles.dividerRow}>
-                            <View style={styles.dividerLine} />
-                            <Text style={styles.dividerText}>
-                                OU CONTINUE COM
-                            </Text>
-                            <View style={styles.dividerLine} />
-                        </View>
-
-                        <View style={styles.socialRow}>
-                            <Pressable
-                                style={styles.socialButton}
-                                onPress={() => handleSocialLogin('Apple')}
-                                accessibilityRole="button"
-                            >
-                                <Text style={styles.appleIcon}>●</Text>
-                                <Text style={styles.socialText}>Apple</Text>
-                            </Pressable>
-
-                            <Pressable
-                                style={styles.socialButton}
-                                onPress={() => handleSocialLogin('Google')}
-                                accessibilityRole="button"
-                            >
-                                <Text style={styles.googleIcon}>G</Text>
-                                <Text style={styles.socialText}>Google</Text>
-                            </Pressable>
-                        </View>
                     </View>
 
                     {/* Cadastro */}
@@ -483,64 +444,6 @@ const styles = StyleSheet.create({
     primaryButtonText: {
         ...typography.button,
         color: colors.white,
-    },
-
-    socialSection: {
-        marginTop: spacing.xxxl,
-        gap: spacing.xxl,
-    },
-
-    dividerRow: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: spacing.md,
-    },
-
-    dividerLine: {
-        flex: 1,
-        height: 1,
-        backgroundColor: '#DCE6FF',
-    },
-
-    dividerText: {
-        fontFamily: fontFamily.medium,
-        fontSize: fontSize.xs,
-        color: colors.text.secondary,
-    },
-
-    socialRow: {
-        flexDirection: 'row',
-        gap: spacing.md,
-    },
-
-    socialButton: {
-        flex: 1,
-        minHeight: 52,
-        backgroundColor: colors.white,
-        borderRadius: radius.md,
-        borderWidth: 1,
-        borderColor: colors.border.subtle,
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'center',
-        gap: spacing.sm,
-    },
-
-    socialText: {
-        fontFamily: fontFamily.semiBold,
-        fontSize: fontSize.sm,
-        color: colors.text.primary,
-    },
-
-    appleIcon: {
-        fontSize: 19,
-        color: colors.text.primary,
-    },
-
-    googleIcon: {
-        fontFamily: fontFamily.bold,
-        fontSize: 20,
-        color: '#4285F4',
     },
 
     footer: {

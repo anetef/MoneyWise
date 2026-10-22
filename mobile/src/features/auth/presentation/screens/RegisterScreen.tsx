@@ -112,13 +112,6 @@ export function RegisterScreen({ navigation }: Props) {
         signIn();
     }
 
-    function handleSocialRegister(provider: string) {
-        Alert.alert(
-            'Em desenvolvimento',
-            `O cadastro com ${provider} ainda não está disponível.`
-        );
-    }
-
     function handleLegalDocument(document: string) {
         Alert.alert(
             document,
@@ -370,39 +363,6 @@ export function RegisterScreen({ navigation }: Props) {
                         </Text>
                     </Pressable>
 
-                    {/* Cadastro social */}
-                    <View style={styles.socialSection}>
-                        <View style={styles.dividerRow}>
-                            <View style={styles.dividerLine} />
-
-                            <Text style={styles.dividerText}>
-                                OU CADASTRE-SE COM
-                            </Text>
-
-                            <View style={styles.dividerLine} />
-                        </View>
-
-                        <View style={styles.socialRow}>
-                            <Pressable
-                                onPress={() => handleSocialRegister('Apple')}
-                                accessibilityRole="button"
-                                style={styles.socialButton}
-                            >
-                                <Text style={styles.appleIcon}>●</Text>
-                                <Text style={styles.socialText}>Apple</Text>
-                            </Pressable>
-
-                            <Pressable
-                                onPress={() => handleSocialRegister('Google')}
-                                accessibilityRole="button"
-                                style={styles.socialButton}
-                            >
-                                <Text style={styles.googleIcon}>G</Text>
-                                <Text style={styles.socialText}>Google</Text>
-                            </Pressable>
-                        </View>
-                    </View>
-
                     {/* Link para Login */}
                     <View style={styles.footer}>
                         <Text style={styles.footerText}>
@@ -627,62 +587,6 @@ const styles = StyleSheet.create({
     primaryButtonText: {
         ...typography.button,
         color: colors.white,
-    },
-
-    socialSection: {
-        marginTop: spacing.xxxl,
-        gap: spacing.xxl,
-    },
-
-    dividerRow: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: spacing.md,
-    },
-
-    dividerLine: {
-        flex: 1,
-        height: 1,
-        backgroundColor: '#E0EAFF',
-    },
-
-    dividerText: {
-        fontFamily: fontFamily.medium,
-        fontSize: fontSize.xs,
-        color: colors.text.secondary,
-    },
-
-    socialRow: {
-        flexDirection: 'row',
-        gap: spacing.md,
-    },
-
-    socialButton: {
-        flex: 1,
-        minHeight: 52,
-        backgroundColor: colors.surface.secondary,
-        borderRadius: radius.md,
-        alignItems: 'center',
-        justifyContent: 'center',
-        flexDirection: 'row',
-        gap: spacing.sm,
-    },
-
-    socialText: {
-        fontFamily: fontFamily.medium,
-        fontSize: fontSize.sm,
-        color: colors.text.primary,
-    },
-
-    appleIcon: {
-        fontSize: 20,
-        color: colors.text.primary,
-    },
-
-    googleIcon: {
-        fontFamily: fontFamily.bold,
-        fontSize: 20,
-        color: '#4285F4',
     },
 
     footer: {

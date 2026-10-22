@@ -5,7 +5,6 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import {
     ActivityIndicator,
-    Alert,
     Pressable,
     ScrollView,
     StyleSheet,
@@ -125,10 +124,6 @@ export function GoalStatementScreen({ navigation, route }: Props) {
         }, [reload]),
     );
 
-    function showComingSoon(title: string, message: string) {
-        Alert.alert(title, message);
-    }
-
     function renderContent() {
         if (isLoading) {
             return <ActivityIndicator color={colors.primary} />;
@@ -164,21 +159,18 @@ export function GoalStatementScreen({ navigation, route }: Props) {
 
                 {/* Ações */}
                 <View style={styles.actions}>
+                    {/* Exportação em PDF fica para a Release 2 (REP-03) */}
                     <Pressable
-                        onPress={() =>
-                            showComingSoon(
-                                'Baixar extrato',
-                                'O download do extrato estará disponível em breve.',
-                            )
-                        }
+                        disabled
                         accessibilityRole="button"
-                        style={({ pressed }) => [
-                            styles.actionButton,
-                            styles.primaryAction,
-                            pressed && styles.pressed,
-                        ]}
+                        accessibilityLabel="Baixar extrato, em breve"
+                        accessibilityState={{ disabled: true }}
+                        style={[styles.actionButton, styles.primaryAction, styles.actionDisabled]}
                     >
                         <Text style={styles.primaryActionText}>⤓  Baixar</Text>
+                        <View style={styles.soonBadge}>
+                            <Text style={styles.soonBadgeText}>Em breve</Text>
+                        </View>
                     </Pressable>
 
                     <Pressable
@@ -423,6 +415,25 @@ const styles = StyleSheet.create({
     primaryActionText: {
         fontFamily: fontFamily.semiBold,
         fontSize: fontSize.sm,
+        color: colors.text.inverse,
+    },
+
+    actionDisabled: {
+        flexDirection: 'row',
+        gap: spacing.xs,
+        opacity: 0.6,
+    },
+
+    soonBadge: {
+        backgroundColor: 'rgba(255, 255, 255, 0.2)',
+        borderRadius: radius.full,
+        paddingHorizontal: spacing.xs,
+        paddingVertical: 1,
+    },
+
+    soonBadgeText: {
+        fontFamily: fontFamily.medium,
+        fontSize: 10,
         color: colors.text.inverse,
     },
 
