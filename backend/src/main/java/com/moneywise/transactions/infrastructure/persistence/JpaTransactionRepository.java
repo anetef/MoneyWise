@@ -7,7 +7,9 @@ import java.util.UUID;
 
 import org.springframework.stereotype.Repository;
 
+import com.moneywise.shared.exception.ResourceNotFoundException;
 import com.moneywise.transactions.application.port.TransactionRepository;
+import com.moneywise.transactions.domain.Category;
 import com.moneywise.transactions.domain.Transaction;
 
 /** Implementa o port de transações usando Spring Data JPA. */
@@ -22,7 +24,12 @@ public class JpaTransactionRepository implements TransactionRepository {
 
     @Override
     public Transaction save(Transaction transaction) {
-        springData.saveAndFlush(TransactionMapper.toEntity(transaction));
+        springData.findUserIdById(transaction.getId()).ifPresent(ownerId -> {
+            if (!ownerId.equals(transaction.getUserId())) {
+                throw new ResourceNotFoundException("Transação não encontrada.");
+            }
+        });
+        springData.save(TransactionMapper.toEntity(transaction));
         return transaction;
     }
 
@@ -32,8 +39,9 @@ public class JpaTransactionRepository implements TransactionRepository {
     }
 
     @Override
-    public List<Transaction> findByUserIdAndFilters(UUID userId, String category, LocalDate from, LocalDate to) {
-        return springData.findRowsByUserIdAndFilters(userId, category, from, to).stream()
+    public List<Transaction> findByUserIdAndFilters(UUID userId, Category category, LocalDate from, LocalDate to) {
+        String categoryName = category == null ? null : category.name();
+        return springData.findRowsByUserIdAndFilters(userId, categoryName, from, to).stream()
                 .map(TransactionMapper::toDomain).toList();
     }
 }

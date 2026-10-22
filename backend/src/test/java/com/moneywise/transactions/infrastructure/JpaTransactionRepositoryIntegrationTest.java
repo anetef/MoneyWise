@@ -1,6 +1,7 @@
 package com.moneywise.transactions.infrastructure;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import java.time.LocalDate;
 import java.util.Currency;
@@ -18,11 +19,12 @@ import com.moneywise.TestcontainersConfiguration;
 import com.moneywise.auth.application.port.UserRepository;
 import com.moneywise.auth.domain.Email;
 import com.moneywise.auth.domain.User;
+import com.moneywise.shared.exception.ResourceNotFoundException;
+import com.moneywise.shared.money.Money;
 import com.moneywise.transactions.application.port.TransactionRepository;
 import com.moneywise.transactions.domain.Category;
 import com.moneywise.transactions.domain.Transaction;
 import com.moneywise.transactions.domain.TransactionType;
-import com.moneywise.transactions.infrastructure.persistence.SpringDataTransactionRepository;
 import com.moneywise.transactions.infrastructure.persistence.TransactionEntity;
 
 import jakarta.persistence.EntityManager;
@@ -37,9 +39,6 @@ class JpaTransactionRepositoryIntegrationTest {
 
     @Autowired
     private UserRepository userRepository;
-
-    @Autowired
-    private SpringDataTransactionRepository springData;
 
     @Autowired
     private EntityManager entityManager;
@@ -69,7 +68,7 @@ class JpaTransactionRepositoryIntegrationTest {
         assertThat(actual.getDescription()).isNull();
 
         entityManager.clear();
-        TransactionEntity entity = springData.findById(expected.getId()).orElseThrow();
+        TransactionEntity entity = entityManager.find(TransactionEntity.class, expected.getId());
         assertThat(entity.getCreatedAt()).isNotNull();
         assertThat(entity.getUpdatedAt()).isNotNull();
     }
@@ -112,9 +111,36 @@ class JpaTransactionRepositoryIntegrationTest {
         transactionRepository.save(newTransaction(owner.getId(), "20.00", "Casa", LocalDate.of(2026, 10, 11)));
         transactionRepository.save(newTransaction(owner.getId(), "30.00", "Comida", LocalDate.of(2026, 9, 30)));
 
-        List<Transaction> found = transactionRepository.findByUserIdAndFilters(owner.getId(), "Comida",
+        List<Transaction> found = transactionRepository.findByUserIdAndFilters(owner.getId(), Category.of(" Comida "),
                 LocalDate.of(2026, 10, 1), LocalDate.of(2026, 10, 31));
 
         assertThat(found).extracting(Transaction::getId).containsExactly(match.getId());
+    }
+
+    @Test
+    @DisplayName("Recusa que outro usuário sobrescreva uma transação pelo mesmo id")
+    void shouldNotAllowAnotherUserToOverwriteTransactionById() {
+        User owner = userRepository.save(newUser("transacao-proprietario@example.com", "BRL"));
+        User attacker = userRepository.save(newUser("transacao-outro-usuario@example.com", "BRL"));
+        Transaction original = newTransaction(owner.getId(), "25.50", "Comida", LocalDate.of(2026, 10, 10));
+        transactionRepository.save(original);
+        entityManager.flush();
+
+        Transaction attemptToOverwrite = Transaction.create(original.getId(), attacker.getId(),
+                Money.of("999.99", "BRL"), LocalDate.of(2026, 10, 15), Category.of("Compras"),
+                TransactionType.INCOME, "Tentativa de sobrescrita");
+
+        assertThatThrownBy(() -> transactionRepository.save(attemptToOverwrite))
+                .isInstanceOf(ResourceNotFoundException.class)
+                .hasFieldOrPropertyWithValue("code", ResourceNotFoundException.DEFAULT_CODE);
+
+        entityManager.clear();
+        Transaction unchanged = transactionRepository.findByIdAndUserId(original.getId(), owner.getId()).orElseThrow();
+        assertThat(unchanged.getUserId()).isEqualTo(owner.getId());
+        assertThat(unchanged.getAmount()).isEqualTo(Money.of("25.50", "BRL"));
+        assertThat(unchanged.getDate()).isEqualTo(LocalDate.of(2026, 10, 10));
+        assertThat(unchanged.getCategory()).isEqualTo(Category.of("Comida"));
+        assertThat(unchanged.getType()).isEqualTo(TransactionType.EXPENSE);
+        assertThat(unchanged.getDescription()).isNull();
     }
 }
