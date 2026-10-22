@@ -3,7 +3,6 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import {
     ActivityIndicator,
-    Alert,
     KeyboardAvoidingView,
     Platform,
     ScrollView,
@@ -53,11 +52,6 @@ export function GoalSettingsScreen({ navigation, route }: Props) {
         }
     }
 
-    // Ações pendentes de L-09 e L-10: não alteram nenhum dado.
-    function showComingSoon(title: string) {
-        Alert.alert(title, 'Esta ação estará disponível em breve.');
-    }
-
     function renderContent() {
         if (isLoading) {
             return <ActivityIndicator color={colors.primary} />;
@@ -86,12 +80,6 @@ export function GoalSettingsScreen({ navigation, route }: Props) {
                     onInvite={() =>
                         navigation.navigate('InviteMembers', { groupId: goal.groupId })
                     }
-                    onManageMember={(member) => showComingSoon(`Gerenciar ${member.name}`)}
-                    onManageInvites={() =>
-                        showComingSoon('Gerenciar convites e permissões')
-                    }
-                    onLeave={() => showComingSoon('Sair desta Caixinha')}
-                    onArchive={() => showComingSoon('Encerrar e Arquivar Caixinha')}
                 />
             );
         }
@@ -106,8 +94,6 @@ export function GoalSettingsScreen({ navigation, route }: Props) {
                 onChangeName={changeName}
                 onChangeAmount={changeAmount}
                 onChangeDeadline={changeDeadline}
-                onArchive={() => showComingSoon('Arquivar Caixinha')}
-                onDelete={() => showComingSoon('Excluir Meta Cadastrada')}
             />
         );
     }
