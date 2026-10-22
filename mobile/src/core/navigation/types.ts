@@ -34,9 +34,6 @@ export type MainTabsParamList = {
 export type MainStackParamList = {
     MainTabs: NavigatorScreenParams<MainTabsParamList>;
 
-    TransactionList: undefined;
-    AddTransaction: undefined;
-
     GoalDetails: {
         goalId: string;
     };
