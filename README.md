@@ -238,6 +238,7 @@ moneywise/
 
 ---
 
+<<<<<<< HEAD
 ## GitFlow
 
 ### Estrutura de Branches
@@ -313,15 +314,17 @@ chore(ci): adiciona job de lint ao pipeline
 
 ---
 
+=======
+>>>>>>> ccb0d97e5c2481efd42cb47a8e89a696ea02982f
 ## 🚀 Como executar
 
-> 🚧 O projeto está em construção. Os comandos abaixo refletem a estrutura planejada e serão confirmados à medida que as tasks de fundação forem concluídas.
+> 🚧 O projeto está em construção. Os comandos abaixo serão atualizados à medida que as tasks de fundação forem concluídas.
 
 ### Pré-requisitos
 
 - [Git](https://git-scm.com/)
-- [Docker](https://www.docker.com/) e Docker Compose
-- [Java (JDK)](https://adoptium.net/) e Maven, para rodar a API fora do Docker
+- [Docker Desktop](https://www.docker.com/products/docker-desktop/) (inclui o Docker Compose)
+- [Java (JDK) 21](https://adoptium.net/). O Maven não precisa ser instalado: o projeto usa o Maven Wrapper (`./mvnw`)
 - [Node.js](https://nodejs.org/) (LTS)
 - App **Expo Go** no celular ou um emulador Android/iOS
 
@@ -332,31 +335,65 @@ git clone https://github.com/anetef/MoneyWise.git
 cd MoneyWise
 ```
 
-### 2. Configurar as variáveis de ambiente
+### 2. Subindo o banco local
 
+O PostgreSQL de desenvolvimento roda via Docker Compose. Cada pessoa tem o próprio banco local, e as tabelas são criadas pelo Flyway quando a API sobe.
+
+1. Abra o **Docker Desktop**.
+2. Crie o seu arquivo de variáveis a partir do modelo e defina uma senha sua em `DB_PASSWORD`:
 ```bash
-cp .env.example .env
-# edite o .env com as credenciais do banco
+   cp .env.example .env
+```
+   O `.env` é pessoal e **não vai para o Git**.
+3. Suba o banco:
+```bash
+   docker compose up -d
+```
+4. Confira se ele está pronto (a coluna STATUS deve mostrar `healthy`):
+```bash
+   docker compose ps
 ```
 
-### 3. Subir o banco e a API
+Para desligar: `docker compose down`. Os dados ficam salvos no volume `postgres_data` e voltam no próximo `up`.
+
+> ⚠️ `docker compose down -v` apaga o volume e **todos os dados** do banco local.
+
+### 3. Rodar a API
+
+Com o banco no ar, carregue as variáveis do `.env` no terminal (o Spring não lê o arquivo sozinho) e suba a API:
 
 ```bash
-docker compose up --build
-```
-
-A API fica disponível em `http://localhost:8080`, e as migrations do Flyway são aplicadas automaticamente.
-
-<details>
-<summary>Rodar a API fora do Docker</summary>
-
-```bash
-docker compose up -d postgres
+set -a; source .env; set +a
 cd backend
 ./mvnw spring-boot:run
 ```
 
-</details>
+A API fica disponível em `http://localhost:8080`, e as migrations do Flyway são aplicadas automaticamente.
+
+### Subir banco e API pelo Docker
+
+Na raiz do projeto, com o `.env` preenchido:
+
+    docker compose up --build
+
+A API fica disponível em `http://localhost:8080` e aplica as migrations do Flyway ao subir.
+O Swagger fica em `http://localhost:8080/swagger-ui.html`.
+Para desligar: `Ctrl+C` e depois `docker compose down`.
+
+### Desenvolver o backend localmente
+
+Para rodar a API pela IDE ou pelo Maven, suba **só o banco**
+(senão a API do Docker ocupa a porta 8080):
+
+    docker compose up -d postgres
+    set -a; source .env; set +a
+    cd backend
+    ./mvnw spring-boot:run
+
+### Variáveis novas
+
+O `.env` agora precisa também de `API_PORT` e `JWT_SECRET`
+(veja o `.env.example`). Para gerar o segredo: `openssl rand -base64 48`.
 
 ### 4. Rodar o aplicativo
 
@@ -374,7 +411,6 @@ Leia o QR Code com o Expo Go ou pressione `a` (Android) ou `i` (iOS) para abrir 
 cd backend && ./mvnw test     # domínio, casos de uso e regras de arquitetura (ArchUnit)
 cd mobile && npm run lint     # ESLint com as regras de import entre camadas
 ```
-
 ---
 
 ## 🗺️ Roadmap
@@ -394,6 +430,8 @@ O desenvolvimento está organizado em milestones no GitHub Projects, e cada task
 
 ## 🤝 Como contribuir
 
+O guia completo, com o passo a passo e a Definition of Done, está no [CONTRIBUTING.md](CONTRIBUTING.md).
+
 ### Fluxo de branches
 
 | Branch | Uso |
@@ -408,7 +446,7 @@ O desenvolvimento está organizado em milestones no GitHub Projects, e cada task
 - **Uma task, uma branch, uma Pull Request.**
 - Commits em [Conventional Commits](https://www.conventionalcommits.org/pt-br/) em português: `feat:`, `fix:`, `docs:`, `test:`, `refactor:`, `chore:`.
 - Título da PR com o ID da task, como `[SEC-05] Cadastro de usuário`, e `Closes #n` na descrição.
-- Pelo menos **uma aprovação** de outra pessoa da equipe antes do merge.
+- Pelo menos **uma aprovação** de outra pessoa da equipe antes do merge, que é feito com **squash and merge**.
 - Nomes de código (classes, arquivos, tabelas e endpoints) em **inglês**. Textos para o usuário e documentação em **português**.
 
 ### Prefixos das tasks

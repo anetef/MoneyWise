@@ -1,0 +1,42 @@
+services:
+  postgres:
+    image: postgres:17
+    container_name: moneywise-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${DB_NAME}
+      POSTGRES_USER: ${DB_USERNAME}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+    ports:
+      - "${DB_PORT:-5432}:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  api:
+    build: ./backend
+    image: moneywise-api
+    container_name: moneywise-api
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      SPRING_PROFILES_ACTIVE: dev
+      # Dentro do Docker, o banco é acessado pelo nome do serviço ("postgres"), não por localhost
+      DB_URL: jdbc:postgresql://postgres:5432/${DB_NAME}
+      DB_USERNAME: ${DB_USERNAME}
+      DB_PASSWORD: ${DB_PASSWORD}
+      JWT_SECRET: ${JWT_SECRET}
+      MAIL_PROVIDER: ${MAIL_PROVIDER:-log}
+      MAIL_FROM: ${MAIL_FROM:-onboarding@resend.dev}
+      RESEND_API_KEY: ${RESEND_API_KEY:-}
+    ports:
+      - "${API_PORT:-8080}:8080"
+
+volumes:
+  postgres_data:
