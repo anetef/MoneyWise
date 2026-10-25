@@ -27,7 +27,148 @@ servers:
 tags:
 - name: Autenticação
   description: Cadastro e login
+- name: Transações
+  description: Operações sobre transações financeiras
+- name: Transações
+  description: Operações sobre transações financeiras
 paths:
+  /api/v1/transactions:
+    post:
+      tags: [Transações]
+      summary: Criar transação
+      description: Cria transação com ID gerado pelo cliente; reenvio do mesmo ID pelo mesmo usuário é idempotente. A moeda vem do perfil e mês fechado é rejeitado.
+      operationId: create
+      security:
+      - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateTransactionRequestDTO"
+      responses:
+        "201":
+          description: Transação criada
+          headers:
+            Location:
+              schema:
+                type: string
+                format: uri
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TransactionResponseDTO"
+        "400":
+          description: Dados inválidos
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "401":
+          description: Não autenticado
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: Usuário não encontrado ou ID pertence a outro usuário
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "422":
+          description: Transação em mês fechado
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  /api/v1/transactions/{id}:
+    put:
+      tags: [Transações]
+      summary: Editar transação
+      description: Atualiza transação própria usando updatedAt; versão antiga é ignorada e a versão mais recente devolvida. Mês fechado não pode ser editado.
+      operationId: update
+      security:
+      - BearerAuth: []
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateTransactionRequestDTO"
+      responses:
+        "200":
+          description: Transação atualizada ou versão mais recente devolvida
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TransactionResponseDTO"
+        "400":
+          description: Dados inválidos
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "401":
+          description: Não autenticado
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: Transação não encontrada
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "422":
+          description: Transação em mês fechado
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+    delete:
+      tags: [Transações]
+      summary: Excluir transação
+      description: Exclui transação própria. IDs de outro usuário retornam 404; mês fechado não pode ser excluído.
+      operationId: delete
+      security:
+      - BearerAuth: []
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        "204":
+          description: Transação excluída
+        "401":
+          description: Não autenticado
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: Transação não encontrada
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "422":
+          description: Transação em mês fechado
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
   /api/v1/auth/verify-email:
     post:
       tags:
@@ -461,6 +602,75 @@ paths:
                 $ref: "#/components/schemas/LoginResponseDTO"
 components:
   schemas:
+    CreateTransactionRequestDTO:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: ID gerado pelo cliente para reenvio idempotente
+        amount:
+          type: number
+          minimum: 0.01
+        date:
+          type: string
+          format: date
+        category:
+          type: string
+          minLength: 1
+        type:
+          type: string
+          enum: [INCOME, EXPENSE]
+        description:
+          type: string
+      required: [id, amount, date, category, type]
+    UpdateTransactionRequestDTO:
+      type: object
+      properties:
+        amount:
+          type: number
+          minimum: 0.01
+        date:
+          type: string
+          format: date
+        category:
+          type: string
+          minLength: 1
+        type:
+          type: string
+          enum: [INCOME, EXPENSE]
+        description:
+          type: string
+        updatedAt:
+          type: string
+          format: date-time
+          description: Versão da transação vista pelo cliente
+      required: [amount, date, category, type, updatedAt]
+    TransactionResponseDTO:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        amount:
+          type: number
+        currency:
+          type: string
+          example: BRL
+        date:
+          type: string
+          format: date
+        category:
+          type: string
+        type:
+          type: string
+          enum: [INCOME, EXPENSE]
+        description:
+          type: string
+        updatedAt:
+          type: string
+          format: date-time
+      required: [id, amount, currency, date, category, type, updatedAt]
     ErrorResponse:
       type: object
       properties:
