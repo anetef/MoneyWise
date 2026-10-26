@@ -7,6 +7,7 @@ import java.math.BigDecimal;
 import java.time.Clock;
 import java.time.Instant;
 import java.time.LocalDate;
+import java.time.ZoneId;
 import java.time.ZoneOffset;
 import java.util.UUID;
 
@@ -77,6 +78,20 @@ class UpdateTransactionTest {
                 .isInstanceOf(ResourceNotFoundException.class);
     }
 
+    @Test
+    @DisplayName("Permite editar no último dia até a meia-noite de São Paulo")
+    void allowsUpdateUntilSaoPauloMonthBoundary() {
+        Clock brazilClock = Clock.fixed(Instant.parse("2026-11-01T00:30:00Z"),
+                ZoneId.of("America/Sao_Paulo"));
+        UpdateTransaction brazilUpdate = new UpdateTransaction(transactions, brazilClock);
+        transactions.transactions.put(TRANSACTION_ID,
+                transaction(LocalDate.of(2026, 10, 31), CURRENT_VERSION));
+
+        Transaction result = brazilUpdate.execute(command(CURRENT_VERSION, LocalDate.of(2026, 10, 31)));
+
+        assertThat(result.getDate()).isEqualTo(LocalDate.of(2026, 10, 31));
+        assertThat(transactions.updates).isEqualTo(1);
+    }
     private Transaction transaction(LocalDate date, Instant updatedAt) {
         return Transaction.restore(TRANSACTION_ID, USER_ID, Money.of("20.00", "BRL"), date,
                 Category.of("Comida"), TransactionType.EXPENSE, null, updatedAt);

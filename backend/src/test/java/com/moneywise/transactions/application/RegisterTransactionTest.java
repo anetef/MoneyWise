@@ -7,6 +7,7 @@ import java.math.BigDecimal;
 import java.time.Clock;
 import java.time.Instant;
 import java.time.LocalDate;
+import java.time.ZoneId;
 import java.time.ZoneOffset;
 import java.util.Currency;
 import java.util.UUID;
@@ -68,6 +69,31 @@ class RegisterTransactionTest {
         assertThat(transactions.saves).isZero();
     }
 
+    @Test
+    @DisplayName("Considera o mês de São Paulo antes da meia-noite local")
+    void acceptsLastDayBeforeSaoPauloMidnight() {
+        Clock brazilClock = Clock.fixed(Instant.parse("2026-11-01T00:30:00Z"),
+                ZoneId.of("America/Sao_Paulo"));
+        RegisterTransaction brazilRegister = new RegisterTransaction(transactions, brazilClock);
+
+        Transaction result = brazilRegister.execute(command(LocalDate.of(2026, 10, 31)));
+
+        assertThat(result.getDate()).isEqualTo(LocalDate.of(2026, 10, 31));
+        assertThat(transactions.saves).isEqualTo(1);
+    }
+
+    @Test
+    @DisplayName("Fecha o mês anterior depois da meia-noite de São Paulo")
+    void rejectsLastDayAfterSaoPauloMidnight() {
+        Clock brazilClock = Clock.fixed(Instant.parse("2026-11-01T03:00:00Z"),
+                ZoneId.of("America/Sao_Paulo"));
+        RegisterTransaction brazilRegister = new RegisterTransaction(transactions, brazilClock);
+
+        assertThatThrownBy(() -> brazilRegister.execute(command(LocalDate.of(2026, 10, 31))))
+                .isInstanceOf(BusinessRuleException.class)
+                .hasFieldOrPropertyWithValue("code", RegisterTransaction.TRANSACTION_MONTH_CLOSED);
+        assertThat(transactions.saves).isZero();
+    }
     private RegisterTransactionCommand command(LocalDate date) {
         return new RegisterTransactionCommand(TRANSACTION_ID, USER_ID, new BigDecimal("12.50"), date,
                 " Comida ", TransactionType.EXPENSE, "  Almoço  ");

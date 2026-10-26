@@ -6,6 +6,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import java.time.Clock;
 import java.time.Instant;
 import java.time.LocalDate;
+import java.time.ZoneId;
 import java.time.ZoneOffset;
 import java.util.UUID;
 
@@ -50,6 +51,19 @@ class DeleteTransactionTest {
         assertThat(transactions.deletes).isZero();
     }
 
+    @Test
+    @DisplayName("Permite excluir no último dia até a meia-noite de São Paulo")
+    void allowsDeleteUntilSaoPauloMonthBoundary() {
+        Clock brazilClock = Clock.fixed(Instant.parse("2026-11-01T00:30:00Z"),
+                ZoneId.of("America/Sao_Paulo"));
+        DeleteTransaction brazilDelete = new DeleteTransaction(transactions, brazilClock);
+        transactions.transactions.put(TRANSACTION_ID, transaction(LocalDate.of(2026, 10, 31)));
+
+        brazilDelete.execute(TRANSACTION_ID, USER_ID);
+
+        assertThat(transactions.deletes).isEqualTo(1);
+        assertThat(transactions.transactions).doesNotContainKey(TRANSACTION_ID);
+    }
     private Transaction transaction(LocalDate date) {
         return Transaction.restore(TRANSACTION_ID, USER_ID, Money.of("20.00", "BRL"), date,
                 Category.of("Comida"), TransactionType.EXPENSE, null, Instant.parse("2026-10-10T12:00:00Z"));
