@@ -54,6 +54,7 @@ public class TransactionController {
 
     @PostMapping
     @Operation(
+            operationId = "createTransaction",
             summary = "Criar transação",
             description = "Cria transação com ID do cliente; reenvio do mesmo ID pelo mesmo usuário é idempotente. "
                     + "A moeda vem do perfil. Transações de mês fechado são rejeitadas.")
@@ -81,6 +82,7 @@ public class TransactionController {
 
     @PutMapping("/{id}")
     @Operation(
+            operationId = "updateTransaction",
             summary = "Editar transação",
             description = "Atualiza transação própria. updatedAt evita que uma alteração antiga sobrescreva a "
                     + "mais recente; registros de outro usuário ou de mês fechado não são editáveis.")
@@ -106,6 +108,7 @@ public class TransactionController {
     @DeleteMapping("/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     @Operation(
+            operationId = "deleteTransaction",
             summary = "Excluir transação",
             description = "Exclui transação própria. Registro de outro usuário retorna 404; mês fechado não pode ser excluído.")
     @ApiResponses({
