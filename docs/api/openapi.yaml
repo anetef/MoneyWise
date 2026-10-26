@@ -26,7 +26,9 @@ servers:
   description: Generated server url
 tags:
 - name: Transações
-  description: "Criação, edição e exclusão de transações do usuário autenticado"
+  description: "Consulta, criação, edição e exclusão de transações do usuário autenticado"
+- name: Relatórios
+  description: Resumo financeiro mensal do usuário autenticado
 - name: Autenticação
   description: Cadastro e login
 paths:
@@ -177,6 +179,73 @@ paths:
       security:
       - BearerAuth: []
   /api/v1/transactions:
+    get:
+      tags:
+      - Transações
+      summary: Listar transações
+      description: Lista apenas as transações do usuário autenticado, com filtros combináveis e período válido. A ordenação é por data e ID decrescentes. A página começa em zero; o tamanho padrão é 20 e o máximo é 100.
+      operationId: listTransactions
+      parameters:
+      - name: category
+        in: query
+        description: Filtro opcional por categoria; espaços externos são removidos
+        required: false
+        schema:
+          type: string
+      - name: from
+        in: query
+        description: Data inicial inclusiva no formato AAAA-MM-DD
+        required: false
+        schema:
+          type: string
+          format: date
+      - name: to
+        in: query
+        description: Data final inclusiva no formato AAAA-MM-DD
+        required: false
+        schema:
+          type: string
+          format: date
+      - name: page
+        in: query
+        description: Índice da página, começando em zero
+        required: false
+        schema:
+          type: integer
+          format: int32
+          default: 0
+          minimum: 0
+      - name: size
+        in: query
+        description: Quantidade de itens por página (1 a 100)
+        required: false
+        schema:
+          type: integer
+          format: int32
+          default: 20
+          minimum: 1
+          maximum: 100
+      responses:
+        "200":
+          description: Página de transações
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/TransactionPageResponseDTO"
+        "400":
+          description: Filtros ou paginação inválidos
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "401":
+          description: Não autenticado
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+      security:
+      - BearerAuth: []
     post:
       tags:
       - Transações
@@ -246,6 +315,49 @@ paths:
             '*/*':
               schema:
                 $ref: "#/components/schemas/TransactionResponseDTO"
+      security:
+      - BearerAuth: []
+  /api/v1/reports/monthly:
+    get:
+      tags:
+      - Relatórios
+      summary: Consultar resumo mensal
+      description: Retorna receitas, despesas, saldo e despesas por categoria no mês informado. Os valores usam a moeda do perfil e consideram somente o usuário autenticado.
+      operationId: getMonthlyTransactionSummary
+      parameters:
+      - name: month
+        in: query
+        description: Mês no formato AAAA-MM
+        required: true
+        example: 2026-10
+        schema:
+          type: string
+          pattern: '^\d{4}-(0[1-9]|1[0-2])$'
+      responses:
+        "200":
+          description: Resumo mensal
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/MonthlyTransactionSummaryResponseDTO"
+        "400":
+          description: Mês inválido
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "401":
+          description: Não autenticado
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: Usuário não encontrado
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
       security:
       - BearerAuth: []
   /api/v1/auth/verify-email:
@@ -752,6 +864,76 @@ components:
         updatedAt:
           type: string
           format: date-time
+    TransactionPageResponseDTO:
+      type: object
+      properties:
+        content:
+          type: array
+          items:
+            $ref: "#/components/schemas/TransactionResponseDTO"
+        page:
+          type: integer
+          format: int32
+        size:
+          type: integer
+          format: int32
+        totalElements:
+          type: integer
+          format: int64
+        totalPages:
+          type: integer
+          format: int32
+        hasNext:
+          type: boolean
+      required:
+      - content
+      - page
+      - size
+      - totalElements
+      - totalPages
+      - hasNext
+    MonthlyTransactionSummaryResponseDTO:
+      type: object
+      properties:
+        month:
+          type: string
+          pattern: '^\d{4}-\d{2}$'
+          example: 2026-10
+        currency:
+          type: string
+          example: BRL
+        totalIncome:
+          type: number
+          example: 3500.00
+        totalExpense:
+          type: number
+          example: 1200.50
+        balance:
+          type: number
+          example: 2299.50
+        expensesByCategory:
+          type: array
+          items:
+            $ref: "#/components/schemas/CategoryExpenseDTO"
+      required:
+      - month
+      - currency
+      - totalIncome
+      - totalExpense
+      - balance
+      - expensesByCategory
+    CategoryExpenseDTO:
+      type: object
+      properties:
+        category:
+          type: string
+          example: Alimentação
+        amount:
+          type: number
+          example: 450.00
+      required:
+      - category
+      - amount
     CreateTransactionRequestDTO:
       type: object
       properties:

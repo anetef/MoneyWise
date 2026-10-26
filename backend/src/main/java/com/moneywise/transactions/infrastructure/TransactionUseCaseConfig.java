@@ -9,6 +9,8 @@ import org.springframework.context.annotation.Configuration;
 
 import com.moneywise.transactions.application.port.TransactionRepository;
 import com.moneywise.transactions.application.usecase.delete.DeleteTransaction;
+import com.moneywise.transactions.application.usecase.list.ListTransactions;
+import com.moneywise.transactions.application.usecase.monthly.GetMonthlyTransactionSummary;
 import com.moneywise.transactions.application.usecase.register.RegisterTransaction;
 import com.moneywise.transactions.application.usecase.update.UpdateTransaction;
 
@@ -25,6 +27,16 @@ public class TransactionUseCaseConfig {
     RegisterTransaction registerTransaction(TransactionRepository transactions,
             @Qualifier("transactionBusinessClock") Clock clock) {
         return new RegisterTransaction(transactions, clock);
+    }
+
+    @Bean
+    ListTransactions listTransactions(TransactionRepository transactions) {
+        return new ListTransactions(transactions);
+    }
+
+    @Bean
+    GetMonthlyTransactionSummary getMonthlyTransactionSummary(TransactionRepository transactions) {
+        return new GetMonthlyTransactionSummary(transactions);
     }
 
     @Bean

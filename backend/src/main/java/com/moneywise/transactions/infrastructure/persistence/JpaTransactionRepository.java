@@ -7,13 +7,17 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
+import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.moneywise.shared.exception.ResourceNotFoundException;
+import com.moneywise.transactions.application.port.TransactionAggregate;
+import com.moneywise.transactions.application.port.TransactionPage;
 import com.moneywise.transactions.application.port.TransactionRepository;
 import com.moneywise.transactions.domain.Category;
 import com.moneywise.transactions.domain.Transaction;
+import com.moneywise.transactions.domain.TransactionType;
 
 import jakarta.persistence.EntityManager;
 
@@ -71,9 +75,21 @@ public class JpaTransactionRepository implements TransactionRepository {
     }
 
     @Override
-    public List<Transaction> findByUserIdAndFilters(UUID userId, Category category, LocalDate from, LocalDate to) {
+    public TransactionPage findPageByUserIdAndFilters(UUID userId, Category category, LocalDate from, LocalDate to,
+            int page, int size) {
         String categoryName = category == null ? null : category.name();
-        return springData.findRowsByUserIdAndFilters(userId, categoryName, from, to).stream()
-                .map(TransactionMapper::toDomain).toList();
+        var result = springData.findPageRowsByUserIdAndFilters(userId, categoryName, from, to,
+                PageRequest.of(page, size));
+        return new TransactionPage(result.getContent().stream().map(TransactionMapper::toDomain).toList(), page, size,
+                result.getTotalElements(), result.getTotalPages(), result.hasNext());
+    }
+
+    @Override
+    public List<TransactionAggregate> findMonthlyAggregatesByUserIdAndPeriod(UUID userId, LocalDate fromInclusive,
+            LocalDate toExclusive) {
+        return springData.findMonthlyAggregatesByUserIdAndPeriod(userId, fromInclusive, toExclusive).stream()
+                .map(row -> new TransactionAggregate(TransactionType.valueOf(row.getType()), row.getCategory(),
+                        row.getAmount()))
+                .toList();
     }
 }
