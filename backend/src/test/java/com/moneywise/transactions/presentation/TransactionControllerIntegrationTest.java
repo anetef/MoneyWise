@@ -3,6 +3,7 @@ package com.moneywise.transactions.presentation;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.security.test.web.servlet.setup.SecurityMockMvcConfigurers.springSecurity;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -45,6 +46,7 @@ import org.springframework.security.test.web.servlet.request.SecurityMockMvcRequ
 class TransactionControllerIntegrationTest {
 
     private static final String TRANSACTIONS_URL = "/api/v1/transactions";
+    private static final String MONTHLY_SUMMARY_URL = "/api/v1/reports/monthly";
 
     @Autowired
     private WebApplicationContext context;
@@ -82,6 +84,79 @@ class TransactionControllerIntegrationTest {
     }
 
     @Test
+    @DisplayName("Lista transações paginadas com filtros combináveis e isolamento por usuário")
+    void listsFilteredTransactionsForCurrentUserOnly() throws Exception {
+        UUID ownerId = newUser("BRL");
+        UUID otherId = newUser("BRL");
+        Transaction newest = saveTransaction(ownerId, "10.00", "Comida", TransactionType.EXPENSE,
+                LocalDate.of(2026, 10, 20));
+        saveTransaction(ownerId, "20.00", "Comida", TransactionType.EXPENSE, LocalDate.of(2026, 10, 18));
+        saveTransaction(ownerId, "30.00", "Casa", TransactionType.EXPENSE, LocalDate.of(2026, 10, 19));
+        saveTransaction(otherId, "40.00", "Comida", TransactionType.EXPENSE, LocalDate.of(2026, 10, 21));
+
+        mockMvc.perform(get(TRANSACTIONS_URL).with(asUser(ownerId))
+                        .param("category", " Comida ")
+                        .param("from", "2026-10-18")
+                        .param("to", "2026-10-20")
+                        .param("page", "0")
+                        .param("size", "1"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.content.length()").value(1))
+                .andExpect(jsonPath("$.content[0].id").value(newest.getId().toString()))
+                .andExpect(jsonPath("$.page").value(0))
+                .andExpect(jsonPath("$.size").value(1))
+                .andExpect(jsonPath("$.totalElements").value(2))
+                .andExpect(jsonPath("$.totalPages").value(2))
+                .andExpect(jsonPath("$.hasNext").value(true));
+
+        mockMvc.perform(get(TRANSACTIONS_URL).with(asUser(ownerId)).param("size", "101"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("INVALID_PARAMETER"));
+        mockMvc.perform(get(TRANSACTIONS_URL).with(asUser(ownerId))
+                        .param("from", "2026-10-20").param("to", "2026-10-01"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("INVALID_PARAMETER"));
+    }
+
+    @Test
+    @DisplayName("Resumo mensal usa apenas transações do mês e do usuário autenticado")
+    void summarizesOnlyTheRequestedMonthAndUser() throws Exception {
+        UUID ownerId = newUser("BRL");
+        UUID otherId = newUser("BRL");
+        saveTransaction(ownerId, "1000.00", "Salário", TransactionType.INCOME,
+                LocalDate.of(2026, 10, 2));
+        saveTransaction(ownerId, "80.00", "Comida", TransactionType.EXPENSE,
+                LocalDate.of(2026, 10, 5));
+        saveTransaction(ownerId, "20.00", "Comida", TransactionType.EXPENSE,
+                LocalDate.of(2026, 10, 6));
+        saveTransaction(ownerId, "50.00", "Casa", TransactionType.EXPENSE,
+                LocalDate.of(2026, 10, 7));
+        saveTransaction(ownerId, "900.00", "Salário", TransactionType.INCOME,
+                LocalDate.of(2026, 9, 2));
+        saveTransaction(otherId, "700.00", "Salário", TransactionType.INCOME,
+                LocalDate.of(2026, 10, 2));
+        saveTransaction(otherId, "500.00", "Comida", TransactionType.EXPENSE,
+                LocalDate.of(2026, 10, 3));
+
+        mockMvc.perform(get(MONTHLY_SUMMARY_URL).with(asUser(ownerId)).param("month", "2026-10"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.month").value("2026-10"))
+                .andExpect(jsonPath("$.currency").value("BRL"))
+                .andExpect(jsonPath("$.totalIncome").value(1000.00))
+                .andExpect(jsonPath("$.totalExpense").value(150.00))
+                .andExpect(jsonPath("$.balance").value(850.00))
+                .andExpect(jsonPath("$.expensesByCategory.length()").value(2))
+                .andExpect(jsonPath("$.expensesByCategory[0].category").value("Comida"))
+                .andExpect(jsonPath("$.expensesByCategory[0].amount").value(100.00))
+                .andExpect(jsonPath("$.expensesByCategory[1].category").value("Casa"))
+                .andExpect(jsonPath("$.expensesByCategory[1].amount").value(50.00));
+
+        mockMvc.perform(get(MONTHLY_SUMMARY_URL).with(asUser(ownerId)).param("month", "2026-13"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("INVALID_PARAMETER"));
+    }
+
+    @Test
     @DisplayName("Repetir a criação com o mesmo ID do usuário não duplica nem sobrescreve")
     void retriesCreateIdempotently() throws Exception {
         UUID userId = newUser("BRL");
@@ -93,7 +168,7 @@ class TransactionControllerIntegrationTest {
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.amount").value(10.00));
 
-        assertThat(transactions.findByUserIdAndFilters(userId, null, null, null))
+        assertThat(transactions.findPageByUserIdAndFilters(userId, null, null, null, 0, 100).content())
                 .extracting(Transaction::getId).containsExactly(id);
     }
 
@@ -221,6 +296,12 @@ class TransactionControllerIntegrationTest {
         LocalDate date = YearMonth.now().minusMonths(1).atEndOfMonth();
         return transactions.save(Transaction.create(id, userId, Money.of("10.00", "BRL"), date,
                 Category.of("Comida"), TransactionType.EXPENSE));
+    }
+
+    private Transaction saveTransaction(UUID userId, String amount, String category, TransactionType type,
+            LocalDate date) {
+        return transactions.save(Transaction.create(UUID.randomUUID(), userId, Money.of(amount, "BRL"), date,
+                Category.of(category), type));
     }
 
     private ResultActions create(UUID userId, UUID id, LocalDate date, String amount) throws Exception {

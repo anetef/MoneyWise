@@ -1,31 +1,38 @@
 package com.moneywise.transactions.presentation;
 
 import java.net.URI;
+import java.time.LocalDate;
 import java.util.UUID;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.format.annotation.DateTimeFormat;
 
 import com.moneywise.shared.web.CurrentUserId;
 import com.moneywise.shared.web.ErrorResponse;
 import com.moneywise.transactions.application.usecase.delete.DeleteTransaction;
+import com.moneywise.transactions.application.usecase.list.ListTransactions;
 import com.moneywise.transactions.application.usecase.register.RegisterTransaction;
 import com.moneywise.transactions.application.usecase.register.RegisterTransactionCommand;
 import com.moneywise.transactions.application.usecase.update.UpdateTransaction;
 import com.moneywise.transactions.application.usecase.update.UpdateTransactionCommand;
 import com.moneywise.transactions.presentation.dto.CreateTransactionRequestDTO;
+import com.moneywise.transactions.presentation.dto.TransactionPageResponseDTO;
 import com.moneywise.transactions.presentation.dto.TransactionResponseDTO;
 import com.moneywise.transactions.presentation.dto.UpdateTransactionRequestDTO;
 
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
@@ -37,19 +44,56 @@ import jakarta.validation.Valid;
 /** Endpoints autenticados para criar, editar e excluir transações. */
 @RestController
 @RequestMapping("/transactions")
-@Tag(name = "Transações", description = "Criação, edição e exclusão de transações do usuário autenticado")
+@Tag(name = "Transações", description = "Consulta e manutenção de transações do usuário autenticado")
 @SecurityRequirement(name = "BearerAuth")
 public class TransactionController {
 
     private final RegisterTransaction registerTransaction;
     private final UpdateTransaction updateTransaction;
     private final DeleteTransaction deleteTransaction;
+    private final ListTransactions listTransactions;
 
     public TransactionController(RegisterTransaction registerTransaction, UpdateTransaction updateTransaction,
-            DeleteTransaction deleteTransaction) {
+            DeleteTransaction deleteTransaction, ListTransactions listTransactions) {
         this.registerTransaction = registerTransaction;
         this.updateTransaction = updateTransaction;
         this.deleteTransaction = deleteTransaction;
+        this.listTransactions = listTransactions;
+    }
+
+    @GetMapping
+    @Operation(operationId = "listTransactions", summary = "Listar transações",
+            description = "Lista apenas as transações do usuário autenticado, com filtros combináveis. "
+                    + "A ordenação é por data e ID decrescentes. A página começa em zero; o tamanho padrão é 20 e o máximo é 100.")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Página de transações",
+                    content = @Content(schema = @Schema(implementation = TransactionPageResponseDTO.class))),
+            @ApiResponse(responseCode = "400", description = "Filtros ou paginação inválidos",
+                    content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
+            @ApiResponse(responseCode = "401", description = "Não autenticado",
+                    content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
+    })
+    public ResponseEntity<?> list(
+            @Parameter(description = "Filtro opcional por categoria; espaços externos são removidos")
+            @RequestParam(required = false) String category,
+            @Parameter(description = "Data inicial inclusiva no formato AAAA-MM-DD", example = "2026-10-01")
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate from,
+            @Parameter(description = "Data final inclusiva no formato AAAA-MM-DD", example = "2026-10-31")
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate to,
+            @Parameter(description = "Índice da página, começando em zero", example = "0")
+            @RequestParam(defaultValue = "0") int page,
+            @Parameter(description = "Quantidade de itens por página (1 a 100)", example = "20")
+            @RequestParam(defaultValue = "20") int size,
+            @CurrentUserId UUID userId) {
+        if (page < 0 || size < 1 || size > ListTransactions.MAX_PAGE_SIZE
+                || (from != null && to != null && from.isAfter(to))) {
+            return ResponseEntity.badRequest()
+                    .body(ErrorResponse.of("INVALID_PARAMETER",
+                            "Use page >= 0, size entre 1 e 100 e um período em que from seja anterior ou igual a to."));
+        }
+
+        return ResponseEntity.ok(TransactionPageResponseDTO.from(
+                listTransactions.execute(userId, category, from, to, page, size)));
     }
 
     @PostMapping

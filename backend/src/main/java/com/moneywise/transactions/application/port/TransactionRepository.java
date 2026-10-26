@@ -24,5 +24,9 @@ public interface TransactionRepository {
 
     Optional<Transaction> findByIdAndUserId(UUID id, UUID userId);
 
-    List<Transaction> findByUserIdAndFilters(UUID userId, Category category, LocalDate from, LocalDate to);
+    TransactionPage findPageByUserIdAndFilters(UUID userId, Category category, LocalDate from, LocalDate to,
+            int page, int size);
+
+    List<TransactionAggregate> findMonthlyAggregatesByUserIdAndPeriod(UUID userId, LocalDate fromInclusive,
+            LocalDate toExclusive);
 }

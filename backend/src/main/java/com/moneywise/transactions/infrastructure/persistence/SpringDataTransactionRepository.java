@@ -11,6 +11,8 @@ import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.data.repository.Repository;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 
 /**
  * Consultas JPA. Leituras de transações sempre são limitadas ao usuário, sem expor findAll ou findById.
@@ -54,18 +56,38 @@ public interface SpringDataTransactionRepository extends Repository<TransactionE
     Optional<TransactionRow> findRowByIdAndUserId(@Param("id") UUID id, @Param("userId") UUID userId);
 
     @Query(value = """
-            SELECT t.id AS id, t.user_id AS \"userId\", t.amount AS amount, t.date AS date,
+            SELECT t.id AS id, t.user_id AS "userId", t.amount AS amount, t.date AS date,
                    t.category AS category, t.type AS type, t.description AS description,
-                   t.updated_at AS \"updatedAt\",
-                   u.currency AS \"currency\"
+                   t.updated_at AS "updatedAt", u.currency AS "currency"
               FROM transactions t JOIN users u ON u.id = t.user_id
              WHERE t.user_id = :userId
                AND (CAST(:category AS text) IS NULL OR t.category = :category)
                AND (CAST(:fromDate AS date) IS NULL OR t.date >= :fromDate)
                AND (CAST(:toDate AS date) IS NULL OR t.date <= :toDate)
-             ORDER BY t.date DESC, t.id
+             ORDER BY t.date DESC, t.id DESC
+            """,
+            countQuery = """
+            SELECT COUNT(*)
+              FROM transactions t
+             WHERE t.user_id = :userId
+               AND (CAST(:category AS text) IS NULL OR t.category = :category)
+               AND (CAST(:fromDate AS date) IS NULL OR t.date >= :fromDate)
+               AND (CAST(:toDate AS date) IS NULL OR t.date <= :toDate)
             """, nativeQuery = true)
-    List<TransactionRow> findRowsByUserIdAndFilters(@Param("userId") UUID userId,
+    Page<TransactionRow> findPageRowsByUserIdAndFilters(@Param("userId") UUID userId,
             @Param("category") String category, @Param("fromDate") LocalDate fromDate,
-            @Param("toDate") LocalDate toDate);
+            @Param("toDate") LocalDate toDate, Pageable pageable);
+
+    @Query(value = """
+            SELECT t.type AS "type",
+                   CASE WHEN t.type = 'EXPENSE' THEN t.category ELSE NULL END AS "category",
+                   SUM(t.amount) AS "amount"
+              FROM transactions t
+             WHERE t.user_id = :userId
+               AND t.date >= :fromDate
+               AND t.date < :toDate
+             GROUP BY t.type, CASE WHEN t.type = 'EXPENSE' THEN t.category ELSE NULL END
+            """, nativeQuery = true)
+    List<TransactionAggregateRow> findMonthlyAggregatesByUserIdAndPeriod(@Param("userId") UUID userId,
+            @Param("fromDate") LocalDate fromDate, @Param("toDate") LocalDate toDate);
 }
