@@ -1,5 +1,6 @@
 package com.moneywise.transactions.domain;
 
+import java.time.Instant;
 import java.time.LocalDate;
 import java.util.Objects;
 import java.util.UUID;
@@ -17,9 +18,10 @@ public final class Transaction {
     private final Category category;
     private final TransactionType type;
     private final String description;
+    private final Instant updatedAt;
 
     private Transaction(UUID id, UUID userId, Money amount, LocalDate date, Category category,
-            TransactionType type, String description) {
+            TransactionType type, String description, Instant updatedAt) {
         this.id = Objects.requireNonNull(id, "O id da transação é obrigatório.");
         this.userId = Objects.requireNonNull(userId, "O usuário da transação é obrigatório.");
         this.amount = Objects.requireNonNull(amount, "O valor da transação é obrigatório.");
@@ -30,6 +32,7 @@ public final class Transaction {
         this.category = Objects.requireNonNull(category, "A categoria da transação é obrigatória.");
         this.type = Objects.requireNonNull(type, "O tipo da transação é obrigatório.");
         this.description = description == null || description.isBlank() ? null : description.strip();
+        this.updatedAt = updatedAt;
     }
 
     public static Transaction create(UUID id, UUID userId, Money amount, LocalDate date, Category category,
@@ -39,7 +42,13 @@ public final class Transaction {
 
     public static Transaction create(UUID id, UUID userId, Money amount, LocalDate date, Category category,
             TransactionType type, String description) {
-        return new Transaction(id, userId, amount, date, category, type, description);
+        return new Transaction(id, userId, amount, date, category, type, description, null);
+    }
+
+    public static Transaction restore(UUID id, UUID userId, Money amount, LocalDate date, Category category,
+            TransactionType type, String description, Instant updatedAt) {
+        return new Transaction(id, userId, amount, date, category, type, description,
+                Objects.requireNonNull(updatedAt, "A data da última atualização é obrigatória."));
     }
 
     public UUID getId() {
@@ -68,6 +77,10 @@ public final class Transaction {
 
     public String getDescription() {
         return description;
+    }
+
+    public Instant getUpdatedAt() {
+        return updatedAt;
     }
 
     @Override

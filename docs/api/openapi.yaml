@@ -25,9 +25,229 @@ servers:
 - url: http://localhost:8080
   description: Generated server url
 tags:
+- name: Transações
+  description: "Criação, edição e exclusão de transações do usuário autenticado"
 - name: Autenticação
   description: Cadastro e login
 paths:
+  /api/v1/transactions/{id}:
+    put:
+      tags:
+      - Transações
+      summary: Editar transação
+      description: Atualiza transação própria. updatedAt evita que uma alteração antiga
+        sobrescreva a mais recente; registros de outro usuário ou de mês fechado não
+        são editáveis.
+      operationId: updateTransaction
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateTransactionRequestDTO"
+        required: true
+      responses:
+        "404":
+          description: Transação não encontrada
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "403":
+          description: Forbidden
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "409":
+          description: Conflict
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "422":
+          description: Transação em mês fechado
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "400":
+          description: Dados inválidos
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: Internal Server Error
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "401":
+          description: Não autenticado
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "429":
+          description: Too Many Requests
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "200":
+          description: Transação atualizada ou versão mais recente devolvida
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/TransactionResponseDTO"
+      security:
+      - BearerAuth: []
+    delete:
+      tags:
+      - Transações
+      summary: Excluir transação
+      description: Exclui transação própria. Registro de outro usuário retorna 404;
+        mês fechado não pode ser excluído.
+      operationId: deleteTransaction
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        "404":
+          description: Transação não encontrada
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "403":
+          description: Forbidden
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "409":
+          description: Conflict
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "422":
+          description: Transação em mês fechado
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "400":
+          description: Bad Request
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: Internal Server Error
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "401":
+          description: Não autenticado
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "429":
+          description: Too Many Requests
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "204":
+          description: Transação excluída
+      security:
+      - BearerAuth: []
+  /api/v1/transactions:
+    post:
+      tags:
+      - Transações
+      summary: Criar transação
+      description: Cria transação com ID do cliente; reenvio do mesmo ID pelo mesmo
+        usuário é idempotente. A moeda vem do perfil. Transações de mês fechado são
+        rejeitadas.
+      operationId: createTransaction
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateTransactionRequestDTO"
+        required: true
+      responses:
+        "404":
+          description: Usuário não encontrado ou ID pertence a outro usuário
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "403":
+          description: Forbidden
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "409":
+          description: Conflict
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "422":
+          description: Transação em mês fechado
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "400":
+          description: Dados inválidos
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: Internal Server Error
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "401":
+          description: Não autenticado
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "429":
+          description: Too Many Requests
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "201":
+          description: Transação criada
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/TransactionResponseDTO"
+      security:
+      - BearerAuth: []
   /api/v1/auth/verify-email:
     post:
       tags:
@@ -479,6 +699,87 @@ components:
           type: string
         message:
           type: string
+    UpdateTransactionRequestDTO:
+      type: object
+      properties:
+        amount:
+          type: number
+          minimum: 0.01
+        date:
+          type: string
+          format: date
+        category:
+          type: string
+          minLength: 1
+        type:
+          type: string
+          enum:
+          - INCOME
+          - EXPENSE
+        description:
+          type: string
+        updatedAt:
+          type: string
+          format: date-time
+      required:
+      - amount
+      - category
+      - date
+      - type
+      - updatedAt
+    TransactionResponseDTO:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        amount:
+          type: number
+        currency:
+          type: string
+        date:
+          type: string
+          format: date
+        category:
+          type: string
+        type:
+          type: string
+          enum:
+          - INCOME
+          - EXPENSE
+        description:
+          type: string
+        updatedAt:
+          type: string
+          format: date-time
+    CreateTransactionRequestDTO:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        amount:
+          type: number
+          minimum: 0.01
+        date:
+          type: string
+          format: date
+        category:
+          type: string
+          minLength: 1
+        type:
+          type: string
+          enum:
+          - INCOME
+          - EXPENSE
+        description:
+          type: string
+      required:
+      - amount
+      - category
+      - date
+      - id
+      - type
     VerifyEmailRequestDTO:
       type: object
       properties:
