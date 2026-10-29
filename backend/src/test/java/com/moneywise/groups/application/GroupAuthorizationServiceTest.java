@@ -14,6 +14,7 @@ import com.moneywise.groups.application.port.GroupMemberRepository;
 import com.moneywise.groups.domain.GroupMember;
 import com.moneywise.groups.domain.Role;
 import com.moneywise.shared.exception.ForbiddenOperationException;
+import com.moneywise.shared.exception.ResourceNotFoundException;
 
 class GroupAuthorizationServiceTest {
 
@@ -42,8 +43,10 @@ class GroupAuthorizationServiceTest {
         assertThat(authorization.isAdmin(groupId, adminId)).isTrue();
         assertThat(authorization.isAdmin(groupId, memberId)).isFalse();
         assertThatThrownBy(() -> authorization.requireMember(groupId, UUID.randomUUID()))
-                .isInstanceOf(ForbiddenOperationException.class);
+                .isInstanceOf(ResourceNotFoundException.class);
         assertThatThrownBy(() -> authorization.requireAdmin(groupId, memberId))
                 .isInstanceOf(ForbiddenOperationException.class);
+        assertThatThrownBy(() -> authorization.requireAdmin(groupId, UUID.randomUUID()))
+                .isInstanceOf(ResourceNotFoundException.class);
     }
 }

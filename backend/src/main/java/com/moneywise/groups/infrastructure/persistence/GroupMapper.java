@@ -14,11 +14,11 @@ final class GroupMapper {
         List<GroupMember> members = memberEntities.stream()
                 .map(member -> new GroupMember(member.getUserId(), member.getRole(), member.getJoinedAt()))
                 .toList();
-        return Group.restore(entity.getId(), entity.getName(), entity.getAdminId(), entity.getCreatedAt(), members);
+        return Group.restore(entity.getId(), entity.getName(), entity.getCreatedAt(), members);
     }
 
     static GroupEntity toEntity(Group group) {
-        return new GroupEntity(group.getId(), group.getName(), group.getAdminId(), group.getCreatedAt());
+        return new GroupEntity(group.getId(), group.getName(), group.getCreatedAt());
     }
 
     static GroupMember toDomain(GroupMemberEntity entity) {

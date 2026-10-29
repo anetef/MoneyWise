@@ -3,6 +3,9 @@ package com.moneywise.groups.infrastructure.persistence;
 import java.time.Instant;
 import java.util.UUID;
 
+import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.UpdateTimestamp;
+
 import com.moneywise.groups.domain.Role;
 
 import jakarta.persistence.Column;
@@ -34,6 +37,14 @@ public class GroupMemberEntity {
     @Column(name = "joined_at", nullable = false, updatable = false)
     private Instant joinedAt;
 
+    @CreationTimestamp
+    @Column(name = "created_at", nullable = false, updatable = false)
+    private Instant createdAt;
+
+    @UpdateTimestamp
+    @Column(name = "updated_at", nullable = false)
+    private Instant updatedAt;
+
     protected GroupMemberEntity() {
     }
 
@@ -42,10 +53,13 @@ public class GroupMemberEntity {
         this.userId = userId;
         this.role = role;
         this.joinedAt = joinedAt;
+        this.createdAt = joinedAt;
     }
 
     public UUID getGroupId() { return groupId; }
     public UUID getUserId() { return userId; }
     public Role getRole() { return role; }
     public Instant getJoinedAt() { return joinedAt; }
+    public Instant getCreatedAt() { return createdAt; }
+    public Instant getUpdatedAt() { return updatedAt; }
 }

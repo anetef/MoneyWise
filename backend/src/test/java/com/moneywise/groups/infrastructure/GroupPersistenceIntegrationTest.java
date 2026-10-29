@@ -3,6 +3,7 @@ package com.moneywise.groups.infrastructure;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import java.sql.Timestamp;
 import java.time.Instant;
 import java.util.Currency;
 import java.util.UUID;
@@ -97,8 +98,8 @@ class GroupPersistenceIntegrationTest {
     }
 
     @Test
-    @DisplayName("Convite usa código único e expira exatamente sete dias após a criação")
-    void invitationCodeIsUniqueAndExpiresAfterSevenDays() {
+    @DisplayName("Convite aceita prazo calculado pela aplicação e exige código único")
+    void invitationExpirationIsProvidedByApplicationAndCodeIsUnique() {
         User admin = newUser("grp01-invite-admin@example.com");
         UUID groupId = UUID.randomUUID();
         groups.save(Group.create(groupId, "Convites", admin.getId(), Instant.now()));
@@ -106,16 +107,19 @@ class GroupPersistenceIntegrationTest {
         UUID invitationId = UUID.randomUUID();
         String code = "GRP01-" + UUID.randomUUID();
 
-        jdbc.update("INSERT INTO group_invitations (id, code, group_id, invited_by) VALUES (?, ?, ?, ?)",
-                invitationId, code, groupId, admin.getId());
+        Instant createdAt = Instant.parse("2026-03-01T10:00:00Z");
+        Instant expiresAt = createdAt.plusSeconds(14L * 24 * 60 * 60);
+        jdbc.update("INSERT INTO group_invitations (id, code, group_id, invited_by, created_at, expires_at) "
+                        + "VALUES (?, ?, ?, ?, ?, ?)",
+                invitationId, code, groupId, admin.getId(), Timestamp.from(createdAt), Timestamp.from(expiresAt));
 
-        Boolean expiresInSevenDays = jdbc.queryForObject(
-                "SELECT expires_at = created_at + INTERVAL '7 days' FROM group_invitations WHERE id = ?",
-                Boolean.class, invitationId);
-        assertThat(expiresInSevenDays).isTrue();
+        Boolean expirationWasStored = jdbc.queryForObject(
+                "SELECT expires_at = ? FROM group_invitations WHERE id = ?",
+                Boolean.class, Timestamp.from(expiresAt), invitationId);
+        assertThat(expirationWasStored).isTrue();
         assertThatThrownBy(() -> jdbc.update(
-                "INSERT INTO group_invitations (id, code, group_id, invited_by) VALUES (?, ?, ?, ?)",
-                UUID.randomUUID(), code, groupId, admin.getId()))
+                "INSERT INTO group_invitations (id, code, group_id, invited_by, expires_at) VALUES (?, ?, ?, ?, ?)",
+                UUID.randomUUID(), code, groupId, admin.getId(), Timestamp.from(expiresAt)))
                 .isInstanceOf(DataIntegrityViolationException.class);
     }
 

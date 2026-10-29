@@ -40,14 +40,6 @@ public final class Group {
         return new Group(id, name, createdAt, members);
     }
 
-    public static Group restore(UUID id, String name, UUID adminId, Instant createdAt, List<GroupMember> members) {
-        Group group = new Group(id, name, createdAt, members);
-        if (!group.isAdmin(adminId)) {
-            throw new IllegalArgumentException("admin_id precisa corresponder ao membro com papel ADMIN.");
-        }
-        return group;
-    }
-
     public UUID getId() {
         return id;
     }
@@ -145,7 +137,8 @@ public final class Group {
         Objects.requireNonNull(name, "name não pode ser nulo");
         String normalized = name.trim();
         if (normalized.isEmpty() || normalized.length() > 100) {
-            throw new IllegalArgumentException("O nome do grupo deve ter entre 1 e 100 caracteres.");
+            throw new BusinessRuleException("INVALID_GROUP_NAME",
+                    "O nome do grupo deve ter entre 1 e 100 caracteres.");
         }
         return normalized;
     }

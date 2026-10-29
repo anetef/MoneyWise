@@ -25,7 +25,7 @@ public class JpaGroupRepository implements GroupRepository {
     @Transactional
     public Group save(Group group) {
         GroupEntity saved = groups.save(GroupMapper.toEntity(group));
-        members.deleteByGroupIdAndUserIdNotIn(group.getId(),
+        members.deleteMembersNotIn(group.getId(),
                 group.getMembers().stream().map(member -> member.userId()).toList());
         for (var member : group.getMembers()) {
             members.save(GroupMapper.toEntity(group.getId(), member));

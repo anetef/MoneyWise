@@ -3,6 +3,9 @@ package com.moneywise.groups.infrastructure.persistence;
 import java.time.Instant;
 import java.util.UUID;
 
+import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.UpdateTimestamp;
+
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
@@ -19,24 +22,25 @@ public class GroupEntity {
     @Column(nullable = false, length = 100)
     private String name;
 
-    @Column(name = "admin_id", nullable = false)
-    private UUID adminId;
-
+    @CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt;
+
+    @UpdateTimestamp
+    @Column(name = "updated_at", nullable = false)
+    private Instant updatedAt;
 
     protected GroupEntity() {
     }
 
-    GroupEntity(UUID id, String name, UUID adminId, Instant createdAt) {
+    GroupEntity(UUID id, String name, Instant createdAt) {
         this.id = id;
         this.name = name;
-        this.adminId = adminId;
         this.createdAt = createdAt;
     }
 
     public UUID getId() { return id; }
     public String getName() { return name; }
-    public UUID getAdminId() { return adminId; }
     public Instant getCreatedAt() { return createdAt; }
+    public Instant getUpdatedAt() { return updatedAt; }
 }
