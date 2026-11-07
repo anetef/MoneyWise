@@ -31,6 +31,8 @@ tags:
   description: Resumo financeiro mensal do usuário autenticado
 - name: Autenticação
   description: Cadastro e login
+- name: Grupos
+  description: "Grupos e Caixinhas do usuário autenticado, membros e convites"
 paths:
   /api/v1/transactions/{id}:
     put:
@@ -791,6 +793,317 @@ paths:
             '*/*':
               schema:
                 $ref: "#/components/schemas/LoginResponseDTO"
+  /api/v1/groups:
+    get:
+      tags:
+      - Grupos
+      summary: Listar grupos
+      description: Lista apenas os grupos e Caixinhas de que o usuário autenticado participa, do mais antigo para o mais recente, com os membros de cada um.
+      operationId: listGroups
+      responses:
+        "200":
+          description: Grupos do usuário
+          content:
+            '*/*':
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/GroupResponseDTO"
+        "401":
+          description: Não autenticado
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+      security:
+      - BearerAuth: []
+    post:
+      tags:
+      - Grupos
+      summary: Criar grupo
+      description: Cria um grupo com ID do cliente; o usuário autenticado vira o Admin. Reenvio do mesmo ID por quem já participa do grupo devolve o grupo existente, sem duplicar. ID de grupo de que o usuário não participa responde 404.
+      operationId: createGroup
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateGroupRequestDTO"
+        required: true
+      responses:
+        "201":
+          description: Grupo criado (ou já existente, no reenvio)
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/GroupResponseDTO"
+        "400":
+          description: Dados inválidos
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "401":
+          description: Não autenticado
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: Usuário não encontrado ou ID pertence a outro grupo
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "422":
+          description: Nome do grupo inválido
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+      security:
+      - BearerAuth: []
+  /api/v1/groups/{id}:
+    get:
+      tags:
+      - Grupos
+      summary: Detalhar grupo
+      description: Detalha um grupo e seus membros. Quem não participa do grupo recebe 404.
+      operationId: getGroup
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        "200":
+          description: Grupo encontrado
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/GroupResponseDTO"
+        "401":
+          description: Não autenticado
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: Grupo não encontrado
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+      security:
+      - BearerAuth: []
+  /api/v1/groups/{id}/members/{memberId}:
+    delete:
+      tags:
+      - Grupos
+      summary: Remover membro
+      description: Somente o Admin remove membros (RN04). Se o Admin remover a si mesmo, o membro mais antigo vira Admin (L-10). O removido perde o acesso ao grupo e às suas metas.
+      operationId: removeGroupMember
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - name: memberId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        "204":
+          description: Membro removido
+        "401":
+          description: Não autenticado
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "403":
+          description: Usuário não é o Admin do grupo
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: Grupo ou membro não encontrado
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "422":
+          description: O Admin é o único membro do grupo
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+      security:
+      - BearerAuth: []
+  /api/v1/groups/{id}/members/me:
+    delete:
+      tags:
+      - Grupos
+      summary: Sair do grupo
+      description: O usuário autenticado sai do grupo (L-09). Se for o Admin, o membro mais antigo vira Admin (L-10). O único membro do grupo não pode sair.
+      operationId: leaveGroup
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        "204":
+          description: Usuário saiu do grupo
+        "401":
+          description: Não autenticado
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: Grupo não encontrado
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "422":
+          description: Usuário é o único membro do grupo
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+      security:
+      - BearerAuth: []
+  /api/v1/groups/{id}/invitations:
+    post:
+      tags:
+      - Grupos
+      summary: Gerar convite
+      description: Gera um código de convite de uso único, válido por 7 dias (L-05). Somente o Admin convida (L-10).
+      operationId: createGroupInvitation
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        "201":
+          description: Convite gerado
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/GroupInvitationResponseDTO"
+        "401":
+          description: Não autenticado
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "403":
+          description: Usuário não é o Admin do grupo
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: Grupo não encontrado
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+      security:
+      - BearerAuth: []
+  /api/v1/invitations/{code}:
+    get:
+      tags:
+      - Grupos
+      summary: Consultar convite
+      description: Mostra o nome do grupo, quem convidou, a quantidade de membros e a validade, antes do aceite. Não expõe a lista de membros nem dados financeiros.
+      operationId: getGroupInvitation
+      parameters:
+      - name: code
+        in: path
+        required: true
+        schema:
+          type: string
+      responses:
+        "200":
+          description: Convite válido
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/InvitationPreviewResponseDTO"
+        "401":
+          description: Não autenticado
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: Convite não encontrado
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "422":
+          description: Convite expirado ou já aceito
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+      security:
+      - BearerAuth: []
+  /api/v1/invitations/{code}/accept:
+    post:
+      tags:
+      - Grupos
+      summary: Aceitar convite
+      description: Inclui o usuário autenticado como membro do grupo. O convite é de uso único e vale 7 dias. Quem já participa do grupo recebe o grupo, sem duplicar o membro, e o convite continua disponível para outra pessoa.
+      operationId: acceptGroupInvitation
+      parameters:
+      - name: code
+        in: path
+        required: true
+        schema:
+          type: string
+      responses:
+        "200":
+          description: Usuário é membro do grupo
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/GroupResponseDTO"
+        "401":
+          description: Não autenticado
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: Convite não encontrado
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "422":
+          description: Convite expirado ou já aceito
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+      security:
+      - BearerAuth: []
 components:
   schemas:
     ErrorResponse:
@@ -1071,6 +1384,90 @@ components:
       required:
       - email
       - password
+    CreateGroupRequestDTO:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: UUID gerado no app; reenviar o mesmo ID não duplica o grupo
+        name:
+          type: string
+          description: Nome do grupo ou da Caixinha
+          example: Viagem de fim de ano
+          maxLength: 100
+          minLength: 0
+      required:
+      - id
+      - name
+    GroupMemberResponseDTO:
+      type: object
+      properties:
+        userId:
+          type: string
+          format: uuid
+        name:
+          type: string
+        role:
+          type: string
+          enum:
+          - ADMIN
+          - MEMBER
+        joinedAt:
+          type: string
+          format: date-time
+    GroupResponseDTO:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        adminId:
+          type: string
+          format: uuid
+        createdAt:
+          type: string
+          format: date-time
+        members:
+          type: array
+          items:
+            $ref: "#/components/schemas/GroupMemberResponseDTO"
+    GroupInvitationResponseDTO:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        code:
+          type: string
+        groupId:
+          type: string
+          format: uuid
+        expiresAt:
+          type: string
+          format: date-time
+    InvitationPreviewResponseDTO:
+      type: object
+      properties:
+        code:
+          type: string
+        groupId:
+          type: string
+          format: uuid
+        groupName:
+          type: string
+        invitedByName:
+          type: string
+        memberCount:
+          type: integer
+          format: int32
+        expiresAt:
+          type: string
+          format: date-time
+        alreadyMember:
+          type: boolean
   securitySchemes:
     BearerAuth:
       type: http

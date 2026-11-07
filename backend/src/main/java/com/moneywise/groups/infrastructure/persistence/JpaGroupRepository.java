@@ -1,7 +1,10 @@
 package com.moneywise.groups.infrastructure.persistence;
 
+import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
@@ -38,5 +41,21 @@ public class JpaGroupRepository implements GroupRepository {
     public Optional<Group> findById(UUID id) {
         return groups.findById(id)
                 .map(entity -> GroupMapper.toDomain(entity, members.findByGroupIdOrderByJoinedAtAscUserIdAsc(id)));
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<Group> findAllByMemberId(UUID userId) {
+        List<GroupEntity> entities = groups.findAllByMemberUserId(userId);
+        if (entities.isEmpty()) {
+            return List.of();
+        }
+        Map<UUID, List<GroupMemberEntity>> membersByGroup = members
+                .findByGroupIdInOrderByJoinedAtAscUserIdAsc(entities.stream().map(GroupEntity::getId).toList())
+                .stream()
+                .collect(Collectors.groupingBy(GroupMemberEntity::getGroupId));
+        return entities.stream()
+                .map(entity -> GroupMapper.toDomain(entity, membersByGroup.getOrDefault(entity.getId(), List.of())))
+                .toList();
     }
 }

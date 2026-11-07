@@ -87,9 +87,23 @@ public final class Group {
         ensureAdmin(actorId, "Somente o Admin pode alterar o valor da meta.");
     }
 
+    /** L-10: somente o Admin pode convidar novos membros. */
+    public void ensureCanInvite(UUID actorId) {
+        ensureAdmin(actorId, "Somente o Admin pode convidar membros.");
+    }
+
     /** RN04: somente o Admin pode remover membros; se remover a si mesmo, aplica L-10. */
     public Group removeMember(UUID actorId, UUID memberId) {
         ensureAdmin(actorId, "Somente o Admin pode remover membros.");
+        return withoutMember(memberId);
+    }
+
+    /** L-09: qualquer membro pode sair; se quem sai é o Admin, aplica L-10. */
+    public Group leave(UUID userId) {
+        return withoutMember(userId);
+    }
+
+    private Group withoutMember(UUID memberId) {
         GroupMember target = members.stream()
                 .filter(member -> member.userId().equals(memberId))
                 .findFirst()
