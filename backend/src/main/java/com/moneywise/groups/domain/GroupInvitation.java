@@ -49,13 +49,18 @@ public final class GroupInvitation {
         return !Objects.requireNonNull(now, "now não pode ser nulo").isBefore(expiresAt);
     }
 
-    public GroupInvitation accept(Instant now) {
+    /** Garante que o convite ainda pode ser aceito: pendente e dentro dos 7 dias. */
+    public void ensureUsable(Instant now) {
         if (status != GroupInvitationStatus.PENDING) {
             throw new BusinessRuleException("GROUP_INVITATION_NOT_PENDING", "Este convite não está pendente.");
         }
         if (isExpired(now)) {
             throw new BusinessRuleException("GROUP_INVITATION_EXPIRED", "Este convite expirou.");
         }
+    }
+
+    public GroupInvitation accept(Instant now) {
+        ensureUsable(now);
         return new GroupInvitation(id, code, groupId, invitedBy, createdAt, expiresAt,
                 GroupInvitationStatus.ACCEPTED);
     }

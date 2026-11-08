@@ -11,6 +11,7 @@ import org.junit.jupiter.api.Test;
 
 import com.moneywise.shared.exception.BusinessRuleException;
 import com.moneywise.shared.exception.ForbiddenOperationException;
+import com.moneywise.shared.exception.ResourceNotFoundException;
 
 class GroupTest {
 
@@ -92,5 +93,64 @@ class GroupTest {
                 .isInstanceOf(BusinessRuleException.class)
                 .hasFieldOrPropertyWithValue("code", "GROUP_LAST_MEMBER_CANNOT_LEAVE");
         assertThat(group.getAdminId()).isEqualTo(adminId);
+    }
+
+    @Test
+    @DisplayName("Membro comum sai do grupo sem alterar o Admin")
+    void memberLeavesWithoutChangingAdmin() {
+        UUID adminId = UUID.randomUUID();
+        UUID memberId = UUID.randomUUID();
+        Group group = Group.create(UUID.randomUUID(), "Casa", adminId, CREATED_AT)
+                .addMember(memberId, CREATED_AT.plusSeconds(1));
+
+        Group afterLeave = group.leave(memberId);
+
+        assertThat(afterLeave.isMember(memberId)).isFalse();
+        assertThat(afterLeave.getAdminId()).isEqualTo(adminId);
+        assertThat(afterLeave.getMembers()).hasSize(1);
+    }
+
+    @Test
+    @DisplayName("Admin que sai pelo endpoint de sair passa o papel ao membro mais antigo (L-10)")
+    void adminLeavingPromotesOldestMember() {
+        UUID adminId = UUID.randomUUID();
+        UUID oldest = UUID.randomUUID();
+        UUID newer = UUID.randomUUID();
+        Group group = Group.create(UUID.randomUUID(), "Viagem", adminId, CREATED_AT)
+                .addMember(newer, CREATED_AT.plusSeconds(20))
+                .addMember(oldest, CREATED_AT.plusSeconds(10));
+
+        Group afterLeave = group.leave(adminId);
+
+        assertThat(afterLeave.isMember(adminId)).isFalse();
+        assertThat(afterLeave.getAdminId()).isEqualTo(oldest);
+        assertThat(afterLeave.isAdmin(newer)).isFalse();
+    }
+
+    @Test
+    @DisplayName("Único membro não pode sair e não membro não encontra o grupo")
+    void soleMemberCannotLeaveAndOutsiderIsNotFound() {
+        UUID adminId = UUID.randomUUID();
+        Group group = Group.create(UUID.randomUUID(), "Individual", adminId, CREATED_AT);
+
+        assertThatThrownBy(() -> group.leave(adminId))
+                .isInstanceOf(BusinessRuleException.class)
+                .hasFieldOrPropertyWithValue("code", "GROUP_LAST_MEMBER_CANNOT_LEAVE");
+        assertThatThrownBy(() -> group.leave(UUID.randomUUID()))
+                .isInstanceOf(ResourceNotFoundException.class);
+    }
+
+    @Test
+    @DisplayName("Somente o Admin pode convidar membros (L-10)")
+    void onlyAdminCanInvite() {
+        UUID adminId = UUID.randomUUID();
+        UUID memberId = UUID.randomUUID();
+        Group group = Group.create(UUID.randomUUID(), "Casa", adminId, CREATED_AT)
+                .addMember(memberId, CREATED_AT.plusSeconds(1));
+
+        group.ensureCanInvite(adminId);
+        assertThatThrownBy(() -> group.ensureCanInvite(memberId))
+                .isInstanceOf(ForbiddenOperationException.class)
+                .hasFieldOrPropertyWithValue("code", "GROUP_ADMIN_REQUIRED");
     }
 }

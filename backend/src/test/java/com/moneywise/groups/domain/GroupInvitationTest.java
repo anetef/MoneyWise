@@ -44,6 +44,19 @@ class GroupInvitationTest {
                 .hasFieldOrPropertyWithValue("code", "GROUP_INVITATION_NOT_PENDING");
     }
 
+    @Test
+    @DisplayName("Valida o convite sem aceitá-lo, para a consulta pelo código")
+    void validatesUsabilityWithoutAccepting() {
+        GroupInvitation invitation = newInvitation();
+
+        invitation.ensureUsable(CREATED_AT.plusSeconds(1));
+
+        assertThat(invitation.getStatus()).isEqualTo(GroupInvitationStatus.PENDING);
+        assertThatThrownBy(() -> invitation.ensureUsable(CREATED_AT.plus(8, ChronoUnit.DAYS)))
+                .isInstanceOf(BusinessRuleException.class)
+                .hasFieldOrPropertyWithValue("code", "GROUP_INVITATION_EXPIRED");
+    }
+
     private GroupInvitation newInvitation() {
         return GroupInvitation.create(UUID.randomUUID(), "convite-123", UUID.randomUUID(), UUID.randomUUID(),
                 CREATED_AT);
