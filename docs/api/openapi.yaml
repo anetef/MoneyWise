@@ -25,14 +25,16 @@ servers:
 - url: http://localhost:8080
   description: Generated server url
 tags:
+- name: Grupos
+  description: "Grupos e Caixinhas do usuário autenticado, membros e convites"
 - name: Transações
-  description: "Consulta, criação, edição e exclusão de transações do usuário autenticado"
+  description: Consulta e manutenção de transações do usuário autenticado
 - name: Relatórios
   description: Resumo financeiro mensal do usuário autenticado
 - name: Autenticação
   description: Cadastro e login
-- name: Grupos
-  description: "Grupos e Caixinhas do usuário autenticado, membros e convites"
+- name: Metas
+  description: Caixinhas dos grupos e Termômetro
 paths:
   /api/v1/transactions/{id}:
     put:
@@ -185,7 +187,9 @@ paths:
       tags:
       - Transações
       summary: Listar transações
-      description: Lista apenas as transações do usuário autenticado, com filtros combináveis e período válido. A ordenação é por data e ID decrescentes. A página começa em zero; o tamanho padrão é 20 e o máximo é 100.
+      description: "Lista apenas as transações do usuário autenticado, com filtros\
+        \ combináveis. A ordenação é por data e ID decrescentes. A página começa em\
+        \ zero; o tamanho padrão é 20 e o máximo é 100."
       operationId: listTransactions
       parameters:
       - name: category
@@ -201,6 +205,7 @@ paths:
         schema:
           type: string
           format: date
+        example: 2026-10-01
       - name: to
         in: query
         description: Data final inclusiva no formato AAAA-MM-DD
@@ -208,15 +213,16 @@ paths:
         schema:
           type: string
           format: date
+        example: 2026-10-31
       - name: page
         in: query
-        description: Índice da página, começando em zero
+        description: "Índice da página, começando em zero"
         required: false
         schema:
           type: integer
           format: int32
           default: 0
-          minimum: 0
+        example: 0
       - name: size
         in: query
         description: Quantidade de itens por página (1 a 100)
@@ -225,17 +231,40 @@ paths:
           type: integer
           format: int32
           default: 20
-          minimum: 1
-          maximum: 100
+        example: 20
       responses:
-        "200":
-          description: Página de transações
+        "404":
+          description: Not Found
           content:
             '*/*':
               schema:
-                $ref: "#/components/schemas/TransactionPageResponseDTO"
+                $ref: "#/components/schemas/ErrorResponse"
+        "403":
+          description: Forbidden
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "409":
+          description: Conflict
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "422":
+          description: Unprocessable Content
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
         "400":
           description: Filtros ou paginação inválidos
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: Internal Server Error
           content:
             '*/*':
               schema:
@@ -246,6 +275,18 @@ paths:
             '*/*':
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
+        "429":
+          description: Too Many Requests
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "200":
+          description: Página de transações
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/TransactionPageResponseDTO"
       security:
       - BearerAuth: []
     post:
@@ -319,31 +360,54 @@ paths:
                 $ref: "#/components/schemas/TransactionResponseDTO"
       security:
       - BearerAuth: []
-  /api/v1/reports/monthly:
-    get:
+  /api/v1/invitations/{code}/accept:
+    post:
       tags:
-      - Relatórios
-      summary: Consultar resumo mensal
-      description: Retorna receitas, despesas, saldo e despesas por categoria no mês informado. Os valores usam a moeda do perfil e consideram somente o usuário autenticado.
-      operationId: getMonthlyTransactionSummary
+      - Grupos
+      summary: Aceitar convite
+      description: "Inclui o usuário autenticado como membro do grupo. O convite é\
+        \ de uso único e vale 7 dias. Quem já participa do grupo recebe o grupo, sem\
+        \ duplicar o membro, e o convite continua disponível para outra pessoa."
+      operationId: acceptGroupInvitation
       parameters:
-      - name: month
-        in: query
-        description: Mês no formato AAAA-MM
+      - name: code
+        in: path
         required: true
-        example: 2026-10
         schema:
           type: string
-          pattern: '^\d{4}-(0[1-9]|1[0-2])$'
       responses:
-        "200":
-          description: Resumo mensal
+        "404":
+          description: Convite não encontrado
           content:
             '*/*':
               schema:
-                $ref: "#/components/schemas/MonthlyTransactionSummaryResponseDTO"
+                $ref: "#/components/schemas/ErrorResponse"
+        "403":
+          description: Forbidden
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "409":
+          description: Conflict
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "422":
+          description: Convite expirado ou já aceito
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
         "400":
-          description: Mês inválido
+          description: Bad Request
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: Internal Server Error
           content:
             '*/*':
               schema:
@@ -354,12 +418,310 @@ paths:
             '*/*':
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
-        "404":
-          description: Usuário não encontrado
+        "429":
+          description: Too Many Requests
           content:
             '*/*':
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
+        "200":
+          description: Usuário é membro do grupo
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/GroupResponseDTO"
+      security:
+      - BearerAuth: []
+  /api/v1/groups:
+    get:
+      tags:
+      - Grupos
+      summary: Listar grupos
+      description: "Lista apenas os grupos e Caixinhas de que o usuário autenticado\
+        \ participa, do mais antigo para o mais recente, com os membros de cada um."
+      operationId: listGroups
+      responses:
+        "404":
+          description: Not Found
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "403":
+          description: Forbidden
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "409":
+          description: Conflict
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "422":
+          description: Unprocessable Content
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "400":
+          description: Bad Request
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: Internal Server Error
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "401":
+          description: Não autenticado
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "429":
+          description: Too Many Requests
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "200":
+          description: Grupos do usuário
+          content:
+            '*/*':
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/GroupResponseDTO"
+      security:
+      - BearerAuth: []
+    post:
+      tags:
+      - Grupos
+      summary: Criar grupo
+      description: "Cria um grupo com ID do cliente; o usuário autenticado vira o\
+        \ Admin. Reenvio do mesmo ID por quem já participa do grupo devolve o grupo\
+        \ existente, sem duplicar. ID de grupo de que o usuário não participa responde\
+        \ 404."
+      operationId: createGroup
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateGroupRequestDTO"
+        required: true
+      responses:
+        "404":
+          description: Usuário não encontrado ou ID pertence a outro grupo
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "403":
+          description: Forbidden
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "409":
+          description: Conflict
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "422":
+          description: Nome do grupo inválido
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "400":
+          description: Dados inválidos
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: Internal Server Error
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "401":
+          description: Não autenticado
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "429":
+          description: Too Many Requests
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "201":
+          description: "Grupo criado (ou já existente, no reenvio)"
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/GroupResponseDTO"
+      security:
+      - BearerAuth: []
+  /api/v1/groups/{id}/invitations:
+    post:
+      tags:
+      - Grupos
+      summary: Gerar convite
+      description: "Gera um código de convite de uso único, válido por 7 dias (L-05).\
+        \ Somente o Admin convida (L-10)."
+      operationId: createGroupInvitation
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        "404":
+          description: Grupo não encontrado
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "403":
+          description: Usuário não é o Admin do grupo
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "409":
+          description: Conflict
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "422":
+          description: Unprocessable Content
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "400":
+          description: Bad Request
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: Internal Server Error
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "401":
+          description: Não autenticado
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "429":
+          description: Too Many Requests
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "201":
+          description: Convite gerado
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/GroupInvitationResponseDTO"
+      security:
+      - BearerAuth: []
+  /api/v1/groups/{groupId}/goals:
+    post:
+      tags:
+      - Metas
+      summary: Criar meta
+      description: "Cria uma Caixinha no grupo. Só o Admin cria metas (L-17). A moeda\
+        \ da meta é a moeda do perfil de quem cria (AD-12). O id é gerado no app:\
+        \ o reenvio com o mesmo id por um membro do mesmo grupo devolve a meta existente,\
+        \ sem alterá-la, também com 201 (seção 6.4, N4). A Caixinha individual é uma\
+        \ meta num grupo com um membro só (L-06)."
+      operationId: create
+      parameters:
+      - name: groupId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateGoalRequestDTO"
+        required: true
+      responses:
+        "404":
+          description: "Grupo não encontrado, ou id de meta de outro grupo"
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "403":
+          description: Membro que não é Admin (L-17)
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "409":
+          description: Conflict
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "422":
+          description: Prazo no passado (INVALID_GOAL_DEADLINE)
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "400":
+          description: "Dados inválidos (ex.: valor da meta zero ou negativo)"
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: Internal Server Error
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "401":
+          description: Não autenticado
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "429":
+          description: Too Many Requests
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "201":
+          description: "Meta criada (ou já existente, no reenvio)"
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/GoalResponseDTO"
       security:
       - BearerAuth: []
   /api/v1/auth/verify-email:
@@ -793,73 +1155,149 @@ paths:
             '*/*':
               schema:
                 $ref: "#/components/schemas/LoginResponseDTO"
-  /api/v1/groups:
+  /api/v1/reports/monthly:
     get:
       tags:
-      - Grupos
-      summary: Listar grupos
-      description: Lista apenas os grupos e Caixinhas de que o usuário autenticado participa, do mais antigo para o mais recente, com os membros de cada um.
-      operationId: listGroups
-      responses:
-        "200":
-          description: Grupos do usuário
-          content:
-            '*/*':
-              schema:
-                type: array
-                items:
-                  $ref: "#/components/schemas/GroupResponseDTO"
-        "401":
-          description: Não autenticado
-          content:
-            '*/*':
-              schema:
-                $ref: "#/components/schemas/ErrorResponse"
-      security:
-      - BearerAuth: []
-    post:
-      tags:
-      - Grupos
-      summary: Criar grupo
-      description: Cria um grupo com ID do cliente; o usuário autenticado vira o Admin. Reenvio do mesmo ID por quem já participa do grupo devolve o grupo existente, sem duplicar. ID de grupo de que o usuário não participa responde 404.
-      operationId: createGroup
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: "#/components/schemas/CreateGroupRequestDTO"
+      - Relatórios
+      summary: Consultar resumo mensal
+      description: "Retorna receitas, despesas, saldo e despesas por categoria no\
+        \ mês informado. Os valores usam a moeda do perfil e consideram somente o\
+        \ usuário autenticado."
+      operationId: getMonthlyTransactionSummary
+      parameters:
+      - name: month
+        in: query
+        description: Mês no formato AAAA-MM
         required: true
+        schema:
+          type: string
+        example: 2026-10
       responses:
-        "201":
-          description: Grupo criado (ou já existente, no reenvio)
-          content:
-            '*/*':
-              schema:
-                $ref: "#/components/schemas/GroupResponseDTO"
-        "400":
-          description: Dados inválidos
-          content:
-            '*/*':
-              schema:
-                $ref: "#/components/schemas/ErrorResponse"
-        "401":
-          description: Não autenticado
-          content:
-            '*/*':
-              schema:
-                $ref: "#/components/schemas/ErrorResponse"
         "404":
-          description: Usuário não encontrado ou ID pertence a outro grupo
+          description: Usuário não encontrado
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "403":
+          description: Forbidden
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "409":
+          description: Conflict
           content:
             '*/*':
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
         "422":
-          description: Nome do grupo inválido
+          description: Unprocessable Content
           content:
             '*/*':
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
+        "400":
+          description: Mês inválido
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: Internal Server Error
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "401":
+          description: Não autenticado
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "429":
+          description: Too Many Requests
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "200":
+          description: Resumo mensal
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/MonthlyTransactionSummaryResponseDTO"
+      security:
+      - BearerAuth: []
+  /api/v1/invitations/{code}:
+    get:
+      tags:
+      - Grupos
+      summary: Consultar convite
+      description: "Mostra o nome do grupo, quem convidou, a quantidade de membros\
+        \ e a validade, antes do aceite. Não expõe a lista de membros nem dados financeiros."
+      operationId: getGroupInvitation
+      parameters:
+      - name: code
+        in: path
+        required: true
+        schema:
+          type: string
+      responses:
+        "404":
+          description: Convite não encontrado
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "403":
+          description: Forbidden
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "409":
+          description: Conflict
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "422":
+          description: Convite expirado ou já aceito
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "400":
+          description: Bad Request
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: Internal Server Error
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "401":
+          description: Não autenticado
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "429":
+          description: Too Many Requests
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "200":
+          description: Convite válido
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/InvitationPreviewResponseDTO"
       security:
       - BearerAuth: []
   /api/v1/groups/{id}:
@@ -867,7 +1305,8 @@ paths:
       tags:
       - Grupos
       summary: Detalhar grupo
-      description: Detalha um grupo e seus membros. Quem não participa do grupo recebe 404.
+      description: Detalha um grupo e seus membros. Quem não participa do grupo recebe
+        404.
       operationId: getGroup
       parameters:
       - name: id
@@ -877,24 +1316,134 @@ paths:
           type: string
           format: uuid
       responses:
-        "200":
-          description: Grupo encontrado
-          content:
-            '*/*':
-              schema:
-                $ref: "#/components/schemas/GroupResponseDTO"
-        "401":
-          description: Não autenticado
-          content:
-            '*/*':
-              schema:
-                $ref: "#/components/schemas/ErrorResponse"
         "404":
           description: Grupo não encontrado
           content:
             '*/*':
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
+        "403":
+          description: Forbidden
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "409":
+          description: Conflict
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "422":
+          description: Unprocessable Content
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "400":
+          description: Bad Request
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: Internal Server Error
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "401":
+          description: Não autenticado
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "429":
+          description: Too Many Requests
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "200":
+          description: Grupo encontrado
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/GroupResponseDTO"
+      security:
+      - BearerAuth: []
+  /api/v1/goals/{id}/thermometer:
+    get:
+      tags:
+      - Metas
+      summary: Consultar Termômetro
+      description: "Estado atual da meta: valor acumulado (entradas − retiradas),\
+        \ valor da meta, prazo, percentual, status (AD-11) e quanto cada membro acumulou\
+        \ (RF-14). O resultado é o mesmo para todos os membros (RN01). Usado també\
+        m na reconexão do app (seção 6.2). Só membros do grupo acessam."
+      operationId: thermometer
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        "404":
+          description: Meta não encontrada ou de um grupo do qual não é membro
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "403":
+          description: Forbidden
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "409":
+          description: Conflict
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "422":
+          description: Unprocessable Content
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "400":
+          description: Bad Request
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: Internal Server Error
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "401":
+          description: Não autenticado
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "429":
+          description: Too Many Requests
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "200":
+          description: Termômetro atual
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ThermometerResponseDTO"
       security:
       - BearerAuth: []
   /api/v1/groups/{id}/members/{memberId}:
@@ -902,7 +1451,9 @@ paths:
       tags:
       - Grupos
       summary: Remover membro
-      description: Somente o Admin remove membros (RN04). Se o Admin remover a si mesmo, o membro mais antigo vira Admin (L-10). O removido perde o acesso ao grupo e às suas metas.
+      description: "Somente o Admin remove membros (RN04). Se o Admin remover a si\
+        \ mesmo, o membro mais antigo vira Admin (L-10). O removido perde o acesso\
+        \ ao grupo e às suas metas."
       operationId: removeGroupMember
       parameters:
       - name: id
@@ -918,10 +1469,8 @@ paths:
           type: string
           format: uuid
       responses:
-        "204":
-          description: Membro removido
-        "401":
-          description: Não autenticado
+        "404":
+          description: Grupo ou membro não encontrado
           content:
             '*/*':
               schema:
@@ -932,8 +1481,8 @@ paths:
             '*/*':
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
-        "404":
-          description: Grupo ou membro não encontrado
+        "409":
+          description: Conflict
           content:
             '*/*':
               schema:
@@ -944,6 +1493,32 @@ paths:
             '*/*':
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
+        "400":
+          description: Bad Request
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: Internal Server Error
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "401":
+          description: Não autenticado
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "429":
+          description: Too Many Requests
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "204":
+          description: Membro removido
       security:
       - BearerAuth: []
   /api/v1/groups/{id}/members/me:
@@ -951,7 +1526,8 @@ paths:
       tags:
       - Grupos
       summary: Sair do grupo
-      description: O usuário autenticado sai do grupo (L-09). Se for o Admin, o membro mais antigo vira Admin (L-10). O único membro do grupo não pode sair.
+      description: "O usuário autenticado sai do grupo (L-09). Se for o Admin, o membro\
+        \ mais antigo vira Admin (L-10). O único membro do grupo não pode sair."
       operationId: leaveGroup
       parameters:
       - name: id
@@ -961,16 +1537,20 @@ paths:
           type: string
           format: uuid
       responses:
-        "204":
-          description: Usuário saiu do grupo
-        "401":
-          description: Não autenticado
+        "404":
+          description: Grupo não encontrado
           content:
             '*/*':
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
-        "404":
-          description: Grupo não encontrado
+        "403":
+          description: Forbidden
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "409":
+          description: Conflict
           content:
             '*/*':
               schema:
@@ -981,127 +1561,32 @@ paths:
             '*/*':
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
-      security:
-      - BearerAuth: []
-  /api/v1/groups/{id}/invitations:
-    post:
-      tags:
-      - Grupos
-      summary: Gerar convite
-      description: Gera um código de convite de uso único, válido por 7 dias (L-05). Somente o Admin convida (L-10).
-      operationId: createGroupInvitation
-      parameters:
-      - name: id
-        in: path
-        required: true
-        schema:
-          type: string
-          format: uuid
-      responses:
-        "201":
-          description: Convite gerado
+        "400":
+          description: Bad Request
           content:
             '*/*':
               schema:
-                $ref: "#/components/schemas/GroupInvitationResponseDTO"
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: Internal Server Error
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
         "401":
           description: Não autenticado
           content:
             '*/*':
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
-        "403":
-          description: Usuário não é o Admin do grupo
+        "429":
+          description: Too Many Requests
           content:
             '*/*':
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
-        "404":
-          description: Grupo não encontrado
-          content:
-            '*/*':
-              schema:
-                $ref: "#/components/schemas/ErrorResponse"
-      security:
-      - BearerAuth: []
-  /api/v1/invitations/{code}:
-    get:
-      tags:
-      - Grupos
-      summary: Consultar convite
-      description: Mostra o nome do grupo, quem convidou, a quantidade de membros e a validade, antes do aceite. Não expõe a lista de membros nem dados financeiros.
-      operationId: getGroupInvitation
-      parameters:
-      - name: code
-        in: path
-        required: true
-        schema:
-          type: string
-      responses:
-        "200":
-          description: Convite válido
-          content:
-            '*/*':
-              schema:
-                $ref: "#/components/schemas/InvitationPreviewResponseDTO"
-        "401":
-          description: Não autenticado
-          content:
-            '*/*':
-              schema:
-                $ref: "#/components/schemas/ErrorResponse"
-        "404":
-          description: Convite não encontrado
-          content:
-            '*/*':
-              schema:
-                $ref: "#/components/schemas/ErrorResponse"
-        "422":
-          description: Convite expirado ou já aceito
-          content:
-            '*/*':
-              schema:
-                $ref: "#/components/schemas/ErrorResponse"
-      security:
-      - BearerAuth: []
-  /api/v1/invitations/{code}/accept:
-    post:
-      tags:
-      - Grupos
-      summary: Aceitar convite
-      description: Inclui o usuário autenticado como membro do grupo. O convite é de uso único e vale 7 dias. Quem já participa do grupo recebe o grupo, sem duplicar o membro, e o convite continua disponível para outra pessoa.
-      operationId: acceptGroupInvitation
-      parameters:
-      - name: code
-        in: path
-        required: true
-        schema:
-          type: string
-      responses:
-        "200":
-          description: Usuário é membro do grupo
-          content:
-            '*/*':
-              schema:
-                $ref: "#/components/schemas/GroupResponseDTO"
-        "401":
-          description: Não autenticado
-          content:
-            '*/*':
-              schema:
-                $ref: "#/components/schemas/ErrorResponse"
-        "404":
-          description: Convite não encontrado
-          content:
-            '*/*':
-              schema:
-                $ref: "#/components/schemas/ErrorResponse"
-        "422":
-          description: Convite expirado ou já aceito
-          content:
-            '*/*':
-              schema:
-                $ref: "#/components/schemas/ErrorResponse"
+        "204":
+          description: Usuário saiu do grupo
       security:
       - BearerAuth: []
 components:
@@ -1177,76 +1662,6 @@ components:
         updatedAt:
           type: string
           format: date-time
-    TransactionPageResponseDTO:
-      type: object
-      properties:
-        content:
-          type: array
-          items:
-            $ref: "#/components/schemas/TransactionResponseDTO"
-        page:
-          type: integer
-          format: int32
-        size:
-          type: integer
-          format: int32
-        totalElements:
-          type: integer
-          format: int64
-        totalPages:
-          type: integer
-          format: int32
-        hasNext:
-          type: boolean
-      required:
-      - content
-      - page
-      - size
-      - totalElements
-      - totalPages
-      - hasNext
-    MonthlyTransactionSummaryResponseDTO:
-      type: object
-      properties:
-        month:
-          type: string
-          pattern: '^\d{4}-\d{2}$'
-          example: 2026-10
-        currency:
-          type: string
-          example: BRL
-        totalIncome:
-          type: number
-          example: 3500.00
-        totalExpense:
-          type: number
-          example: 1200.50
-        balance:
-          type: number
-          example: 2299.50
-        expensesByCategory:
-          type: array
-          items:
-            $ref: "#/components/schemas/CategoryExpenseDTO"
-      required:
-      - month
-      - currency
-      - totalIncome
-      - totalExpense
-      - balance
-      - expensesByCategory
-    CategoryExpenseDTO:
-      type: object
-      properties:
-        category:
-          type: string
-          example: Alimentação
-        amount:
-          type: number
-          example: 450.00
-      required:
-      - category
-      - amount
     CreateTransactionRequestDTO:
       type: object
       properties:
@@ -1275,6 +1690,133 @@ components:
       - date
       - id
       - type
+    GroupMemberResponseDTO:
+      type: object
+      properties:
+        userId:
+          type: string
+          format: uuid
+        name:
+          type: string
+        role:
+          type: string
+          enum:
+          - ADMIN
+          - MEMBER
+        joinedAt:
+          type: string
+          format: date-time
+    GroupResponseDTO:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        adminId:
+          type: string
+          format: uuid
+        createdAt:
+          type: string
+          format: date-time
+        members:
+          type: array
+          items:
+            $ref: "#/components/schemas/GroupMemberResponseDTO"
+    CreateGroupRequestDTO:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: UUID gerado no app; reenviar o mesmo ID não duplica o grupo
+        name:
+          type: string
+          description: Nome do grupo ou da Caixinha
+          example: Viagem de fim de ano
+          maxLength: 100
+          minLength: 0
+      required:
+      - id
+      - name
+    GroupInvitationResponseDTO:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        code:
+          type: string
+        groupId:
+          type: string
+          format: uuid
+        expiresAt:
+          type: string
+          format: date-time
+    CreateGoalRequestDTO:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+          maxLength: 100
+          minLength: 0
+        targetAmount:
+          type: number
+          minimum: 0.01
+        deadline:
+          type: string
+          format: date
+        icon:
+          type: string
+          maxLength: 50
+          minLength: 0
+        category:
+          type: string
+          maxLength: 50
+          minLength: 0
+        monthlyReminder:
+          type: boolean
+        milestonesEnabled:
+          type: boolean
+      required:
+      - id
+      - name
+      - targetAmount
+    GoalResponseDTO:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        groupId:
+          type: string
+          format: uuid
+        name:
+          type: string
+        targetAmount:
+          type: number
+        currency:
+          type: string
+        deadline:
+          type: string
+          format: date
+        icon:
+          type: string
+        category:
+          type: string
+        monthlyReminder:
+          type: boolean
+        milestonesEnabled:
+          type: boolean
+        archived:
+          type: boolean
+        createdAt:
+          type: string
+          format: date-time
     VerifyEmailRequestDTO:
       type: object
       properties:
@@ -1384,70 +1926,51 @@ components:
       required:
       - email
       - password
-    CreateGroupRequestDTO:
+    TransactionPageResponseDTO:
       type: object
       properties:
-        id:
-          type: string
-          format: uuid
-          description: UUID gerado no app; reenviar o mesmo ID não duplica o grupo
-        name:
-          type: string
-          description: Nome do grupo ou da Caixinha
-          example: Viagem de fim de ano
-          maxLength: 100
-          minLength: 0
-      required:
-      - id
-      - name
-    GroupMemberResponseDTO:
-      type: object
-      properties:
-        userId:
-          type: string
-          format: uuid
-        name:
-          type: string
-        role:
-          type: string
-          enum:
-          - ADMIN
-          - MEMBER
-        joinedAt:
-          type: string
-          format: date-time
-    GroupResponseDTO:
-      type: object
-      properties:
-        id:
-          type: string
-          format: uuid
-        name:
-          type: string
-        adminId:
-          type: string
-          format: uuid
-        createdAt:
-          type: string
-          format: date-time
-        members:
+        content:
           type: array
           items:
-            $ref: "#/components/schemas/GroupMemberResponseDTO"
-    GroupInvitationResponseDTO:
+            $ref: "#/components/schemas/TransactionResponseDTO"
+        page:
+          type: integer
+          format: int32
+        size:
+          type: integer
+          format: int32
+        totalElements:
+          type: integer
+          format: int64
+        totalPages:
+          type: integer
+          format: int32
+        hasNext:
+          type: boolean
+    CategoryExpenseDTO:
       type: object
       properties:
-        id:
+        category:
           type: string
-          format: uuid
-        code:
+        amount:
+          type: number
+    MonthlyTransactionSummaryResponseDTO:
+      type: object
+      properties:
+        month:
           type: string
-        groupId:
+        currency:
           type: string
-          format: uuid
-        expiresAt:
-          type: string
-          format: date-time
+        totalIncome:
+          type: number
+        totalExpense:
+          type: number
+        balance:
+          type: number
+        expensesByCategory:
+          type: array
+          items:
+            $ref: "#/components/schemas/CategoryExpenseDTO"
     InvitationPreviewResponseDTO:
       type: object
       properties:
@@ -1468,6 +1991,54 @@ components:
           format: date-time
         alreadyMember:
           type: boolean
+    ContributorResponseDTO:
+      type: object
+      properties:
+        userId:
+          type: string
+          format: uuid
+        name:
+          type: string
+        total:
+          type: number
+    ThermometerResponseDTO:
+      type: object
+      properties:
+        goalId:
+          type: string
+          format: uuid
+        name:
+          type: string
+        status:
+          type: string
+          enum:
+          - ATINGIDA
+          - VENCIDA
+          - SEM_APORTES
+          - EM_ANDAMENTO
+          - ADIANTADA
+          - NO_PRAZO
+          - ATRASADA
+        progressPercent:
+          type: number
+        accumulated:
+          type: number
+        targetAmount:
+          type: number
+        remaining:
+          type: number
+        currency:
+          type: string
+        deadline:
+          type: string
+          format: date
+        daysLeft:
+          type: integer
+          format: int64
+        contributors:
+          type: array
+          items:
+            $ref: "#/components/schemas/ContributorResponseDTO"
   securitySchemes:
     BearerAuth:
       type: http
