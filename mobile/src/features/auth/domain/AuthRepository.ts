@@ -8,6 +8,9 @@ import type { User } from './User';
  * endpoint `/users/me` (L-09).
  */
 export interface AuthRepository {
+        /** Faz login e guarda a sessão no aparelho. */
+    login(email: string, password: string): Promise<User>;
+    
     /** Usuário da sessão atual. */
     getCurrentUser(): Promise<User>;
 

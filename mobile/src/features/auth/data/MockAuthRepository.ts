@@ -12,6 +12,10 @@ const mockUser: User = {
  * Repository simulado da sessão.
  */
 export class MockAuthRepository implements AuthRepository {
+    async login(): Promise<User> {
+        return { ...mockUser };
+    }
+
     async getCurrentUser(): Promise<User> {
         return { ...mockUser };
     }
@@ -22,5 +26,3 @@ export class MockAuthRepository implements AuthRepository {
         // continuam pendentes do MAU-05 (dependem de MAU-01, MOB-05 e N5).
     }
 }
-
-export const authRepository: AuthRepository = new MockAuthRepository();

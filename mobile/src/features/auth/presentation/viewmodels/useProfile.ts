@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 
 import { useMockAuth } from '../../../../core/navigation/MockAuthContext';
-import { authRepository } from '../../data/MockAuthRepository';
+import { authRepository } from '../../data/ApiAuthRepository';
 import type { User } from '../../domain/User';
 
 /**
@@ -19,10 +19,13 @@ export function useProfile() {
     const loadUser = useCallback(async () => {
         try {
             setUser(await authRepository.getCurrentUser());
+        } catch {
+            // Não há sessão salva no aparelho: volta para a tela de entrada.
+            endMockSession();
         } finally {
             setIsLoading(false);
         }
-    }, []);
+    }, [endMockSession]);
 
     useEffect(() => {
         loadUser();
