@@ -9,6 +9,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.moneywise.goals.application.port.GoalRepository;
 import com.moneywise.goals.domain.Goal;
+import org.springframework.transaction.annotation.Propagation;
 
 @Repository
 public class JpaGoalRepository implements GoalRepository {
@@ -36,4 +37,12 @@ public class JpaGoalRepository implements GoalRepository {
     public List<Goal> findByGroupId(UUID groupId) {
         return goals.findByGroupIdOrderByCreatedAtAscIdAsc(groupId).stream().map(GoalMapper::toDomain).toList();
     }
+
+    @Override
+    @Transactional(propagation = Propagation.MANDATORY)
+    public Optional<Goal> findByIdForUpdate(UUID id) {
+        return goals.findByIdForUpdate(id).map(GoalMapper::toDomain);
+    }
+
+   
 }

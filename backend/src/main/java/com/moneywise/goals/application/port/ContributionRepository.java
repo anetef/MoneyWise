@@ -6,6 +6,8 @@ import com.moneywise.goals.domain.Contribution;
 import com.moneywise.goals.domain.Goal;
 import com.moneywise.goals.domain.MemberTotal;
 import com.moneywise.shared.money.Money;
+import java.util.Optional;
+import java.util.UUID;
 
 public interface ContributionRepository {
 
@@ -16,4 +18,6 @@ public interface ContributionRepository {
     Money balanceOf(Goal goal);
 
     List<MemberTotal> totalsByMember(Goal goal);
+
+    Optional<UUID> findGoalIdByContributionId(UUID contributionId);
 }

@@ -13,6 +13,8 @@ import com.moneywise.goals.application.port.UserCurrencyQuery;
 import com.moneywise.goals.application.usecase.create.CreateGoal;
 import com.moneywise.goals.application.usecase.thermometer.GetGoalThermometer;
 import com.moneywise.groups.application.GroupAuthorizationService;
+import com.moneywise.goals.application.port.UnitOfWork;
+import com.moneywise.goals.application.usecase.contribution.RegisterContribution;
 
 @Configuration
 public class GoalUseCaseConfig {
@@ -28,5 +30,12 @@ public class GoalUseCaseConfig {
             ContributorNameQuery names, GroupAuthorizationService authorization,
             @Qualifier("transactionBusinessClock") Clock clock) {
         return new GetGoalThermometer(goals, contributions, names, authorization, clock);
+    }
+
+    @Bean
+    RegisterContribution registerContribution(GoalRepository goals, ContributionRepository contributions,
+            GroupAuthorizationService authorization, GetGoalThermometer thermometer, UnitOfWork unitOfWork,
+            @Qualifier("transactionBusinessClock") Clock clock) {
+        return new RegisterContribution(goals, contributions, authorization, thermometer, unitOfWork, clock);
     }
 }

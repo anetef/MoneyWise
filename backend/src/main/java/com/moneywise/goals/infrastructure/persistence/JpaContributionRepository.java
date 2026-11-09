@@ -1,6 +1,8 @@
 package com.moneywise.goals.infrastructure.persistence;
 
 import java.util.List;
+import java.util.Optional;
+import java.util.UUID;
 
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
@@ -11,20 +13,36 @@ import com.moneywise.goals.domain.Goal;
 import com.moneywise.goals.domain.MemberTotal;
 import com.moneywise.shared.money.Money;
 
+import jakarta.persistence.EntityManager;
+
+/** Implementa o port de movimentos; as somas são feitas no banco, em NUMERIC. */
 @Repository
 public class JpaContributionRepository implements ContributionRepository {
 
     private final SpringDataContributionRepository contributions;
+    private final EntityManager entityManager;
 
-    public JpaContributionRepository(SpringDataContributionRepository contributions) {
+    public JpaContributionRepository(SpringDataContributionRepository contributions, EntityManager entityManager) {
         this.contributions = contributions;
+        this.entityManager = entityManager;
     }
 
+    /**
+     * Grava o movimento e envia o INSERT ao banco na hora (flush), para que as somas calculadas
+     * logo em seguida, na mesma transação, já incluam este movimento.
+     */
     @Override
     @Transactional
     public Contribution save(Contribution contribution) {
         contributions.save(GoalMapper.toEntity(contribution));
+        entityManager.flush();
         return contribution;
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public Optional<UUID> findGoalIdByContributionId(UUID contributionId) {
+        return contributions.findGoalIdById(contributionId);
     }
 
     @Override
