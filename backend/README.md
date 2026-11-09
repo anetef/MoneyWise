@@ -66,8 +66,12 @@ Exemplo: `V1__create_users.sql`.
 |---|---|---|
 | V1 | DB-02 / SEC-01 | `create_users` |
 | V2 | SEC-03 | `create_refresh_tokens` |
-| V3 | SEC-05| `add_email_verified_at_to_users`|
-| V4 | email_verification_codes | confirmação de e-mail | Débora |
+| V3 | SEC-05 | `add_email_verified_at_to_users` |
+| V4 | Confirmação de e-mail | `create_email_verification_codes` |
+| V5 | TX-01 / DB-04 | `create_transactions` |
+| V6 | TX-04 | `add_transaction_category_date_index` |
+| V7 | GRP-01 | `create_groups_members_and_invitations` |
+| V8 | GOAL-01 / DB-06 | `create_goals_and_contributions` |
 
 ### Começar com o banco limpo
 
