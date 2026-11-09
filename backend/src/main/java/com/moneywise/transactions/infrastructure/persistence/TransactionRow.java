@@ -1,6 +1,7 @@
 package com.moneywise.transactions.infrastructure.persistence;
 
 import java.math.BigDecimal;
+import java.time.Instant;
 import java.time.LocalDate;
 import java.util.UUID;
 
@@ -22,4 +23,6 @@ public interface TransactionRow {
     String getDescription();
 
     String getCurrency();
+
+    Instant getUpdatedAt();
 }

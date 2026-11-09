@@ -97,8 +97,10 @@ class JpaTransactionRepositoryIntegrationTest {
         transactionRepository.save(privateTransaction);
 
         assertThat(transactionRepository.findByIdAndUserId(privateTransaction.getId(), other.getId())).isEmpty();
-        assertThat(transactionRepository.findByUserIdAndFilters(other.getId(), null, null, null)).isEmpty();
-        assertThat(transactionRepository.findByUserIdAndFilters(owner.getId(), null, null, null))
+        assertThat(transactionRepository.findPageByUserIdAndFilters(other.getId(), null, null, null, 0, 20)
+                .content()).isEmpty();
+        assertThat(transactionRepository.findPageByUserIdAndFilters(owner.getId(), null, null, null, 0, 20)
+                .content())
                 .extracting(Transaction::getId).containsExactly(privateTransaction.getId());
     }
 
@@ -111,8 +113,8 @@ class JpaTransactionRepositoryIntegrationTest {
         transactionRepository.save(newTransaction(owner.getId(), "20.00", "Casa", LocalDate.of(2026, 10, 11)));
         transactionRepository.save(newTransaction(owner.getId(), "30.00", "Comida", LocalDate.of(2026, 9, 30)));
 
-        List<Transaction> found = transactionRepository.findByUserIdAndFilters(owner.getId(), Category.of(" Comida "),
-                LocalDate.of(2026, 10, 1), LocalDate.of(2026, 10, 31));
+        List<Transaction> found = transactionRepository.findPageByUserIdAndFilters(owner.getId(),
+                Category.of(" Comida "), LocalDate.of(2026, 10, 1), LocalDate.of(2026, 10, 31), 0, 20).content();
 
         assertThat(found).extracting(Transaction::getId).containsExactly(match.getId());
     }

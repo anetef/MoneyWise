@@ -20,8 +20,9 @@ final class TransactionMapper {
     }
 
     static Transaction toDomain(TransactionRow row) {
-        return Transaction.create(row.getId(), row.getUserId(),
+        return Transaction.restore(row.getId(), row.getUserId(),
                 new Money(row.getAmount(), Currency.getInstance(row.getCurrency().strip())), row.getDate(),
-                Category.of(row.getCategory()), TransactionType.valueOf(row.getType()), row.getDescription());
+                Category.of(row.getCategory()), TransactionType.valueOf(row.getType()), row.getDescription(),
+                row.getUpdatedAt());
     }
 }

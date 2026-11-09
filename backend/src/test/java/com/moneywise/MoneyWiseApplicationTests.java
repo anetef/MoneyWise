@@ -1,11 +1,11 @@
 package com.moneywise;
 
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.context.annotation.Import;
 
 @SpringBootTest
-@Disabled("Requer PostgreSQL. Reativar quando a tarefa do banco estiver pronta.")
+@Import(TestcontainersConfiguration.class)
 class MoneyWiseApplicationTests {
 
     @Test
