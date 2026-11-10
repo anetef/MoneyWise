@@ -15,6 +15,8 @@ import {
 
 import type { AuthStackParamList } from '../../../../core/navigation/types';
 import { useMockAuth } from '../../../../core/navigation/MockAuthContext';
+import { ApiError } from '../../../../core/api/apiClient';
+import { authRepository } from '../../data/ApiAuthRepository';
 
 import {
     colors,
@@ -38,10 +40,14 @@ export function LoginScreen({ navigation }: Props) {
     const [showPassword, setShowPassword] = useState(false);
     const [rememberMe, setRememberMe] = useState(false);
     const [error, setError] = useState('');
+    const [isLoading, setIsLoading] = useState(false);
 
-    function handleLogin() {
+    async function handleLogin() {
+        if (isLoading) {
+            return;
+        }
+
         setError('');
-
         if (!email.trim() || !password) {
             setError('Preencha seu e-mail e sua senha.');
             return;
@@ -60,10 +66,27 @@ export function LoginScreen({ navigation }: Props) {
             return;
         }
 
-        // Autenticação simulada.
-        // Não envia ou armazena credenciais.
-        signIn();
+        setIsLoading(true);
+
+        try {
+            await authRepository.login(email.trim(), password);
+            signIn();
+        } catch (e) {
+
+            if (e instanceof ApiError && e.code === 'INVALID_CREDENTIALS') {
+                setError('E-mail ou senha incorretos.');
+            } else if (e instanceof ApiError && e.code === 'EMAIL_NOT_VERIFIED') {
+                setError('Confirme seu e-mail antes de entrar.');
+            } else if (e instanceof ApiError && e.code === 'NETWORK_ERROR') {
+                setError('Sem conexão com o servidor. Tente de novo.');
+            } else {
+                setError('Não foi possível entrar. Tente novamente.');
+            }
+        } finally {
+            setIsLoading(false);
+        }
     }
+    
 
     return (
         <SafeAreaView style={styles.safeArea}>
@@ -112,7 +135,7 @@ export function LoginScreen({ navigation }: Props) {
 
                                 <View style={styles.inputContent}>
                                     <Text style={styles.inputLabel}>
-                                        E-MAIL OU TELEFONE
+                                        E-MAIL
                                     </Text>
 
                                     <TextInput
@@ -213,6 +236,7 @@ export function LoginScreen({ navigation }: Props) {
                         {/* Login */}
                         <Pressable
                             onPress={handleLogin}
+                            disabled={isLoading}
                             accessibilityRole="button"
                             style={({ pressed }) => [
                                 styles.primaryButton,
@@ -220,9 +244,10 @@ export function LoginScreen({ navigation }: Props) {
                             ]}
                         >
                             <Text style={styles.primaryButtonText}>
-                                Entrar na conta →
+                                {isLoading ? 'Entrando...' : 'Entrar na conta →'}
                             </Text>
                         </Pressable>
+                        
                     </View>
 
                     {/* Cadastro */}
