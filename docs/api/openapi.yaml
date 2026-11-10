@@ -724,6 +724,92 @@ paths:
                 $ref: "#/components/schemas/GoalResponseDTO"
       security:
       - BearerAuth: []
+  /api/v1/goals/{id}/contributions:
+    post:
+      tags:
+      - Metas
+      summary: Registrar movimento na Caixinha
+      description: "Registra uma entrada (aporte) ou uma retirada na meta (RF-13,\
+        \ L-07). Qualquer membro do grupo pode movimentar. O valor é na moeda da meta.\
+        \ Uma retirada maior que o valor acumulado é recusada e o acumulado nunca\
+        \ fica negativo. A resposta é o novo estado do Termômetro, no mesmo formato\
+        \ de GET /goals/{id}/thermometer (RF-17). O id é gerado no app: o reenvio\
+        \ com o mesmo id não registra de novo e devolve o Termômetro atual, també\
+        m com 201 (seção 6.4). Nenhum saldo pessoal é retornado: só os movimentos\
+        \ das Caixinhas são visíveis ao grupo (RN02/RN08)."
+      operationId: registerContribution
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateContributionRequestDTO"
+        required: true
+      responses:
+        "404":
+          description: "Meta não encontrada, de um grupo do qual não é membro, ou\
+            \ id de movimento de outra meta"
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "403":
+          description: Forbidden
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "409":
+          description: Conflict
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "422":
+          description: Retirada maior que o acumulado (GOAL_INSUFFICIENT_BALANCE)
+            ou meta arquivada (GOAL_ARCHIVED)
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "400":
+          description: "Dados inválidos (ex.: valor zero ou negativo, tipo ausente)"
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: Internal Server Error
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "401":
+          description: Não autenticado
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "429":
+          description: Too Many Requests
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "201":
+          description: "Movimento registrado (ou já existente, no reenvio)"
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ThermometerResponseDTO"
+      security:
+      - BearerAuth: []
   /api/v1/auth/verify-email:
     post:
       tags:
@@ -1817,6 +1903,73 @@ components:
         createdAt:
           type: string
           format: date-time
+    CreateContributionRequestDTO:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        type:
+          type: string
+          description: ENTRADA (aporte) ou RETIRADA (L-07)
+          enum:
+          - ENTRADA
+          - RETIRADA
+        amount:
+          type: number
+          minimum: 0.01
+      required:
+      - amount
+      - id
+      - type
+    ContributorResponseDTO:
+      type: object
+      properties:
+        userId:
+          type: string
+          format: uuid
+        name:
+          type: string
+        total:
+          type: number
+    ThermometerResponseDTO:
+      type: object
+      properties:
+        goalId:
+          type: string
+          format: uuid
+        name:
+          type: string
+        status:
+          type: string
+          enum:
+          - ATINGIDA
+          - VENCIDA
+          - SEM_APORTES
+          - EM_ANDAMENTO
+          - ADIANTADA
+          - NO_PRAZO
+          - ATRASADA
+        progressPercent:
+          type: number
+        accumulated:
+          type: number
+        targetAmount:
+          type: number
+        remaining:
+          type: number
+        currency:
+          type: string
+        deadline:
+          type: string
+          format: date
+        daysLeft:
+          type: integer
+          format: int64
+        contributors:
+          type: array
+          items:
+            $ref: "#/components/schemas/ContributorResponseDTO"
     VerifyEmailRequestDTO:
       type: object
       properties:
@@ -1991,54 +2144,6 @@ components:
           format: date-time
         alreadyMember:
           type: boolean
-    ContributorResponseDTO:
-      type: object
-      properties:
-        userId:
-          type: string
-          format: uuid
-        name:
-          type: string
-        total:
-          type: number
-    ThermometerResponseDTO:
-      type: object
-      properties:
-        goalId:
-          type: string
-          format: uuid
-        name:
-          type: string
-        status:
-          type: string
-          enum:
-          - ATINGIDA
-          - VENCIDA
-          - SEM_APORTES
-          - EM_ANDAMENTO
-          - ADIANTADA
-          - NO_PRAZO
-          - ATRASADA
-        progressPercent:
-          type: number
-        accumulated:
-          type: number
-        targetAmount:
-          type: number
-        remaining:
-          type: number
-        currency:
-          type: string
-        deadline:
-          type: string
-          format: date
-        daysLeft:
-          type: integer
-          format: int64
-        contributors:
-          type: array
-          items:
-            $ref: "#/components/schemas/ContributorResponseDTO"
   securitySchemes:
     BearerAuth:
       type: http

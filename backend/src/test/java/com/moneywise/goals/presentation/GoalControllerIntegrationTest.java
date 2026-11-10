@@ -42,7 +42,7 @@ import com.moneywise.goals.domain.ThermometerCalculator;
 import com.moneywise.groups.application.port.GroupRepository;
 import com.moneywise.groups.domain.Group;
 import com.moneywise.shared.money.Money;
-
+import com.moneywise.goals.domain.ContributionType;
 @SpringBootTest
 @Import(TestcontainersConfiguration.class)
 @Transactional
@@ -109,6 +109,23 @@ class GoalControllerIntegrationTest {
 
     private JwtRequestPostProcessor asUser(UUID userId) {
         return jwt().jwt(token -> token.subject(userId.toString()));
+    }
+
+    private ResultActions contribute(UUID userId, UUID goalId, UUID contributionId, String type, String amount)
+            throws Exception {
+        String body = """
+                {"id":"%s","type":"%s","amount":%s}
+                """.formatted(contributionId, type, amount);
+        return mockMvc.perform(post("/api/v1/goals/" + goalId + "/contributions").with(asUser(userId))
+                .contentType(MediaType.APPLICATION_JSON).content(body));
+    }
+
+    /** Cria uma meta de R$ 1.000 num grupo da admin, com o membro informado. Devolve o id da meta. */
+    private UUID goalWithMember(UUID admin, UUID member) throws Exception {
+        UUID groupId = newGroup(admin, member);
+        UUID goalId = UUID.randomUUID();
+        createGoal(admin, groupId, goalId, "Viagem", "1000.00", inSixMonths()).andExpect(status().isCreated());
+        return goalId;
     }
 
     // ---------- Criar meta ----------
@@ -292,5 +309,138 @@ class GoalControllerIntegrationTest {
     void requiresAuthentication() throws Exception {
         mockMvc.perform(get("/api/v1/goals/" + UUID.randomUUID() + "/thermometer"))
                 .andExpect(status().isUnauthorized());
+    }
+
+        // ---------- Registrar movimento (GOAL-04) ----------
+
+    @Test
+    @DisplayName("Membro registra entrada: 201 com o novo estado do Termômetro")
+    void memberRegistersDeposit() throws Exception {
+        UUID admin = newUser("Ana", "BRL");
+        UUID member = newUser("Bruno", "BRL");
+        UUID goalId = goalWithMember(admin, member);
+
+        contribute(member, goalId, UUID.randomUUID(), "ENTRADA", "250.00")
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.goalId").value(goalId.toString()))
+                .andExpect(jsonPath("$.accumulated").value(250.00))
+                .andExpect(jsonPath("$.remaining").value(750.00))
+                .andExpect(jsonPath("$.progressPercent").value(25.00))
+                .andExpect(jsonPath("$.contributors[0].name").value("Bruno"))
+                .andExpect(jsonPath("$.contributors[0].total").value(250.00));
+    }
+
+    @Test
+    @DisplayName("Retirada reduz o acumulado")
+    void withdrawalReducesAccumulated() throws Exception {
+        UUID admin = newUser("Ana", "BRL");
+        UUID member = newUser("Bruno", "BRL");
+        UUID goalId = goalWithMember(admin, member);
+        contribute(admin, goalId, UUID.randomUUID(), "ENTRADA", "500.00").andExpect(status().isCreated());
+
+        contribute(member, goalId, UUID.randomUUID(), "RETIRADA", "200.00")
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.accumulated").value(300.00));
+    }
+
+    @Test
+    @DisplayName("Retirada maior que o acumulado: 422 e nada é registrado (L-07)")
+    void rejectsWithdrawalAboveBalance() throws Exception {
+        UUID admin = newUser("Ana", "BRL");
+        UUID goalId = goalWithMember(admin, newUser("Bruno", "BRL"));
+        contribute(admin, goalId, UUID.randomUUID(), "ENTRADA", "100.00").andExpect(status().isCreated());
+
+        contribute(admin, goalId, UUID.randomUUID(), "RETIRADA", "100.01")
+                .andExpect(status().isUnprocessableContent())
+                .andExpect(jsonPath("$.code").value("GOAL_INSUFFICIENT_BALANCE"));
+
+        Goal goal = goals.findById(goalId).orElseThrow();
+        assertThat(contributions.balanceOf(goal)).isEqualTo(Money.of("100.00", "BRL"));
+        assertThat(contributions.findByGoal(goal)).hasSize(1);
+    }
+
+    @Test
+    @DisplayName("Retirar exatamente o acumulado é permitido e zera a meta")
+    void allowsWithdrawingWholeBalance() throws Exception {
+        UUID admin = newUser("Ana", "BRL");
+        UUID goalId = goalWithMember(admin, newUser("Bruno", "BRL"));
+        contribute(admin, goalId, UUID.randomUUID(), "ENTRADA", "100.00").andExpect(status().isCreated());
+
+        contribute(admin, goalId, UUID.randomUUID(), "RETIRADA", "100.00")
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.accumulated").value(0.00))
+                .andExpect(jsonPath("$.status").value("SEM_APORTES"));
+    }
+
+    @Test
+    @DisplayName("Valor zero ou negativo e tipo ausente: 400")
+    void rejectsInvalidBody() throws Exception {
+        UUID admin = newUser("Ana", "BRL");
+        UUID goalId = goalWithMember(admin, newUser("Bruno", "BRL"));
+
+        contribute(admin, goalId, UUID.randomUUID(), "ENTRADA", "0.00").andExpect(status().isBadRequest());
+        contribute(admin, goalId, UUID.randomUUID(), "ENTRADA", "-5.00").andExpect(status().isBadRequest());
+        mockMvc.perform(post("/api/v1/goals/" + goalId + "/contributions").with(asUser(admin))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"id\":\"" + UUID.randomUUID() + "\",\"amount\":10.00}"))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    @DisplayName("Reenvio com o mesmo id não registra o movimento de novo (seção 6.4)")
+    void contributionRetryDoesNotDuplicate() throws Exception {
+        UUID admin = newUser("Ana", "BRL");
+        UUID goalId = goalWithMember(admin, newUser("Bruno", "BRL"));
+        UUID contributionId = UUID.randomUUID();
+        contribute(admin, goalId, contributionId, "ENTRADA", "100.00").andExpect(status().isCreated());
+
+        contribute(admin, goalId, contributionId, "ENTRADA", "100.00")
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.accumulated").value(100.00));
+
+        assertThat(contributions.findByGoal(goals.findById(goalId).orElseThrow())).hasSize(1);
+    }
+
+    @Test
+    @DisplayName("Quem não é membro recebe 404 e nada é registrado")
+    void nonMemberCannotContribute() throws Exception {
+        UUID admin = newUser("Ana", "BRL");
+        UUID goalId = goalWithMember(admin, newUser("Bruno", "BRL"));
+        UUID outsider = newUser("Carla", "BRL");
+
+        contribute(outsider, goalId, UUID.randomUUID(), "ENTRADA", "100.00").andExpect(status().isNotFound());
+
+        assertThat(contributions.findByGoal(goals.findById(goalId).orElseThrow())).isEmpty();
+    }
+
+    @Test
+    @DisplayName("Id de movimento já usado em outra meta: 404, sem registrar")
+    void contributionIdFromAnotherGoalIsNotFound() throws Exception {
+        UUID admin = newUser("Ana", "BRL");
+        UUID member = newUser("Bruno", "BRL");
+        UUID firstGoal = goalWithMember(admin, member);
+        UUID secondGoal = goalWithMember(admin, member);
+        UUID contributionId = UUID.randomUUID();
+        contribute(admin, firstGoal, contributionId, "ENTRADA", "100.00").andExpect(status().isCreated());
+
+        contribute(admin, secondGoal, contributionId, "ENTRADA", "100.00").andExpect(status().isNotFound());
+
+        assertThat(contributions.findByGoal(goals.findById(secondGoal).orElseThrow())).isEmpty();
+    }
+
+    @Test
+    @DisplayName("A resposta do registro tem o mesmo conteúdo do GET do Termômetro (RF-17)")
+    void responseMatchesThermometerEndpoint() throws Exception {
+        UUID admin = newUser("Ana", "BRL");
+        UUID goalId = goalWithMember(admin, newUser("Bruno", "BRL"));
+
+        String fromPost = contribute(admin, goalId, UUID.randomUUID(), "ENTRADA", "300.00")
+                .andExpect(status().isCreated())
+                .andReturn().getResponse().getContentAsString();
+        String fromGet = thermometer(admin, goalId)
+                .andExpect(status().isOk())
+                .andReturn().getResponse().getContentAsString();
+
+        assertThat(fromPost).isEqualTo(fromGet);
     }
 }
