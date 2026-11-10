@@ -1,4 +1,11 @@
-import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import {
+    ActivityIndicator,
+    Pressable,
+    ScrollView,
+    StyleSheet,
+    Text,
+    View,
+} from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Svg, { Circle } from 'react-native-svg';
 import { Feather, MaterialCommunityIcons } from '@expo/vector-icons';
@@ -6,6 +13,14 @@ import { Feather, MaterialCommunityIcons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { DashboardStackParamList } from '../../../../core/navigation/types';
+import type { Transaction } from '../../../transactions/domain/Transaction';
+import { useDashboard } from '../../../transactions/presentation/viewmodels/useDashboard';
+import { categoryIcon } from '../../../transactions/presentation/utils/categories';
+import {
+    formatCurrency,
+    formatShortDate,
+    formatSignedAmount,
+} from '../../../transactions/presentation/utils/format';
 
 // 🎨 Cores do Figma (depois trocamos pelos tokens do core/theme)
 const C = {
@@ -30,59 +45,8 @@ const F = {
     bold: 'Inter_700Bold',
 };
 
-// 📊 Dados mockados
-type Category = { id: string; label: string; amount: string; color: string };
-
-type TransactionIcon = 'shopping' | 'income' | 'food';
-
-type Transaction = {
-    id: string;
-    title: string;
-    subtitle: string;
-    amount: string;
-    type: 'income' | 'expense';
-    icon: TransactionIcon;
-};
-
-const MOCK = {
-    balance: 'R$ 14.529,80',
-    income: 'R$ 8.450,00',
-    expenses: 'R$ 6.337,50',
-    spentPercent: 75,
-};
-
-const CATEGORIES: Category[] = [
-    { id: '1', label: 'Moradia', amount: 'R$ 3.100,00', color: C.primary },
-    { id: '2', label: 'Alimentação', amount: 'R$ 1.850,50', color: C.taupe },
-    { id: '3', label: 'Transporte', amount: 'R$ 850,00', color: C.lightGray },
-];
-
-const TRANSACTIONS: Transaction[] = [
-    {
-        id: '1',
-        title: 'Mercado Livre',
-        subtitle: 'Cartão final 4021 • Hoje, 14:30',
-        amount: '- R$ 149,90',
-        type: 'expense',
-        icon: 'shopping',
-    },
-    {
-        id: '2',
-        title: 'Pix Recebido',
-        subtitle: 'João Silva • Ontem, 09:15',
-        amount: '+ R$ 450,00',
-        type: 'income',
-        icon: 'income',
-    },
-    {
-        id: '3',
-        title: 'Ifood',
-        subtitle: 'Cartão final 4021 • 24 Out, 20:45',
-        amount: '- R$ 68,50',
-        type: 'expense',
-        icon: 'food',
-    },
-];
+// Cores das 3 categorias do gráfico, da maior para a menor.
+const CATEGORY_COLORS = [C.primary, C.taupe, C.lightGray];
 
 // 🍩 Gráfico de rosca
 function DonutChart({ percent }: { percent: number }) {
@@ -122,9 +86,9 @@ function DonutChart({ percent }: { percent: number }) {
     );
 }
 
-// 🧾 Ícone de cada transação
-function TransactionIconBadge({ icon }: { icon: TransactionIcon }) {
-    if (icon === 'income') {
+// 🧾 Ícone de cada transação: seta para entradas, ícone da categoria para gastos
+function TransactionIconBadge({ transaction }: { transaction: Transaction }) {
+    if (transaction.type === 'INCOME') {
         return (
             <View style={[styles.txIcon, { backgroundColor: C.primarySoft }]}>
                 <Feather name="arrow-down" size={18} color={C.primary} />
@@ -134,11 +98,11 @@ function TransactionIconBadge({ icon }: { icon: TransactionIcon }) {
 
     return (
         <View style={styles.txIcon}>
-            {icon === 'shopping' ? (
-                <Feather name="shopping-bag" size={17} color={C.text} />
-            ) : (
-                <MaterialCommunityIcons name="silverware-fork-knife" size={18} color={C.text} />
-            )}
+            <MaterialCommunityIcons
+                name={categoryIcon(transaction.category)}
+                size={18}
+                color={C.text}
+            />
         </View>
     );
 }
@@ -146,6 +110,9 @@ function TransactionIconBadge({ icon }: { icon: TransactionIcon }) {
 export function DashboardScreen() {
     const navigation =
         useNavigation<NativeStackNavigationProp<DashboardStackParamList>>();
+
+    const { summary, latest, isLoading, error, spentPercent, topCategories, reload } =
+        useDashboard();
 
     function handleFullStatement() {
         navigation.navigate('Statement');
@@ -164,10 +131,28 @@ export function DashboardScreen() {
                 {/* Título */}
                 <Text style={styles.title}>Dashboard</Text>
 
+                {/* Erro ao carregar, com opção de tentar de novo */}
+                {error ? (
+                    <Pressable
+                        onPress={reload}
+                        accessibilityRole="button"
+                        style={[styles.card, styles.feedbackCard]}
+                    >
+                        <Feather name="wifi-off" size={18} color={C.primary} />
+                        <Text style={styles.feedbackText}>{error} Toque para tentar de novo.</Text>
+                    </Pressable>
+                ) : null}
+
+                {isLoading && !summary ? (
+                    <ActivityIndicator color={C.primary} style={styles.loader} />
+                ) : null}
+
                 {/* Saldo */}
                 <View style={[styles.card, styles.balanceCard]}>
-                    <Text style={styles.balanceLabel}>Saldo Atual</Text>
-                    <Text style={styles.balanceValue}>{MOCK.balance}</Text>
+                    <Text style={styles.balanceLabel}>Saldo do Mês</Text>
+                    <Text style={styles.balanceValue}>
+                        {formatCurrency(summary?.balance ?? 0)}
+                    </Text>
                 </View>
 
                 {/* Entradas e Saídas */}
@@ -178,7 +163,7 @@ export function DashboardScreen() {
                             <Text style={styles.smallCardLabel}>Entradas</Text>
                         </View>
                         <Text style={[styles.smallCardValue, { color: C.primary }]}>
-                            {MOCK.income}
+                            {formatCurrency(summary?.totalIncome ?? 0)}
                         </Text>
                     </View>
 
@@ -187,7 +172,9 @@ export function DashboardScreen() {
                             <Feather name="arrow-up" size={16} color={C.text} />
                             <Text style={styles.smallCardLabel}>Saídas</Text>
                         </View>
-                        <Text style={styles.smallCardValue}>{MOCK.expenses}</Text>
+                        <Text style={styles.smallCardValue}>
+                            {formatCurrency(summary?.totalExpense ?? 0)}
+                        </Text>
                     </View>
                 </View>
 
@@ -200,16 +187,27 @@ export function DashboardScreen() {
                     </View>
 
                     <View style={styles.categoriesBody}>
-                        <DonutChart percent={MOCK.spentPercent} />
+                        <DonutChart percent={spentPercent} />
 
                         <View style={styles.legend}>
-                            {CATEGORIES.map((category) => (
-                                <View key={category.id} style={styles.legendRow}>
-                                    <View style={[styles.legendDot, { backgroundColor: category.color }]} />
-                                    <Text style={styles.legendLabel}>{category.label}</Text>
-                                    <Text style={styles.legendAmount}>{category.amount}</Text>
+                            {topCategories.map((category, index) => (
+                                <View key={category.category} style={styles.legendRow}>
+                                    <View
+                                        style={[
+                                            styles.legendDot,
+                                            { backgroundColor: CATEGORY_COLORS[index] },
+                                        ]}
+                                    />
+                                    <Text style={styles.legendLabel}>{category.category}</Text>
+                                    <Text style={styles.legendAmount}>
+                                        {formatCurrency(category.amount)}
+                                    </Text>
                                 </View>
                             ))}
+
+                            {topCategories.length === 0 && !isLoading ? (
+                                <Text style={styles.emptyText}>Nenhum gasto neste mês.</Text>
+                            ) : null}
                         </View>
                     </View>
                 </View>
@@ -218,28 +216,38 @@ export function DashboardScreen() {
                 <Text style={styles.sectionTitle}>ÚLTIMAS TRANSAÇÕES</Text>
 
                 <View style={styles.card}>
-                    {TRANSACTIONS.map((tx, index) => (
+                    {latest.map((tx, index) => (
                         <View
                             key={tx.id}
                             style={[styles.txRow, index > 0 && styles.txRowDivider]}
                         >
-                            <TransactionIconBadge icon={tx.icon} />
+                            <TransactionIconBadge transaction={tx} />
 
                             <View style={styles.txInfo}>
-                                <Text style={styles.txTitle}>{tx.title}</Text>
-                                <Text style={styles.txSubtitle}>{tx.subtitle}</Text>
+                                <Text style={styles.txTitle} numberOfLines={1}>
+                                    {tx.description || tx.category}
+                                </Text>
+                                <Text style={styles.txSubtitle}>
+                                    {tx.category} • {formatShortDate(tx.date)}
+                                </Text>
                             </View>
 
                             <Text
                                 style={[
                                     styles.txAmount,
-                                    tx.type === 'income' && { color: C.primary },
+                                    tx.type === 'INCOME' && { color: C.primary },
                                 ]}
                             >
-                                {tx.amount}
+                                {formatSignedAmount(tx.amount, tx.type)}
                             </Text>
                         </View>
                     ))}
+
+                    {latest.length === 0 && !isLoading ? (
+                        <Text style={[styles.emptyText, styles.emptyLatest]}>
+                            Nenhuma transação ainda. Toque no + para adicionar.
+                        </Text>
+                    ) : null}
 
                     <Pressable onPress={handleFullStatement} style={styles.statementButton}>
                         <Text style={styles.statementText}>Ver extrato completo</Text>
@@ -450,6 +458,32 @@ const styles = StyleSheet.create({
         fontFamily: F.medium,
         fontSize: 13,
         color: C.primary,
+    },
+
+    // Carregando, erro e listas vazias
+    loader: {
+        marginBottom: 16,
+    },
+    feedbackCard: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 10,
+        marginBottom: 16,
+    },
+    feedbackText: {
+        flex: 1,
+        fontFamily: F.regular,
+        fontSize: 13,
+        color: C.text,
+    },
+    emptyText: {
+        fontFamily: F.regular,
+        fontSize: 13,
+        color: C.textSecondary,
+    },
+    emptyLatest: {
+        textAlign: 'center',
+        paddingVertical: 16,
     },
 
     // Botão flutuante

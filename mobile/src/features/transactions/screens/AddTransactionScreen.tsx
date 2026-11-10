@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useRef, useState } from 'react';
 import {
     KeyboardAvoidingView,
     Platform,
@@ -11,11 +11,18 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Feather, MaterialCommunityIcons } from '@expo/vector-icons';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useRoute, type RouteProp } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 
 import type { DashboardStackParamList } from '../../../core/navigation/types';
 import { colors } from '../../../core/theme';
+import { transactionRepository } from '../data/ApiTransactionRepository';
+import { CATEGORIES, findCategoryByLabel } from '../presentation/utils/categories';
+import {
+    isoToInputDate,
+    toIsoDate,
+    transactionErrorMessage,
+} from '../presentation/utils/format';
 
 // 🎨 Cores do Figma (depois trocamos pelos tokens do core/theme)
 const C = {
@@ -41,26 +48,11 @@ const F = {
     bold: 'Inter_700Bold',
 };
 
-// 📊 Tipos e dados mockados
+// 📊 Tipos
 type TransactionType = 'expense' | 'income';
-type IconName = keyof typeof MaterialCommunityIcons.glyphMap;
-
-type Category = {
-    id: string;
-    label: string;
-    icon: IconName;
-};
-
-const CATEGORIES: Category[] = [
-    { id: 'food', label: 'Comida', icon: 'silverware-fork-knife' },
-    { id: 'transport', label: 'Transporte', icon: 'car-outline' },
-    { id: 'shopping', label: 'Compras', icon: 'shopping-outline' },
-    { id: 'home', label: 'Casa', icon: 'home-outline' },
-    { id: 'health', label: 'Saúde', icon: 'heart-pulse' },
-    { id: 'leisure', label: 'Lazer', icon: 'gamepad-variant-outline' },
-];
 
 type Navigation = NativeStackNavigationProp<DashboardStackParamList>;
+type Route = RouteProp<DashboardStackParamList, 'AddTransaction'>;
 
 type FormErrors = {
     amount?: string;
@@ -70,9 +62,6 @@ type FormErrors = {
 
 // Mesmo limite de dígitos do valor usado nos formulários de Caixinhas.
 const MAX_AMOUNT_DIGITS = 11;
-
-// Tempo em que a confirmação da simulação fica visível antes de voltar.
-const SIMULATION_FEEDBACK_MS = 1500;
 
 /** Mantém só os dígitos do valor digitado, em centavos. */
 function toAmountDigits(value: string): string {
@@ -146,26 +135,31 @@ function amountInputWidth(text: string): number {
 
 export function AddTransactionScreen() {
     const navigation = useNavigation<Navigation>();
+    const route = useRoute<Route>();
 
-    const [type, setType] = useState<TransactionType>('expense');
-    const [amountDigits, setAmountDigits] = useState('');
-    const [categoryId, setCategoryId] = useState<string | null>(null);
-    const [description, setDescription] = useState('');
-    // Começa com a data de hoje no dispositivo.
-    const [dateText, setDateText] = useState(() => formatDateInput(new Date()));
+    // Com uma transação nos parâmetros, a tela vira "Editar".
+    const editing = route.params?.transaction;
+
+    const [type, setType] = useState<TransactionType>(
+        editing?.type === 'INCOME' ? 'income' : 'expense',
+    );
+    const [amountDigits, setAmountDigits] = useState(() =>
+        editing ? String(Math.round(editing.amount * 100)) : '',
+    );
+    const [categoryId, setCategoryId] = useState<string | null>(
+        () => (editing ? findCategoryByLabel(editing.category)?.id ?? null : null),
+    );
+    const [description, setDescription] = useState(editing?.description ?? '');
+    // Na criação, começa com a data de hoje no dispositivo.
+    const [dateText, setDateText] = useState(() =>
+        editing ? isoToInputDate(editing.date) : formatDateInput(new Date()),
+    );
     const [errors, setErrors] = useState<FormErrors>({});
-    const [isSimulated, setIsSimulated] = useState(false);
+    const [saveError, setSaveError] = useState('');
+    const [isSaving, setIsSaving] = useState(false);
 
-    // Evita duas confirmações com toques seguidos.
-    const submittedRef = useRef(false);
-    const backTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-    // Cancela o retorno automático se a tela for fechada antes.
-    useEffect(() => () => {
-        if (backTimerRef.current) {
-            clearTimeout(backTimerRef.current);
-        }
-    }, []);
+    // Evita duas gravações com toques seguidos.
+    const submittingRef = useRef(false);
 
     const amountText = formatAmount(amountDigits);
 
@@ -185,14 +179,15 @@ export function AddTransactionScreen() {
     }
 
     /**
-     * Correção intermediária da MTX-03: valida o formulário e mostra
-     * uma confirmação de simulação. Nada é gravado; o registro real
-     * depende da MTX-01 (useTransactions e Repository).
+     * Valida o formulário e grava na API:
+     * POST /transactions na criação, PUT /transactions/{id} na edição.
      */
-    function handleSave() {
-        if (submittedRef.current) {
+    async function handleSave() {
+        if (submittingRef.current) {
             return;
         }
+
+        setSaveError('');
 
         const nextErrors: FormErrors = {};
 
@@ -204,19 +199,44 @@ export function AddTransactionScreen() {
             nextErrors.category = 'Selecione uma categoria.';
         }
 
-        if (!parseDate(dateText)) {
+        const date = parseDate(dateText);
+        const category = CATEGORIES.find((option) => option.id === categoryId);
+
+        if (!date) {
             nextErrors.date = 'Digite uma data válida no formato DD/MM/AAAA.';
         }
 
         setErrors(nextErrors);
 
-        if (Object.keys(nextErrors).length > 0) {
+        if (Object.keys(nextErrors).length > 0 || !date || !category) {
             return;
         }
 
-        submittedRef.current = true;
-        setIsSimulated(true);
-        backTimerRef.current = setTimeout(() => navigation.goBack(), SIMULATION_FEEDBACK_MS);
+        const input = {
+            amount: Number(amountDigits) / 100,
+            date: toIsoDate(date),
+            category: category.label,
+            type: type === 'income' ? ('INCOME' as const) : ('EXPENSE' as const),
+            description,
+        };
+
+        submittingRef.current = true;
+        setIsSaving(true);
+
+        try {
+            if (editing) {
+                await transactionRepository.update(editing, input);
+            } else {
+                await transactionRepository.create(input);
+            }
+
+            // O Dashboard e o Extrato recarregam sozinhos ao voltar.
+            navigation.goBack();
+        } catch (e) {
+            setSaveError(transactionErrorMessage(e, 'Não foi possível salvar a transação.'));
+            submittingRef.current = false;
+            setIsSaving(false);
+        }
     }
 
     return (
@@ -234,7 +254,9 @@ export function AddTransactionScreen() {
                     >
                         <Feather name="chevron-left" size={26} color={C.primary} />
                     </Pressable>
-                    <Text style={styles.headerTitle}>Adicionar Transação</Text>
+                    <Text style={styles.headerTitle}>
+                        {editing ? 'Editar Transação' : 'Adicionar Transação'}
+                    </Text>
                 </View>
 
                 <ScrollView
@@ -399,32 +421,31 @@ export function AddTransactionScreen() {
 
                 {/* Botão salvar fixo */}
                 <View style={styles.footer}>
-                    {isSimulated && (
+                    {saveError ? (
                         <View
                             style={styles.simulationNotice}
                             accessibilityRole="alert"
                             accessibilityLiveRegion="polite"
                         >
-                            <Feather name="info" size={16} color={C.primary} />
-                            <Text style={styles.simulationText}>
-                                Simulação: os dados são válidos, mas a transação
-                                ainda não é gravada nesta versão.
-                            </Text>
+                            <Feather name="alert-circle" size={16} color={C.primary} />
+                            <Text style={styles.simulationText}>{saveError}</Text>
                         </View>
-                    )}
+                    ) : null}
 
                     <Pressable
                         onPress={handleSave}
-                        disabled={isSimulated}
+                        disabled={isSaving}
                         accessibilityRole="button"
-                        accessibilityState={{ disabled: isSimulated }}
+                        accessibilityState={{ disabled: isSaving, busy: isSaving }}
                         style={({ pressed }) => [
                             styles.saveButton,
-                            (pressed || isSimulated) && { opacity: 0.85 },
+                            (pressed || isSaving) && { opacity: 0.85 },
                         ]}
                     >
                         <Feather name="check-circle" size={20} color={C.surface} />
-                        <Text style={styles.saveText}>Salvar Transação</Text>
+                        <Text style={styles.saveText}>
+                            {isSaving ? 'Salvando...' : 'Salvar Transação'}
+                        </Text>
                     </Pressable>
                 </View>
             </KeyboardAvoidingView>
