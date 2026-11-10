@@ -11,9 +11,15 @@ import com.moneywise.goals.application.port.ContributorNameQuery;
 import com.moneywise.goals.application.port.GoalRepository;
 import com.moneywise.goals.application.port.UserCurrencyQuery;
 import com.moneywise.goals.application.usecase.create.CreateGoal;
+import com.moneywise.goals.application.usecase.delete.DeleteGoal;
+import com.moneywise.goals.application.usecase.detail.GetGoal;
+import com.moneywise.goals.application.usecase.history.GetContributionHistory;
+import com.moneywise.goals.application.usecase.list.ListGoals;
 import com.moneywise.goals.application.usecase.thermometer.GetGoalThermometer;
+import com.moneywise.goals.application.usecase.update.UpdateGoal;
 import com.moneywise.groups.application.GroupAuthorizationService;
 import com.moneywise.goals.application.port.UnitOfWork;
+import com.moneywise.goals.application.usecase.archive.ArchiveGoal;
 import com.moneywise.goals.application.usecase.contribution.RegisterContribution;
 
 @Configuration
@@ -37,5 +43,39 @@ public class GoalUseCaseConfig {
             GroupAuthorizationService authorization, GetGoalThermometer thermometer, UnitOfWork unitOfWork,
             @Qualifier("transactionBusinessClock") Clock clock) {
         return new RegisterContribution(goals, contributions, authorization, thermometer, unitOfWork, clock);
+    }
+
+        @Bean
+    ListGoals listGoals(GoalRepository goals, ContributionRepository contributions,
+            GroupAuthorizationService authorization, @Qualifier("transactionBusinessClock") Clock clock) {
+        return new ListGoals(goals, contributions, authorization, clock);
+    }
+
+    @Bean
+    GetGoal getGoal(GoalRepository goals, GroupAuthorizationService authorization) {
+        return new GetGoal(goals, authorization);
+    }
+
+    @Bean
+    GetContributionHistory getContributionHistory(GoalRepository goals, ContributionRepository contributions,
+            ContributorNameQuery names, GroupAuthorizationService authorization) {
+        return new GetContributionHistory(goals, contributions, names, authorization);
+    }
+
+    @Bean
+    UpdateGoal updateGoal(GoalRepository goals, GroupAuthorizationService authorization, UnitOfWork unitOfWork,
+            @Qualifier("transactionBusinessClock") Clock clock) {
+        return new UpdateGoal(goals, authorization, unitOfWork, clock);
+    }
+
+    @Bean
+    ArchiveGoal archiveGoal(GoalRepository goals, GroupAuthorizationService authorization, UnitOfWork unitOfWork) {
+        return new ArchiveGoal(goals, authorization, unitOfWork);
+    }
+
+    @Bean
+    DeleteGoal deleteGoal(GoalRepository goals, ContributionRepository contributions,
+            GroupAuthorizationService authorization, UnitOfWork unitOfWork) {
+        return new DeleteGoal(goals, contributions, authorization, unitOfWork);
     }
 }

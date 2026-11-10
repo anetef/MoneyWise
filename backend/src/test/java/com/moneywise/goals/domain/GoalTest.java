@@ -3,6 +3,7 @@ package com.moneywise.goals.domain;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.util.List;
@@ -123,5 +124,65 @@ class GoalTest {
                 Money.of("0.00", "BRL"), Money.of("0.00", "BRL"), NOW))
                 .isInstanceOf(BusinessRuleException.class)
                 .hasFieldOrPropertyWithValue("code", Contribution.INVALID_AMOUNT);
+    }
+
+        // ---------- GOAL-06: editar, arquivar, excluir ----------
+
+    @Test
+    @DisplayName("Editar devolve a meta com os novos dados e mantém id, grupo, moeda e data de criação")
+    void updateKeepsIdentityAndCurrency() {
+        Goal goal = goal();
+
+        Goal updated = goal.update("  Casa  ", new BigDecimal("2500.00"), null, " ", "Moradia", false, false);
+
+        assertThat(updated.getId()).isEqualTo(goal.getId());
+        assertThat(updated.getGroupId()).isEqualTo(goal.getGroupId());
+        assertThat(updated.getCreatedAt()).isEqualTo(goal.getCreatedAt());
+        assertThat(updated.getName()).isEqualTo("Casa");
+        assertThat(updated.getTarget()).isEqualTo(Money.of("2500.00", "BRL"));
+        assertThat(updated.hasDeadline()).isFalse();
+        assertThat(updated.getIcon()).isNull();
+        assertThat(updated.getCategory()).isEqualTo("Moradia");
+        assertThat(updated.isMonthlyReminder()).isFalse();
+        assertThat(updated.isMilestonesEnabled()).isFalse();
+    }
+
+    @Test
+    @DisplayName("Editar recusa valor da meta zero e meta arquivada")
+    void updateRejectsInvalidTargetAndArchivedGoal() {
+        Goal goal = goal();
+
+        assertThatThrownBy(() -> goal.update("Viagem", new BigDecimal("0.00"), null, null, null, false, false))
+                .isInstanceOf(BusinessRuleException.class)
+                .hasFieldOrPropertyWithValue("code", Goal.INVALID_TARGET);
+        assertThatThrownBy(() -> goal.archive().update("Viagem", new BigDecimal("10.00"), null, null, null,
+                false, false))
+                .isInstanceOf(BusinessRuleException.class)
+                .hasFieldOrPropertyWithValue("code", Goal.ARCHIVED);
+    }
+
+    @Test
+    @DisplayName("Arquivar e desarquivar; repetir a operação não muda nada")
+    void archiveAndUnarchive() {
+        Goal goal = goal();
+
+        Goal archived = goal.archive();
+        assertThat(archived.isArchived()).isTrue();
+        assertThat(archived.archive()).isSameAs(archived);
+
+        Goal active = archived.unarchive();
+        assertThat(active.isArchived()).isFalse();
+        assertThat(active.unarchive()).isSameAs(active);
+    }
+
+    @Test
+    @DisplayName("Só exclui meta sem valor acumulado")
+    void deleteOnlyWithoutBalance() {
+        Goal goal = goal();
+
+        goal.ensureCanBeDeleted(Money.of("0.00", "BRL"));
+        assertThatThrownBy(() -> goal.ensureCanBeDeleted(Money.of("0.01", "BRL")))
+                .isInstanceOf(BusinessRuleException.class)
+                .hasFieldOrPropertyWithValue("code", Goal.HAS_BALANCE);
     }
 }

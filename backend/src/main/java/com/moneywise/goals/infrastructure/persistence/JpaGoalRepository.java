@@ -44,5 +44,24 @@ public class JpaGoalRepository implements GoalRepository {
         return goals.findByIdForUpdate(id).map(GoalMapper::toDomain);
     }
 
+        @Override
+    @Transactional(readOnly = true)
+    public List<Goal> findByGroupIdAndArchived(UUID groupId, boolean archived) {
+        return goals.findByGroupIdAndArchivedOrderByCreatedAtAscIdAsc(groupId, archived).stream()
+                .map(GoalMapper::toDomain)
+                .toList();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<Goal> findByMemberAndArchived(UUID userId, boolean archived) {
+        return goals.findByMemberAndArchived(userId, archived).stream().map(GoalMapper::toDomain).toList();
+    }
+
+    @Override
+    @Transactional
+    public void delete(Goal goal) {
+        goals.deleteById(goal.getId());
+    }
    
 }
