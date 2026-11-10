@@ -8,6 +8,7 @@ import { GoalDetailsScreen } from '../../features/goals/presentation/screens/Goa
 import { GoalSettingsScreen } from '../../features/goals/presentation/screens/GoalSettingsScreen';
 import { GoalStatementScreen } from '../../features/goals/presentation/screens/GoalStatementScreen';
 import { InviteMembersScreen } from '../../features/goals/presentation/screens/InviteMembersScreen';
+import { AcceptInvitationScreen } from '../../features/goals/presentation/screens/AcceptInvitationScreen';
 
 import { AuthStack } from './AuthStack';
 import { MainTabs } from './MainTabs';
@@ -64,6 +65,11 @@ function MainStack() {
             <Stack.Screen
                 name="InviteMembers"
                 component={InviteMembersScreen}
+            />
+
+            <Stack.Screen
+                name="AcceptInvitation"
+                component={AcceptInvitationScreen}
             />
         </Stack.Navigator>
     );
