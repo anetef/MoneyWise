@@ -1,5 +1,7 @@
 import type { NavigatorScreenParams } from '@react-navigation/native';
 
+import type { Transaction } from '../../features/transactions/domain/Transaction';
+
 /** Rotas de onboarding e autenticação. */
 export type AuthStackParamList = {
     OnboardingStep1: undefined;
@@ -78,5 +80,6 @@ export type RootStackParamList = {
 export type DashboardStackParamList = {
     DashboardHome: undefined;
     Statement: undefined;
-    AddTransaction: undefined;
+    /** Sem parâmetro, cria; com `transaction`, abre a edição dela. */
+    AddTransaction: { transaction?: Transaction } | undefined;
 };
