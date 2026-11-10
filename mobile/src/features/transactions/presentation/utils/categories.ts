@@ -16,7 +16,7 @@ export const CATEGORIES: CategoryOption[] = [
     { id: 'shopping', label: 'Compras', icon: 'shopping-outline' },
     { id: 'home', label: 'Casa', icon: 'home-outline' },
     { id: 'health', label: 'Saúde', icon: 'heart-pulse' },
-    { id: 'leisure', label: 'Lazer', icon: 'gamepad-variant-outline' },
+    { id: 'other', label: 'Outros', icon: 'dots-horizontal-circle-outline' },
 ];
 
 /** Ícone da categoria pelo nome; categorias desconhecidas usam uma etiqueta. */

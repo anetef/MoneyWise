@@ -63,6 +63,9 @@ export type MainStackParamList = {
         groupId: string;
     };
 
+    /** Aceitar convite pelo código (pode chegar já preenchido). */
+    AcceptInvitation: { code?: string } | undefined;
+
     CreateGoal: undefined;
 };
 

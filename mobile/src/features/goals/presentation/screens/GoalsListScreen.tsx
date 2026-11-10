@@ -92,6 +92,10 @@ export function GoalsListScreen({ navigation, route }: Props) {
         navigation.navigate('CreateGoal');
     }
 
+    function openAcceptInvitation() {
+        navigation.navigate('AcceptInvitation');
+    }
+
     return (
         <SafeAreaView style={styles.screen} edges={['top']}>
             {/* Cabeçalho */}
@@ -137,6 +141,18 @@ export function GoalsListScreen({ navigation, route }: Props) {
                 >
                     <Text style={styles.createButtonIcon}>⊕</Text>
                     <Text style={styles.createButtonText}>Nova Caixinha</Text>
+                </Pressable>
+
+                {/* Entrar com código de convite */}
+                <Pressable
+                    accessibilityRole="button"
+                    onPress={openAcceptInvitation}
+                    style={({ pressed }) => [
+                        styles.inviteLink,
+                        pressed && styles.createButtonPressed,
+                    ]}
+                >
+                    <Text style={styles.inviteLinkText}>Tenho um código de convite</Text>
                 </Pressable>
 
                 <Text style={styles.helperText}>
@@ -201,6 +217,19 @@ const styles = StyleSheet.create({
     createButtonText: {
         ...typography.button,
         color: colors.text.inverse,
+    },
+
+    inviteLink: {
+        minHeight: 44,
+        alignItems: 'center',
+        justifyContent: 'center',
+        marginTop: -spacing.sm,
+    },
+
+    inviteLinkText: {
+        fontFamily: fontFamily.semiBold,
+        fontSize: fontSize.sm,
+        color: colors.primary,
     },
 
     helperText: {
