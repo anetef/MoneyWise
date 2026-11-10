@@ -1,7 +1,28 @@
-import { useState } from 'react';
-import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import {
+    ActivityIndicator,
+    Alert,
+    Pressable,
+    ScrollView,
+    StyleSheet,
+    Text,
+    View,
+} from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Feather, MaterialCommunityIcons } from '@expo/vector-icons';
+import { useNavigation } from '@react-navigation/native';
+import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
+
+import type { DashboardStackParamList } from '../../../../core/navigation/types';
+import type { Transaction } from '../../../transactions/domain/Transaction';
+import {
+    useStatement,
+    type StatementFilter,
+} from '../../../transactions/presentation/viewmodels/useStatement';
+import { categoryIcon } from '../../../transactions/presentation/utils/categories';
+import {
+    formatCurrency,
+    formatSignedAmount,
+} from '../../../transactions/presentation/utils/format';
 
 // 🎨 Cores do Figma (depois trocamos pelos tokens do core/theme)
 const C = {
@@ -26,119 +47,23 @@ const F = {
     bold: 'Inter_700Bold',
 };
 
-// 📊 Tipos e dados mockados
-type Filter = 'all' | 'income' | 'expense';
-type StatementIcon = 'cart' | 'income' | 'food' | 'fuel';
-
-type StatementItem = {
-    id: string;
-    title: string;
-    subtitle: string;
-    amount: string;
-    type: 'income' | 'expense';
-    icon: StatementIcon;
-};
-
-type StatementGroup = {
-    id: string;
-    /** Dia e mês do grupo; os dados simulados não têm ano. */
-    day: number;
-    month: number;
-    items: StatementItem[];
-};
-
-const FILTERS: { key: Filter; label: string }[] = [
+// 📊 Filtros
+const FILTERS: { key: StatementFilter; label: string }[] = [
     { key: 'all', label: 'Tudo' },
     { key: 'income', label: 'Entradas' },
     { key: 'expense', label: 'Saídas' },
 ];
 
-const BALANCE = 'R$ 14.529,80';
-
-const GROUPS: StatementGroup[] = [
-    {
-        id: 'today',
-        day: 24,
-        month: 10,
-        items: [
-            {
-                id: '1',
-                title: 'Mercado Extra',
-                subtitle: 'Cartão de Crédito • 14:32',
-                amount: '- R$ 145,90',
-                type: 'expense',
-                icon: 'cart',
-            },
-            {
-                id: '2',
-                title: 'Pix Recebido',
-                subtitle: 'João Silva • 10:15',
-                amount: '+ R$ 350,00',
-                type: 'income',
-                icon: 'income',
-            },
-        ],
-    },
-    {
-        id: 'yesterday',
-        day: 23,
-        month: 10,
-        items: [
-            {
-                id: '3',
-                title: 'Restaurante Sabor',
-                subtitle: 'Cartão de Débito • 20:45',
-                amount: '- R$ 89,50',
-                type: 'expense',
-                icon: 'food',
-            },
-            {
-                id: '4',
-                title: 'Posto Ipiranga',
-                subtitle: 'Cartão de Crédito • 08:30',
-                amount: '- R$ 200,00',
-                type: 'expense',
-                icon: 'fuel',
-            },
-        ],
-    },
-];
-
-const MONTH_NAMES = [
-    'Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho',
-    'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro',
-];
-
 // Mensagem quando a aba escolhida não tem transações
-const EMPTY_MESSAGES: Record<Filter, string> = {
+const EMPTY_MESSAGES: Record<StatementFilter, string> = {
     all: 'Nenhuma transação registrada.',
     income: 'Nenhuma entrada registrada.',
     expense: 'Nenhuma saída registrada.',
 };
 
-/**
- * Título do dia, ex.: "24 de Outubro". "Hoje" e "Ontem" só
- * aparecem quando dia e mês coincidem com a data do aparelho.
- */
-function formatGroupDate(day: number, month: number, now = new Date()): string {
-    const label = `${day} de ${MONTH_NAMES[month - 1]}`;
-    const yesterday = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 1);
-    const isSameDay = (date: Date) => date.getDate() === day && date.getMonth() + 1 === month;
-
-    if (isSameDay(now)) {
-        return `Hoje, ${label}`;
-    }
-
-    if (isSameDay(yesterday)) {
-        return `Ontem, ${label}`;
-    }
-
-    return label;
-}
-
-// 🧾 Ícone de cada transação
-function ItemIcon({ icon }: { icon: StatementIcon }) {
-    if (icon === 'income') {
+// 🧾 Ícone de cada transação: seta para entradas, ícone da categoria para gastos
+function ItemIcon({ transaction }: { transaction: Transaction }) {
+    if (transaction.type === 'INCOME') {
         return (
             <View style={[styles.itemIcon, { backgroundColor: C.incomeIconBg }]}>
                 <Feather name="arrow-down" size={20} color={C.primary} />
@@ -148,27 +73,65 @@ function ItemIcon({ icon }: { icon: StatementIcon }) {
 
     return (
         <View style={styles.itemIcon}>
-            {icon === 'cart' && (
-                <MaterialCommunityIcons name="cart-outline" size={21} color={C.text} />
-            )}
-            {icon === 'food' && (
-                <MaterialCommunityIcons name="silverware-fork-knife" size={19} color={C.text} />
-            )}
-            {icon === 'fuel' && (
-                <MaterialCommunityIcons name="gas-station-outline" size={21} color={C.text} />
-            )}
+            <MaterialCommunityIcons
+                name={categoryIcon(transaction.category)}
+                size={20}
+                color={C.text}
+            />
         </View>
     );
 }
 
 export function StatementScreen() {
-    const [filter, setFilter] = useState<Filter>('all');
+    const navigation =
+        useNavigation<NativeStackNavigationProp<DashboardStackParamList>>();
 
-    // Filtra os itens de cada dia e esconde os dias que ficarem vazios
-    const visibleGroups = GROUPS.map((group) => ({
-        ...group,
-        items: group.items.filter((item) => filter === 'all' || item.type === filter),
-    })).filter((group) => group.items.length > 0);
+    const {
+        sections,
+        balance,
+        filter,
+        setFilter,
+        hasNext,
+        isLoading,
+        isLoadingMore,
+        error,
+        loadMore,
+        remove,
+        reload,
+    } = useStatement();
+
+    /** Toque longo: escolher entre editar e excluir. */
+    function handleItemOptions(item: Transaction) {
+        Alert.alert(item.description || item.category, 'O que você quer fazer?', [
+            { text: 'Cancelar', style: 'cancel' },
+            {
+                text: 'Editar',
+                onPress: () => navigation.navigate('AddTransaction', { transaction: item }),
+            },
+            { text: 'Excluir', style: 'destructive', onPress: () => confirmDelete(item) },
+        ]);
+    }
+
+    function confirmDelete(item: Transaction) {
+        Alert.alert(
+            'Excluir transação?',
+            `${formatSignedAmount(item.amount, item.type)} em ${item.category}. Essa ação não pode ser desfeita.`,
+            [
+                { text: 'Cancelar', style: 'cancel' },
+                {
+                    text: 'Excluir',
+                    style: 'destructive',
+                    onPress: async () => {
+                        const message = await remove(item.id);
+
+                        if (message) {
+                            Alert.alert('Não deu certo', message);
+                        }
+                    },
+                },
+            ],
+        );
+    }
 
     function handleFilters() {
         Alert.alert('Em breve', 'Os filtros avançados serão implementados em breve.');
@@ -187,8 +150,8 @@ export function StatementScreen() {
             >
                 {/* Saldo */}
                 <View style={styles.balance}>
-                    <Text style={styles.balanceLabel}>Saldo Disponível</Text>
-                    <Text style={styles.balanceValue}>{BALANCE}</Text>
+                    <Text style={styles.balanceLabel}>Saldo do Mês</Text>
+                    <Text style={styles.balanceValue}>{formatCurrency(balance ?? 0)}</Text>
                 </View>
 
                 {/* Tudo / Entradas / Saídas */}
@@ -239,42 +202,87 @@ export function StatementScreen() {
                     </Pressable>
                 </View>
 
+                {/* Erro ao carregar, com opção de tentar de novo */}
+                {error ? (
+                    <Pressable
+                        onPress={reload}
+                        accessibilityRole="button"
+                        style={styles.errorBox}
+                    >
+                        <Feather name="wifi-off" size={16} color={C.primary} />
+                        <Text style={styles.errorText}>{error} Toque para tentar de novo.</Text>
+                    </Pressable>
+                ) : null}
+
+                {isLoading && sections.length === 0 ? (
+                    <ActivityIndicator color={C.primary} style={styles.loader} />
+                ) : null}
+
+                {sections.length > 0 ? (
+                    <Text style={styles.hint}>Toque e segure uma transação para editar ou excluir.</Text>
+                ) : null}
+
                 {/* Lista agrupada por dia */}
-                {visibleGroups.map((group) => (
-                    <View key={group.id} style={styles.group}>
-                        <Text style={styles.groupTitle}>
-                            {formatGroupDate(group.day, group.month)}
-                        </Text>
+                {sections.map((section) => (
+                    <View key={section.key} style={styles.group}>
+                        <Text style={styles.groupTitle}>{section.title}</Text>
 
                         <View style={styles.card}>
-                            {group.items.map((item, index) => (
+                            {section.items.map((item, index) => (
                                 <View key={item.id}>
                                     {index > 0 && <View style={styles.divider} />}
 
-                                    <View style={styles.itemRow}>
-                                        <ItemIcon icon={item.icon} />
+                                    <Pressable
+                                        onLongPress={() => handleItemOptions(item)}
+                                        accessibilityRole="button"
+                                        accessibilityHint="Toque e segure para editar ou excluir"
+                                        style={({ pressed }) => [
+                                            styles.itemRow,
+                                            pressed && { opacity: 0.7 },
+                                        ]}
+                                    >
+                                        <ItemIcon transaction={item} />
 
                                         <View style={styles.itemInfo}>
-                                            <Text style={styles.itemTitle}>{item.title}</Text>
-                                            <Text style={styles.itemSubtitle}>{item.subtitle}</Text>
+                                            <Text style={styles.itemTitle} numberOfLines={1}>
+                                                {item.description || item.category}
+                                            </Text>
+                                            <Text style={styles.itemSubtitle}>{item.category}</Text>
                                         </View>
 
                                         <Text
                                             style={[
                                                 styles.itemAmount,
-                                                item.type === 'income' && { color: C.primary },
+                                                item.type === 'INCOME' && { color: C.primary },
                                             ]}
                                         >
-                                            {item.amount}
+                                            {formatSignedAmount(item.amount, item.type)}
                                         </Text>
-                                    </View>
+                                    </Pressable>
                                 </View>
                             ))}
                         </View>
                     </View>
                 ))}
 
-                {visibleGroups.length === 0 && (
+                {/* Próxima página */}
+                {hasNext ? (
+                    <Pressable
+                        onPress={loadMore}
+                        disabled={isLoadingMore}
+                        accessibilityRole="button"
+                        style={({ pressed }) => [
+                            styles.loadMoreButton,
+                            (pressed || isLoadingMore) && { opacity: 0.7 },
+                        ]}
+                    >
+                        <Text style={styles.loadMoreText}>
+                            {isLoadingMore ? 'Carregando...' : 'Carregar mais'}
+                        </Text>
+                    </Pressable>
+                ) : null}
+
+                {sections.length === 0 && !isLoading && !error && (
                     <View style={styles.empty}>
                         <Text style={styles.emptyText}>{EMPTY_MESSAGES[filter]}</Text>
                     </View>
@@ -470,5 +478,41 @@ const styles = StyleSheet.create({
         fontSize: 14,
         color: C.textSecondary,
         textAlign: 'center',
+    },
+
+    // Carregando, erro, dica e paginação
+    loader: {
+        marginVertical: 24,
+    },
+    errorBox: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 8,
+        backgroundColor: C.surface,
+        borderRadius: 12,
+        padding: 14,
+        marginBottom: 16,
+    },
+    errorText: {
+        flex: 1,
+        fontFamily: F.regular,
+        fontSize: 13,
+        color: C.text,
+    },
+    hint: {
+        fontFamily: F.regular,
+        fontSize: 12,
+        color: C.textSecondary,
+        marginBottom: 12,
+    },
+    loadMoreButton: {
+        alignItems: 'center',
+        paddingVertical: 14,
+        marginBottom: 8,
+    },
+    loadMoreText: {
+        fontFamily: F.semibold,
+        fontSize: 14,
+        color: C.primary,
     },
 });
