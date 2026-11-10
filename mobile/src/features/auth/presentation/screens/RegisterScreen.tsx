@@ -15,7 +15,8 @@ import {
 } from 'react-native';
 
 import type { AuthStackParamList } from '../../../../core/navigation/types';
-import { useMockAuth } from '../../../../core/navigation/MockAuthContext';
+import { ApiError } from '../../../../core/api/apiClient';
+import { authRepository } from '../../data/ApiAuthRepository';
 
 import {
     colors,
@@ -49,8 +50,6 @@ function getPasswordStrength(password: string): number {
 }
 
 export function RegisterScreen({ navigation }: Props) {
-    const { signIn } = useMockAuth();
-
     const [name, setName] = useState('');
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
@@ -61,10 +60,15 @@ export function RegisterScreen({ navigation }: Props) {
 
     const [acceptedTerms, setAcceptedTerms] = useState(false);
     const [error, setError] = useState('');
+    const [isLoading, setIsLoading] = useState(false);
 
     const passwordStrength = getPasswordStrength(password);
 
-    function handleRegister() {
+    async function handleRegister() {
+        if (isLoading) {
+            return;
+        }
+
         setError('');
 
         if (
@@ -106,10 +110,34 @@ export function RegisterScreen({ navigation }: Props) {
             return;
         }
 
-        // Cadastro simulado.
-        // Nenhum usuário é criado no backend.
-        // A sessão existe apenas em memória.
-        signIn();
+        if (password.length > 72) {
+            setError('A senha deve ter no máximo 72 caracteres.');
+            return;
+        }
+
+        setIsLoading(true);
+
+        const cleanEmail = email.trim().toLowerCase();
+
+        try {
+            await authRepository.register(name.trim(), cleanEmail, password);
+
+            // Conta criada: agora o usuário confirma o código enviado por e-mail.
+            navigation.navigate('VerifyEmail', { email: cleanEmail });
+        } catch (e) {
+            if (e instanceof ApiError && e.code === 'EMAIL_ALREADY_IN_USE') {
+                setError('Este e-mail já está cadastrado. Tente entrar na sua conta.');
+            } else if (e instanceof ApiError && e.code === 'NETWORK_ERROR') {
+                setError('Sem conexão com o servidor. Tente de novo.');
+            } else if (e instanceof ApiError && e.fields.length > 0) {
+                // Erro de validação do backend (400): mostra a primeira mensagem.
+                setError(e.fields[0].message);
+            } else {
+                setError('Não foi possível criar sua conta. Tente novamente.');
+            }
+        } finally {
+            setIsLoading(false);
+        }
     }
 
     function handleLegalDocument(document: string) {
@@ -352,14 +380,16 @@ export function RegisterScreen({ navigation }: Props) {
                     {/* Cadastro */}
                     <Pressable
                         onPress={handleRegister}
+                        disabled={isLoading}
                         accessibilityRole="button"
+                        accessibilityState={{ disabled: isLoading, busy: isLoading }}
                         style={({ pressed }) => [
                             styles.primaryButton,
-                            pressed && styles.pressed,
+                            (pressed || isLoading) && styles.pressed,
                         ]}
                     >
                         <Text style={styles.primaryButtonText}>
-                            Criar conta gratuita →
+                            {isLoading ? 'Criando conta...' : 'Criar conta gratuita →'}
                         </Text>
                     </Pressable>
 
