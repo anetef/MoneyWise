@@ -9,6 +9,8 @@ export type AuthStackParamList = {
     Welcome: undefined;
     Login: undefined;
     Register: undefined;
+    /** Confirmação do e-mail com o código de 6 dígitos (após o cadastro). */
+    VerifyEmail: { email: string };
     ForgotPassword: undefined;
 };
 

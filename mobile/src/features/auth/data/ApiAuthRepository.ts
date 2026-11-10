@@ -27,6 +27,17 @@ function toUser(response: UserResponse): User {
     };
 }
 
+// Moeda padrão da conta (RN09). Ainda não há seletor de moeda no cadastro.
+const DEFAULT_CURRENCY = 'BRL';
+
+/** Guarda tokens e usuário no aparelho (usado no login e na confirmação do e-mail). */
+async function saveSession(data: LoginResponse): Promise<User> {
+    const user = toUser(data.user);
+    await sessionStore.saveTokens(data.accessToken, data.refreshToken);
+    await sessionStore.saveUser(user);
+    return user;
+}
+
 /**
  * Repository real: conversa com a API do MoneyWise.
  */
@@ -38,10 +49,36 @@ export class ApiAuthRepository implements AuthRepository {
             auth: false,
         });
 
-        const user = toUser(data.user);
-        await sessionStore.saveTokens(data.accessToken, data.refreshToken);
-        await sessionStore.saveUser(user);
-        return user;
+        return saveSession(data);
+    }
+
+    async register(name: string, email: string, password: string): Promise<void> {
+        // A API devolve o usuário criado, mas sem tokens:
+        // a sessão só começa depois de confirmar o e-mail.
+        await apiRequest<UserResponse>('/auth/register', {
+            method: 'POST',
+            body: { name, email, password, currency: DEFAULT_CURRENCY },
+            auth: false,
+        });
+    }
+
+    async verifyEmail(email: string, code: string): Promise<User> {
+        // Se o código estiver certo, a API responde igual ao login.
+        const data = await apiRequest<LoginResponse>('/auth/verify-email', {
+            method: 'POST',
+            body: { email, code },
+            auth: false,
+        });
+
+        return saveSession(data);
+    }
+
+    async resendVerificationCode(email: string): Promise<void> {
+        await apiRequest<void>('/auth/resend-verification', {
+            method: 'POST',
+            body: { email },
+            auth: false,
+        });
     }
 
     async getCurrentUser(): Promise<User> {

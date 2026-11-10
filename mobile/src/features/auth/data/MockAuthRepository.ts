@@ -16,6 +16,18 @@ export class MockAuthRepository implements AuthRepository {
         return { ...mockUser };
     }
 
+    async register(): Promise<void> {
+        // Simulação: nenhuma conta é criada.
+    }
+
+    async verifyEmail(): Promise<User> {
+        return { ...mockUser };
+    }
+
+    async resendVerificationCode(): Promise<void> {
+        // Simulação: nenhum e-mail é enviado.
+    }
+
     async getCurrentUser(): Promise<User> {
         return { ...mockUser };
     }

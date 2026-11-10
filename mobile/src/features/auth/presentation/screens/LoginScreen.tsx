@@ -76,7 +76,8 @@ export function LoginScreen({ navigation }: Props) {
             if (e instanceof ApiError && e.code === 'INVALID_CREDENTIALS') {
                 setError('E-mail ou senha incorretos.');
             } else if (e instanceof ApiError && e.code === 'EMAIL_NOT_VERIFIED') {
-                setError('Confirme seu e-mail antes de entrar.');
+                // Leva para a confirmação; lá dá para pedir um novo código.
+                navigation.navigate('VerifyEmail', { email: email.trim().toLowerCase() });
             } else if (e instanceof ApiError && e.code === 'NETWORK_ERROR') {
                 setError('Sem conexão com o servidor. Tente de novo.');
             } else {
