@@ -135,7 +135,7 @@ export function LoginScreen({ navigation }: Props) {
 
                                 <View style={styles.inputContent}>
                                     <Text style={styles.inputLabel}>
-                                        E-MAIL OU TELEFONE
+                                        E-MAIL
                                     </Text>
 
                                     <TextInput
