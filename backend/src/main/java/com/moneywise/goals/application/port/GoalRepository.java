@@ -13,4 +13,6 @@ public interface GoalRepository {
     Optional<Goal> findById(UUID id);
 
     List<Goal> findByGroupId(UUID groupId);
+
+    Optional<Goal> findByIdForUpdate(UUID id);
 }

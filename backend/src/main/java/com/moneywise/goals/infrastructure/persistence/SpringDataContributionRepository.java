@@ -7,6 +7,7 @@ import java.util.UUID;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.Repository;
 import org.springframework.data.repository.query.Param;
+import java.util.Optional;
 
 public interface SpringDataContributionRepository extends Repository<ContributionEntity, UUID> {
 
@@ -30,4 +31,7 @@ public interface SpringDataContributionRepository extends Repository<Contributio
              ORDER BY "total" DESC
             """, nativeQuery = true)
     List<MemberTotalRow> sumByMember(@Param("goalId") UUID goalId);
+
+    @Query("SELECT c.goalId FROM ContributionEntity c WHERE c.id = :id")
+    Optional<UUID> findGoalIdById(@Param("id") UUID id);
 }
