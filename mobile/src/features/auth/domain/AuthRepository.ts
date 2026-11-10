@@ -10,7 +10,20 @@ import type { User } from './User';
 export interface AuthRepository {
         /** Faz login e guarda a sessão no aparelho. */
     login(email: string, password: string): Promise<User>;
-    
+
+    /**
+     * Cria a conta com o e-mail ainda não confirmado.
+     * A API não devolve tokens: o usuário precisa confirmar
+     * o código enviado por e-mail antes de entrar.
+     */
+    register(name: string, email: string, password: string): Promise<void>;
+
+    /** Confere o código de 6 dígitos e já guarda a sessão no aparelho. */
+    verifyEmail(email: string, code: string): Promise<User>;
+
+    /** Pede um novo código de confirmação (o anterior deixa de valer). */
+    resendVerificationCode(email: string): Promise<void>;
+
     /** Usuário da sessão atual. */
     getCurrentUser(): Promise<User>;
 
