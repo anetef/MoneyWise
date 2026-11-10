@@ -1,5 +1,6 @@
 package com.moneywise.goals.domain;
 
+import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.util.Collection;
@@ -17,7 +18,7 @@ public final class Goal {
     public static final String ARCHIVED = "GOAL_ARCHIVED";
     public static final String CURRENCY_MISMATCH = "GOAL_CURRENCY_MISMATCH";
     public static final String INSUFFICIENT_BALANCE = "GOAL_INSUFFICIENT_BALANCE";
-
+    public static final String HAS_BALANCE = "GOAL_HAS_BALANCE";
     private final UUID id;
     private final UUID groupId;
     private final String name;
@@ -85,6 +86,39 @@ public final class Goal {
             throw new BusinessRuleException(INSUFFICIENT_BALANCE, "A retirada é maior que o valor acumulado.");
         }
         return Contribution.create(contributionId, id, userId, type, amount, now);
+    }
+
+     
+    public Goal update(String name, BigDecimal targetAmount, LocalDate deadline, String icon, String category,
+            boolean monthlyReminder, boolean milestonesEnabled) {
+        if (archived) {
+            throw new BusinessRuleException(ARCHIVED, "Não é possível editar uma meta arquivada.");
+        }
+        return new Goal(id, groupId, name, new Money(targetAmount, getCurrency()), deadline, icon, category,
+                monthlyReminder, milestonesEnabled, false, createdAt);
+    }
+
+    public Goal archive() {
+        return withArchived(true);
+    }
+
+    public Goal unarchive() {
+        return withArchived(false);
+    }
+
+    public void ensureCanBeDeleted(Money currentBalance) {
+        if (currentBalance.amount().signum() > 0) {
+            throw new BusinessRuleException(HAS_BALANCE,
+                    "A meta ainda tem valor acumulado. Retire o valor ou arquive a meta.");
+        }
+    }
+
+    private Goal withArchived(boolean newArchived) {
+        if (archived == newArchived) {
+            return this;
+        }
+        return new Goal(id, groupId, name, target, deadline, icon, category, monthlyReminder, milestonesEnabled,
+                newArchived, createdAt);
     }
 
     public boolean hasDeadline() {
