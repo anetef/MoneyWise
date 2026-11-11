@@ -1,6 +1,6 @@
 <div align="center">
 
-# 💰 MoneyWise
+#  MoneyWise
 
 **Finanças pessoais e colaborativas, com metas em grupo que você acompanha em tempo real.**
 
@@ -27,7 +27,7 @@ Trabalho de Conclusão de Curso · Engenharia de Software · Universidade Catól
 
 ---
 
-## 📖 Sobre o projeto
+## Sobre o projeto
 
 O **MoneyWise** é um sistema de gerenciamento de finanças pessoais e colaborativas pensado para jovens adultos, casais e famílias. Com ele, o usuário registra receitas e despesas, acompanha o próprio saldo e, junto com outras pessoas, cria **Caixinhas**: metas financeiras dentro de um grupo.
 
@@ -45,7 +45,7 @@ O sistema é formado por:
 
 ---
 
-## ✨ Funcionalidades
+## Funcionalidades
 
 ### Release 1 · MVP
 
@@ -91,7 +91,7 @@ A lista completa de requisitos e regras está no [Documento de Requisitos](https
 
 ---
 
-## 🎨 Protótipo
+## Protótipo
 
 O protótipo de alta fidelidade foi desenvolvido no **Figma** e é a referência das telas do aplicativo. Algumas telas ainda mostram itens que ficaram fora do MVP, como o login com Apple e Google, o convite por e-mail e o Plano Pro.
 
@@ -110,7 +110,7 @@ O protótipo de alta fidelidade foi desenvolvido no **Figma** e é a referência
 
 ---
 
-## 🏗️ Arquitetura
+## Arquitetura
 
 O MoneyWise segue o modelo **cliente-servidor** e é organizado como um **monorepo**. O aplicativo cuida da interface e do armazenamento local. A API concentra as regras de negócio, a autenticação, a persistência e o tempo real.
 
@@ -210,7 +210,7 @@ Ainda não implementados: exclusão da conta (MVP) e, na Release 2, calendário,
 
 ---
 
-## 📁 Estrutura do repositório
+## Estrutura do repositório
 
 ```
 moneywise/
@@ -244,9 +244,9 @@ moneywise/
 
 ---
 
-## 🚀 Como executar
+## Como executar
 
-> 🚧 O projeto está em construção. Um guia completo, testado do zero com o app conectado à API, será publicado na task QA-03.
+> O projeto está em construção. Um guia completo, testado do zero com o app conectado à API, será publicado na task QA-03.
 
 ### Pré-requisitos
 
@@ -331,7 +331,7 @@ Os testes de integração usam Testcontainers, então o Docker precisa estar abe
 
 ---
 
-## 🗺️ Roadmap
+## Roadmap
 
 O desenvolvimento é acompanhado no quadro [MoneyWise — Desenvolvimento](https://github.com/users/anetef/projects/2), e cada task é uma [issue](https://github.com/anetef/MoneyWise/issues).
 
@@ -346,7 +346,7 @@ O desenvolvimento é acompanhado no quadro [MoneyWise — Desenvolvimento](https
 
 ---
 
-## 🤝 Como contribuir
+## Como contribuir
 
 O guia completo, com o passo a passo e a Definition of Done, está no [CONTRIBUTING.md](https://github.com/anetef/MoneyWise/blob/develop/CONTRIBUTING.md).
 
@@ -383,7 +383,7 @@ O guia completo, com o passo a passo e a Definition of Done, está no [CONTRIBUT
 
 ---
 
-## 👩‍💻 Equipe
+## Equipe
 
 | Integrante | Área |
 |---|---|
@@ -396,7 +396,7 @@ O guia completo, com o passo a passo e a Definition of Done, está no [CONTRIBUT
 
 ---
 
-## 📚 Documentação
+## Documentação
 
 | Documento | Conteúdo |
 |---|---|
@@ -409,7 +409,7 @@ O guia completo, com o passo a passo e a Definition of Done, está no [CONTRIBUT
 
 ---
 
-## 📄 Licença
+## Licença
 
 Projeto acadêmico desenvolvido como Trabalho de Conclusão de Curso na Universidade Católica de Brasília.
 
