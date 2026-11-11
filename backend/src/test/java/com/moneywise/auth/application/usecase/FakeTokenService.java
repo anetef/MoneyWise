@@ -37,6 +37,10 @@ class FakeTokenService implements TokenService {
     public void revokeRefreshToken(String refreshToken) {
     }
 
+    @Override
+    public void revokeAllRefreshTokens(UUID userId) {
+    }
+    
     /** Quantos access tokens foram emitidos, para conferir que nenhum foi emitido quando o login falha. */
     int issuedCount() {
         return issuedFor.size();

@@ -1,8 +1,10 @@
 package com.moneywise.auth.infrastructure.security.jwt;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.UUID;
 
 import com.moneywise.auth.infrastructure.persistence.refreshtoken.RefreshTokenEntity;
 import com.moneywise.auth.infrastructure.security.jwt.RefreshTokenStore;
@@ -22,6 +24,12 @@ class InMemoryRefreshTokenStore implements RefreshTokenStore {
         return Optional.ofNullable(byHash.get(tokenHash));
     }
 
+    @Override
+    public List<RefreshTokenEntity> findNotRevokedByUserId(UUID userId) {
+        return byHash.values().stream()
+                .filter(token -> token.getUserId().equals(userId) && token.getRevokedAt() == null)
+                .toList();
+    }
     Map<String, RefreshTokenEntity> all() {
         return byHash;
     }

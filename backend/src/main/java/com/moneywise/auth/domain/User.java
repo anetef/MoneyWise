@@ -7,10 +7,7 @@ import java.util.UUID;
 
 import com.moneywise.shared.exception.BusinessRuleException;
 
-/**
- * Entidade de domínio: usuário do MoneyWise.
- * Java puro, sem Spring nem JPA. A versão para o banco (UserEntity) fica na infrastructure.
- */
+
 public class User {
 
     public static final int NAME_MAX_LENGTH = 100;
@@ -18,7 +15,7 @@ public class User {
     private final UUID id;
     private final String name;
     private final Email email;
-    private final String passwordHash;
+    private String passwordHash;
     private final Currency currency;
     private Instant emailVerifiedAt;
 
@@ -31,28 +28,28 @@ public class User {
         this.emailVerifiedAt = emailVerifiedAt;
     }
 
-    /** Cria um usuário novo, no cadastro. O id é gerado aqui, e o e-mail começa não confirmado. */
     public static User register(String name, Email email, String passwordHash, Currency currency) {
         return new User(UUID.randomUUID(), name, email, passwordHash, currency, null);
     }
 
-    /** Reconstrói um usuário que já existe, por exemplo ao ler do banco. */
     public static User restore(UUID id, String name, Email email, String passwordHash, Currency currency,
             Instant emailVerifiedAt) {
         return new User(id, name, email, passwordHash, currency, emailVerifiedAt);
     }
 
-    /** O usuário só pode entrar no app depois de confirmar o e-mail. */
     public boolean isEmailVerified() {
         return emailVerifiedAt != null;
     }
 
-    /** Marca o e-mail como confirmado. Se já estava confirmado, mantém a data original. */
     public void markEmailVerified(Instant at) {
         Objects.requireNonNull(at, "A data da confirmação é obrigatória.");
         if (emailVerifiedAt == null) {
             emailVerifiedAt = at;
         }
+    }
+
+    public void changePassword(String newPasswordHash) {
+        this.passwordHash = requireText(newPasswordHash, "O hash da senha é obrigatório.");
     }
 
     private static String validateName(String name) {
@@ -96,7 +93,6 @@ public class User {
         return emailVerifiedAt;
     }
 
-    /** Dois usuários são o mesmo se têm o mesmo id. */
     @Override
     public boolean equals(Object other) {
         if (this == other) {
@@ -113,7 +109,6 @@ public class User {
         return id.hashCode();
     }
 
-    /** Nunca inclui o hash da senha, para ele não vazar em logs. */
     @Override
     public String toString() {
         return "User[id=" + id + ", email=" + email + "]";

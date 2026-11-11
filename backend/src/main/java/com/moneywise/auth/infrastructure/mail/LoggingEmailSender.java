@@ -15,4 +15,10 @@ public class LoggingEmailSender implements EmailSender {
         log.info("[DEV] Código de verificação para {}: {} (expira em {} min)",
                 to, code, expiresIn.toMinutes());
     }
+
+    @Override
+    public void sendPasswordResetCode(String to, String userName, String code, Duration expiresIn) {
+        log.info("[DEV] Código de recuperação de senha para {}: {} (expira em {} min)",
+                to, code, expiresIn.toMinutes());
+    }
 }

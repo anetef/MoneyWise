@@ -8,9 +8,14 @@ import org.springframework.context.annotation.Configuration;
 import com.moneywise.auth.application.port.EmailSender;
 import com.moneywise.auth.application.port.EmailVerificationCodeRepository;
 import com.moneywise.auth.application.port.PasswordHasher;
+import com.moneywise.auth.application.port.PasswordResetCodeRepository;
 import com.moneywise.auth.application.port.TokenService;
+import com.moneywise.auth.application.port.UnitOfWork;
 import com.moneywise.auth.application.port.UserRepository;
 import com.moneywise.auth.application.usecase.login.Login;
+import com.moneywise.auth.application.usecase.passwordreset.RequestPasswordReset;
+import com.moneywise.auth.application.usecase.passwordreset.ResetPassword;
+import com.moneywise.auth.application.usecase.passwordreset.VerifyPasswordResetCode;
 import com.moneywise.auth.application.usecase.register.RegisterUser;
 import com.moneywise.auth.application.usecase.session.Logout;
 import com.moneywise.auth.application.usecase.session.RefreshAccessToken;
@@ -61,5 +66,24 @@ public class AuthUseCaseConfig {
     @Bean
     Logout logout(TokenService tokenService) {
         return new Logout(tokenService);
+    }
+
+    @Bean
+    RequestPasswordReset requestPasswordReset(UserRepository userRepository, PasswordResetCodeRepository codes,
+                                              EmailSender emailSender, Clock clock) {
+        return new RequestPasswordReset(userRepository, codes, emailSender, clock);
+    }
+
+    @Bean
+    VerifyPasswordResetCode verifyPasswordResetCode(UserRepository userRepository,
+                                                    PasswordResetCodeRepository codes, Clock clock) {
+        return new VerifyPasswordResetCode(userRepository, codes, clock);
+    }
+
+    @Bean
+    ResetPassword resetPassword(UserRepository userRepository, PasswordResetCodeRepository codes,
+                                PasswordHasher passwordHasher, TokenService tokenService,
+                                UnitOfWork unitOfWork, Clock clock) {
+        return new ResetPassword(userRepository, codes, passwordHasher, tokenService, unitOfWork, clock);
     }
 }
