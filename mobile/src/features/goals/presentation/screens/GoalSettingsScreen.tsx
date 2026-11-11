@@ -11,6 +11,7 @@ import {
 } from 'react-native';
 
 import type { MainStackParamList } from '../../../../core/navigation/types';
+import type { GoalMember } from '../../domain/Goal';
 import { colors, spacing } from '../../../../core/theme';
 
 import { DetailsHeader } from '../components/DetailsHeader';
@@ -49,6 +50,7 @@ export function GoalSettingsScreen({ navigation, route }: Props) {
         archive,
         remove,
         leave,
+        removeMember,
     } = useGoalSettings(route.params.goalId);
 
     const canSave = !!goal;
@@ -116,6 +118,24 @@ export function GoalSettingsScreen({ navigation, route }: Props) {
         );
     }
 
+    /** Pede confirmação e remove o membro; a tela continua aberta. */
+    function handleRemoveMember(member: GoalMember) {
+        Alert.alert(
+            `Remover ${member.name} da Caixinha?`,
+            `${member.name} deixa de ver a Caixinha e os registros dela. Os aportes que já fez continuam no total.`,
+            [
+                { text: 'Cancelar', style: 'cancel' },
+                {
+                    text: 'Remover',
+                    style: 'destructive',
+                    onPress: async () => {
+                        handleResult(await removeMember(member.id));
+                    },
+                },
+            ],
+        );
+    }
+
     function renderContent() {
         if (isLoading) {
             return <ActivityIndicator color={colors.primary} />;
@@ -146,6 +166,7 @@ export function GoalSettingsScreen({ navigation, route }: Props) {
                     }
                     onLeave={handleLeave}
                     onArchive={handleArchive}
+                    onRemoveMember={handleRemoveMember}
                     disabled={isSaving}
                 />
             );

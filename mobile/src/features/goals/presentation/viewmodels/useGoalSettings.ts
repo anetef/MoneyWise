@@ -193,6 +193,43 @@ export function useGoalSettings(goalId: string) {
         );
     }
 
+    /**
+     * Remove um membro (só o Admin) e recarrega a Caixinha, para a
+     * lista de membros refletir o grupo atual.
+     */
+    async function removeMember(memberId: string): Promise<SettingsActionResult> {
+        if (!goal) {
+            return { ok: false, message: null };
+        }
+
+        const groupId = goal.groupId;
+        let alreadyGone = false;
+
+        const result = await runAction(async () => {
+            try {
+                await goalRepository.removeMember(groupId, memberId);
+            } catch (e) {
+                // O membro já tinha saído: só atualizar a lista.
+                if (isApiErrorCode(e, 'RESOURCE_NOT_FOUND')) {
+                    alreadyGone = true;
+                    return;
+                }
+
+                throw e;
+            }
+        }, 'Não foi possível remover o membro. Tente novamente.');
+
+        if (result.ok || result.message) {
+            await load();
+        }
+
+        if (alreadyGone) {
+            return { ok: false, message: 'Esse membro já não está na Caixinha.' };
+        }
+
+        return result;
+    }
+
     return {
         goal,
         isLoading,
@@ -208,5 +245,6 @@ export function useGoalSettings(goalId: string) {
         archive,
         remove,
         leave,
+        removeMember,
     };
 }
