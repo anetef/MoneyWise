@@ -33,6 +33,10 @@ type Props = {
     onChangeAmount: (value: string) => void;
     onChangeDeadline: (value: string) => void;
     onInvite: () => void;
+    onLeave: () => void;
+    onArchive: () => void;
+    /** Trava as ações enquanto uma operação está em andamento. */
+    disabled?: boolean;
 };
 
 /**
@@ -40,9 +44,8 @@ type Props = {
  * (frame "Caixinha - Configurações (Compartilhada)").
  *
  * Os campos comuns ficam em GoalBasicsFields. Membros e papéis
- * vêm do mock e são apenas exibidos: gerenciar membros,
- * permissões e regras do grupo depende de L-09 e L-10.
- * Essas ações aparecem desativadas, com "Em breve".
+ * vêm da API. Sair e arquivar chamam a API; gerenciar
+ * permissões e regras do grupo seguem com "Em breve" (L-10).
  */
 export function SharedGoalSettings({
     goal,
@@ -54,6 +57,9 @@ export function SharedGoalSettings({
     onChangeAmount,
     onChangeDeadline,
     onInvite,
+    onLeave,
+    onArchive,
+    disabled = false,
 }: Props) {
     return (
         <View style={styles.container}>
@@ -122,40 +128,41 @@ export function SharedGoalSettings({
                 </FormRow>
             </FormSection>
 
-            {/* Sair do grupo e arquivar dependem de L-09 */}
             <View style={styles.actionsCard}>
                 <Pressable
-                    disabled
+                    onPress={onLeave}
+                    disabled={disabled}
                     accessibilityRole="button"
-                    accessibilityLabel="Sair desta Caixinha, em breve"
-                    accessibilityState={{ disabled: true }}
-                    style={[styles.actionRow, styles.disabled]}
+                    accessibilityLabel="Sair desta Caixinha"
+                    accessibilityState={{ disabled }}
+                    style={({ pressed }) => [
+                        styles.actionRow,
+                        (pressed || disabled) && styles.disabled,
+                    ]}
                 >
                     <Text style={[styles.actionIcon, styles.primaryText]}>⇥</Text>
                     <Text style={[styles.actionLabel, styles.primaryText]}>
                         Sair desta Caixinha
                     </Text>
-                    <View style={styles.soonBadge}>
-                        <Text style={styles.soonBadgeText}>Em breve</Text>
-                    </View>
                 </Pressable>
 
                 <View style={styles.divider} />
 
                 <Pressable
-                    disabled
+                    onPress={onArchive}
+                    disabled={disabled}
                     accessibilityRole="button"
-                    accessibilityLabel="Encerrar e Arquivar Caixinha, em breve"
-                    accessibilityState={{ disabled: true }}
-                    style={[styles.actionRow, styles.disabled]}
+                    accessibilityLabel="Encerrar e Arquivar Caixinha"
+                    accessibilityState={{ disabled }}
+                    style={({ pressed }) => [
+                        styles.actionRow,
+                        (pressed || disabled) && styles.disabled,
+                    ]}
                 >
                     <Text style={[styles.actionIcon, styles.dangerText]}>⊠</Text>
                     <Text style={[styles.actionLabel, styles.dangerText]}>
                         Encerrar e Arquivar Caixinha
                     </Text>
-                    <View style={styles.soonBadge}>
-                        <Text style={styles.soonBadgeText}>Em breve</Text>
-                    </View>
                 </Pressable>
             </View>
 

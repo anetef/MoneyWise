@@ -8,7 +8,7 @@ import type {
     TransactionType,
 } from '../domain/Transaction';
 import type { TransactionRepository } from '../domain/TransactionRepository';
-import { createId } from './createId';
+import { createId } from '../../../core/utils/createId';
 
 // Formatos que a API devolve (iguais ao Swagger).
 type TransactionResponse = {

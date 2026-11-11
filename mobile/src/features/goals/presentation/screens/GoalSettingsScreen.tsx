@@ -3,6 +3,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import {
     ActivityIndicator,
+    Alert,
     KeyboardAvoidingView,
     Platform,
     ScrollView,
@@ -16,7 +17,10 @@ import { DetailsHeader } from '../components/DetailsHeader';
 import { EmptyState } from '../components/EmptyState';
 import { IndividualGoalSettings } from '../components/IndividualGoalSettings';
 import { SharedGoalSettings } from '../components/SharedGoalSettings';
-import { useGoalSettings } from '../viewmodels/useGoalSettings';
+import {
+    useGoalSettings,
+    type SettingsActionResult,
+} from '../viewmodels/useGoalSettings';
 
 type Props = NativeStackScreenProps<MainStackParamList, 'GoalSettings'>;
 
@@ -26,8 +30,8 @@ type Props = NativeStackScreenProps<MainStackParamList, 'GoalSettings'>;
  * Uma única tela que exibe o conteúdo conforme o tipo.
  *
  * A tela não aplica regras de permissão: quem pode editar a
- * meta ou gerenciar membros (RN04, L-10, L-17) será validado
- * pelo backend. No mock, o usuário simulado é o Admin.
+ * meta ou gerenciar membros (RN04, L-10, L-17) é validado
+ * pelo backend, e a mensagem de erro dele é mostrada.
  */
 export function GoalSettingsScreen({ navigation, route }: Props) {
     const {
@@ -42,14 +46,74 @@ export function GoalSettingsScreen({ navigation, route }: Props) {
         changeAmount,
         changeDeadline,
         save,
+        archive,
+        remove,
+        leave,
     } = useGoalSettings(route.params.goalId);
 
     const canSave = !!goal;
 
+    /** Mostra o erro da API, se houver; devolve true quando deu certo. */
+    function handleResult(result: SettingsActionResult): boolean {
+        if (!result.ok && result.message) {
+            Alert.alert('Não deu certo', result.message);
+        }
+
+        return result.ok;
+    }
+
     async function handleSave() {
-        if (await save()) {
+        if (handleResult(await save())) {
             navigation.goBack();
         }
+    }
+
+    /** Pede confirmação e, se der certo, volta para a lista de Caixinhas. */
+    function confirmAndLeave(
+        title: string,
+        message: string,
+        confirmLabel: string,
+        action: () => Promise<SettingsActionResult>,
+    ) {
+        Alert.alert(title, message, [
+            { text: 'Cancelar', style: 'cancel' },
+            {
+                text: confirmLabel,
+                style: 'destructive',
+                onPress: async () => {
+                    if (handleResult(await action())) {
+                        navigation.popTo('MainTabs', { screen: 'Goals' });
+                    }
+                },
+            },
+        ]);
+    }
+
+    function handleArchive() {
+        confirmAndLeave(
+            'Arquivar Caixinha?',
+            'Ela sai da sua lista, mas o histórico e o valor guardado continuam salvos.',
+            'Arquivar',
+            archive,
+        );
+    }
+
+    function handleDelete() {
+        confirmAndLeave(
+            'Excluir Caixinha?',
+            'A Caixinha e todo o histórico serão apagados. Essa ação não pode ser desfeita.',
+            'Excluir',
+            remove,
+        );
+    }
+
+    function handleLeave() {
+        confirmAndLeave(
+            'Sair desta Caixinha?',
+            'Você deixa de ver a Caixinha e os registros dela. Para voltar, vai precisar de um novo convite.',
+            'Sair',
+            leave,
+        );
     }
 
     function renderContent() {
@@ -80,6 +144,9 @@ export function GoalSettingsScreen({ navigation, route }: Props) {
                     onInvite={() =>
                         navigation.navigate('InviteMembers', { groupId: goal.groupId })
                     }
+                    onLeave={handleLeave}
+                    onArchive={handleArchive}
+                    disabled={isSaving}
                 />
             );
         }
@@ -94,6 +161,9 @@ export function GoalSettingsScreen({ navigation, route }: Props) {
                 onChangeName={changeName}
                 onChangeAmount={changeAmount}
                 onChangeDeadline={changeDeadline}
+                onArchive={handleArchive}
+                onDelete={handleDelete}
+                disabled={isSaving}
             />
         );
     }

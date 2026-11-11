@@ -1,9 +1,10 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 
-import { goalRepository } from '../../data/MockGoalRepository';
+import { goalRepository } from '../../data/ApiGoalRepository';
 import type { GoalDetails, GoalRecordKind } from '../../domain/Goal';
 import { formatCurrency } from '../utils/formatCurrency';
 import { toAmountDigits } from '../utils/goalForm';
+import { goalErrorMessage, isApiErrorCode } from '../utils/goalErrorMessage';
 
 type FormErrors = {
     amount?: string;
@@ -20,7 +21,7 @@ const INSUFFICIENT_BALANCE = 'Saldo insuficiente na Caixinha';
  * Valida o valor localmente e delega o registro ao
  * Repository. Saldo e progresso atualizados são lidos
  * depois pelos Detalhes; nada é calculado aqui.
- * Nesta etapa, a retirada existe só na Caixinha individual.
+ * A retirada vale para os dois tipos de Caixinha (L-07).
  */
 export function useGoalContribution(goalId: string, initialKind: GoalRecordKind = 'deposit') {
     const [goal, setGoal] = useState<GoalDetails | null>(null);
@@ -28,7 +29,6 @@ export function useGoalContribution(goalId: string, initialKind: GoalRecordKind 
 
     const [selectedKind, setSelectedKind] = useState<GoalRecordKind>(initialKind);
     const [amountDigits, setAmountDigits] = useState('');
-    const [description, setDescription] = useState('');
     const [errors, setErrors] = useState<FormErrors>({});
     const [isSaving, setIsSaving] = useState(false);
 
@@ -38,6 +38,8 @@ export function useGoalContribution(goalId: string, initialKind: GoalRecordKind 
     const load = useCallback(async () => {
         try {
             setGoal(await goalRepository.getGoalDetails(goalId));
+        } catch {
+            setGoal(null);
         } finally {
             setIsLoading(false);
         }
@@ -47,7 +49,8 @@ export function useGoalContribution(goalId: string, initialKind: GoalRecordKind 
         load();
     }, [load]);
 
-    const canWithdraw = goal?.type === 'individual';
+    // A API aceita retirada nos dois tipos (L-07).
+    const canWithdraw = goal !== null;
     const kind: GoalRecordKind = canWithdraw ? selectedKind : 'deposit';
     const amount = Number(amountDigits || '0') / 100;
 
@@ -69,10 +72,6 @@ export function useGoalContribution(goalId: string, initialKind: GoalRecordKind 
         setErrors({});
     }
 
-    function changeDescription(value: string) {
-        setDescription(value);
-        setErrors((current) => ({ ...current, submit: undefined }));
-    }
 
     /** Registra no Repository; devolve true quando gravou. */
     async function save(): Promise<boolean> {
@@ -97,17 +96,22 @@ export function useGoalContribution(goalId: string, initialKind: GoalRecordKind 
         try {
             // Após o sucesso o formulário permanece bloqueado,
             // pois a tela será fechada em seguida.
-            await goalRepository.addContribution(goalId, {
-                amount,
-                description: description.trim() || undefined,
-                kind,
-            });
+            await goalRepository.addContribution(goalId, { amount, kind });
 
             return true;
-        } catch {
+        } catch (e) {
             savingRef.current = false;
             setIsSaving(false);
-            setErrors({ submit: 'Não foi possível registrar. Tente novamente.' });
+
+            // O saldo pode ter mudado (outro membro retirou antes).
+            if (isApiErrorCode(e, 'GOAL_INSUFFICIENT_BALANCE')) {
+                setErrors({ amount: INSUFFICIENT_BALANCE });
+                load();
+            } else {
+                setErrors({
+                    submit: goalErrorMessage(e, 'Não foi possível registrar. Tente novamente.'),
+                });
+            }
 
             return false;
         }
@@ -120,12 +124,10 @@ export function useGoalContribution(goalId: string, initialKind: GoalRecordKind 
         canWithdraw,
         // Só o número ("180,00"); o "R$" fica fixo ao lado do campo.
         amountText: amountDigits ? formatCurrency(amount).replace('R$ ', '') : '',
-        description,
         errors,
         isSaving,
         changeKind,
         changeAmount,
-        changeDescription,
         save,
     };
 }

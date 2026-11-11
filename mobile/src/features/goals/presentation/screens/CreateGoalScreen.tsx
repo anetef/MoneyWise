@@ -69,7 +69,7 @@ export function CreateGoalScreen({ navigation }: Props) {
         }
     }
 
-    const formErrors = [errors.targetAmount, errors.deadline].filter(Boolean);
+    const formErrors = [errors.targetAmount, errors.deadline, errors.submit].filter(Boolean);
 
     return (
         <SafeAreaView style={styles.safeArea} edges={['top']}>

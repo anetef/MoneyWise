@@ -10,9 +10,8 @@ import type {
 /**
  * Acesso aos dados das Caixinhas.
  *
- * A implementação atual é simulada. Quando os
- * endpoints forem aprovados (L-09), uma implementação
- * baseada na API substituirá a versão mockada.
+ * Implementação real: `ApiGoalRepository` (API do MoneyWise).
+ * A versão simulada (`MockGoalRepository`) fica para testes.
  */
 export interface GoalRepository {
     /** Caixinhas de que o usuário participa. */
@@ -51,4 +50,22 @@ export interface GoalRepository {
      * ou se a retirada for maior que o saldo acumulado.
      */
     addContribution(goalId: string, input: AddContributionInput): Promise<void>;
+
+    /**
+     * Arquiva a Caixinha: sai da lista, mas mantém histórico
+     * e acumulado. Só o Admin (L-17).
+     */
+    archiveGoal(goalId: string): Promise<void>;
+
+    /**
+     * Exclui a Caixinha e o histórico. Só o Admin (L-17) e só
+     * sem valor acumulado (falha com GOAL_HAS_BALANCE).
+     */
+    deleteGoal(goalId: string): Promise<void>;
+
+    /**
+     * O usuário sai do grupo da Caixinha (L-09). Se for o Admin,
+     * o membro mais antigo vira Admin (L-10).
+     */
+    leaveGroup(groupId: string): Promise<void>;
 }
