@@ -18,6 +18,7 @@ import { DetailsHeader } from '../components/DetailsHeader';
 import { EmptyState } from '../components/EmptyState';
 import { IndividualGoalSettings } from '../components/IndividualGoalSettings';
 import { SharedGoalSettings } from '../components/SharedGoalSettings';
+import { isCurrentUserAdmin } from '../utils/goalPermissions';
 import {
     useGoalSettings,
     type SettingsActionResult,
@@ -53,7 +54,8 @@ export function GoalSettingsScreen({ navigation, route }: Props) {
         removeMember,
     } = useGoalSettings(route.params.goalId);
 
-    const canSave = !!goal;
+    // Na compartilhada, só o Admin edita a meta (RN04, L-17).
+    const canSave = !!goal && (goal.type === 'individual' || isCurrentUserAdmin(goal));
 
     /** Mostra o erro da API, se houver; devolve true quando deu certo. */
     function handleResult(result: SettingsActionResult): boolean {

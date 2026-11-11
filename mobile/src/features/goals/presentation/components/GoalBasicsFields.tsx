@@ -32,6 +32,8 @@ type Props = {
     onChangeName: (value: string) => void;
     onChangeAmount: (value: string) => void;
     onChangeDeadline: (value: string) => void;
+    /** Membro comum: vê os campos, mas só o Admin edita (RN04, L-17). */
+    readOnly?: boolean;
 };
 
 /** Largura aproximada do campo de nome, entre 120 e 260 px. */
@@ -43,8 +45,9 @@ function nameInputWidth(name: string): number {
  * Campos comuns às Configurações individual e compartilhada:
  * identidade visual, nome e "Identificação & Objetivo".
  *
- * Nome, valor objetivo e data limite são editáveis; os
- * demais campos dependem de L-08 e ficam "Em breve".
+ * Nome, valor objetivo e data limite são editáveis pelo Admin;
+ * para o membro comum aparecem só para leitura. Os demais
+ * campos dependem de L-08 e ficam "Em breve".
  */
 export function GoalBasicsFields({
     goal,
@@ -55,6 +58,7 @@ export function GoalBasicsFields({
     onChangeName,
     onChangeAmount,
     onChangeDeadline,
+    readOnly = false,
 }: Props) {
     const visual = getGoalVisual(goal.id);
     const formErrors = [errors.targetAmount, errors.deadline].filter(Boolean);
@@ -84,10 +88,17 @@ export function GoalBasicsFields({
                         placeholder="Nome da caixinha"
                         placeholderTextColor={colors.text.secondary}
                         maxLength={60}
+                        editable={!readOnly}
                         accessibilityLabel="Nome da caixinha"
                     />
-                    <Text style={styles.editIcon}>✎</Text>
+                    {!readOnly && <Text style={styles.editIcon}>✎</Text>}
                 </View>
+
+                {readOnly && (
+                    <Text style={styles.readOnlyNote}>
+                        Só o Admin pode editar esta Caixinha.
+                    </Text>
+                )}
 
                 {errors.name && (
                     <Text style={styles.errorText} accessibilityRole="alert">
@@ -107,6 +118,7 @@ export function GoalBasicsFields({
                             placeholder="R$ 0,00"
                             placeholderTextColor={colors.text.secondary}
                             keyboardType="number-pad"
+                            editable={!readOnly}
                             accessibilityLabel="Valor objetivo"
                         />
                     </FormRow>
@@ -116,10 +128,11 @@ export function GoalBasicsFields({
                             style={styles.dateInput}
                             value={deadlineText}
                             onChangeText={onChangeDeadline}
-                            placeholder="DD/MM/AAAA"
+                            placeholder={readOnly ? 'Sem data' : 'DD/MM/AAAA'}
                             placeholderTextColor={colors.text.secondary}
                             keyboardType="number-pad"
                             maxLength={10}
+                            editable={!readOnly}
                             accessibilityLabel="Data limite estimada, opcional"
                         />
                     </FormRow>
@@ -243,6 +256,13 @@ const styles = StyleSheet.create({
         ...typography.caption,
         fontSize: fontSize.xs,
         color: colors.status.error,
+        textAlign: 'center',
+    },
+
+    readOnlyNote: {
+        ...typography.caption,
+        fontSize: fontSize.xs,
+        color: colors.text.secondary,
         textAlign: 'center',
     },
 });
