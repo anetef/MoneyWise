@@ -15,14 +15,7 @@ import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.noClasses;
 import java.util.HashSet;
 import java.util.Set;
 
-/**
- * Regras de dependência da Clean Architecture do backend (Documento de Arquitetura, seção 5.2).
- *
- * A única dependência entre módulos autorizada é goals.application ->
- * groups.application.GroupAuthorizationService, para consultar a autorização do grupo
- * antes de operar sobre uma meta (seção 6.3). O teste mantém essa exceção restrita a
- * esse serviço; não libera dependências gerais entre os módulos.
- */
+
 @AnalyzeClasses(
         packages = "com.moneywise",
         importOptions = ImportOption.DoNotIncludeTests.class
@@ -89,6 +82,16 @@ class ArchitectureRulesTest {
             noClasses().that().resideInAPackage("com.moneywise.goals.application..")
                     .should(dependOnNoOtherGroupsApplicationType())
                     .allowEmptyShould(true);
+
+    /** GOAL-08: a publicação é feita pela presentation; a application não conhece o publisher nem o WebSocket. */
+    @ArchTest
+    static final ArchRule goalsApplicationDoesNotKnowWebSocket = noClasses()
+            .that().resideInAPackage("com.moneywise.goals.application..")
+            .should().dependOnClassesThat().resideInAnyPackage(
+                    "com.moneywise.goals.presentation.websocket..",
+                    "org.springframework.messaging..",
+                    "org.springframework.web.socket.."
+            ).allowEmptyShould(true);
 
     private static ArchCondition<JavaClass> domainMustUseFrameworkFreeSharedTypes() {
         return new ArchCondition<>("depend only on framework-free types from shared") {

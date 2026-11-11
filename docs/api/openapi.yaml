@@ -182,6 +182,228 @@ paths:
           description: Transação excluída
       security:
       - BearerAuth: []
+  /api/v1/goals/{id}:
+    get:
+      tags:
+      - Metas
+      summary: Detalhar meta
+      description: "Dados da meta (nome, valor, prazo, ícone, categoria, lembrete,\
+        \ marcos, arquivada). O progresso e a soma por membro estão em GET /goals/{id}/thermometer.\
+        \ Só membros do grupo acessam."
+      operationId: getGoal
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        "404":
+          description: Meta não encontrada ou de um grupo do qual não é membro
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "403":
+          description: Forbidden
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "409":
+          description: Conflict
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "422":
+          description: Unprocessable Content
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "400":
+          description: Bad Request
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: Internal Server Error
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "401":
+          description: Não autenticado
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "429":
+          description: Too Many Requests
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "200":
+          description: Meta
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/GoalResponseDTO"
+      security:
+      - BearerAuth: []
+    put:
+      tags:
+      - Metas
+      summary: Editar meta
+      description: "Substitui os dados editáveis da meta; campo opcional enviado como\
+        \ null é apagado (prazo null = meta sem prazo). Só o Admin edita (L-17): membro\
+        \ comum não altera o valor da meta nem os outros campos (RN04). A moeda nã\
+        o muda (AD-12). O prazo novo não pode estar no passado; um prazo que não mudou\
+        \ não é validado de novo. Meta arquivada precisa ser desarquivada antes."
+      operationId: updateGoal
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateGoalRequestDTO"
+        required: true
+      responses:
+        "404":
+          description: Meta não encontrada ou de um grupo do qual não é membro
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "403":
+          description: "Membro que não é Admin (L-17, RN04)"
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "409":
+          description: Conflict
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "422":
+          description: Prazo no passado (INVALID_GOAL_DEADLINE) ou meta arquivada
+            (GOAL_ARCHIVED)
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "400":
+          description: "Dados inválidos (ex.: valor da meta zero ou negativo)"
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: Internal Server Error
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "401":
+          description: Não autenticado
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "429":
+          description: Too Many Requests
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "200":
+          description: Meta editada
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/GoalResponseDTO"
+      security:
+      - BearerAuth: []
+    delete:
+      tags:
+      - Metas
+      summary: Excluir meta
+      description: "Exclui a Caixinha e todo o histórico de movimentos. Só o Admin\
+        \ (L-17) e só sem valor acumulado: com saldo, é preciso retirar o valor ou\
+        \ arquivar a meta."
+      operationId: deleteGoal
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        "404":
+          description: Meta não encontrada ou de um grupo do qual não é membro
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "403":
+          description: Membro que não é Admin (L-17)
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "409":
+          description: Conflict
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "422":
+          description: Meta com valor acumulado (GOAL_HAS_BALANCE)
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "400":
+          description: Bad Request
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: Internal Server Error
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "401":
+          description: Não autenticado
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "429":
+          description: Too Many Requests
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "204":
+          description: Meta excluída
+      security:
+      - BearerAuth: []
   /api/v1/transactions:
     get:
       tags:
@@ -724,7 +946,169 @@ paths:
                 $ref: "#/components/schemas/GoalResponseDTO"
       security:
       - BearerAuth: []
+  /api/v1/goals/{id}/unarchive:
+    post:
+      tags:
+      - Metas
+      summary: Desarquivar meta
+      description: Volta a Caixinha para a lista de metas ativas. Só o Admin (L-17).
+      operationId: unarchiveGoal
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        "404":
+          description: Meta não encontrada ou de um grupo do qual não é membro
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "403":
+          description: Membro que não é Admin (L-17)
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "409":
+          description: Conflict
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "422":
+          description: Unprocessable Content
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "400":
+          description: Bad Request
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: Internal Server Error
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "401":
+          description: Não autenticado
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "429":
+          description: Too Many Requests
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "200":
+          description: Meta ativa
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/GoalResponseDTO"
+      security:
+      - BearerAuth: []
   /api/v1/goals/{id}/contributions:
+    get:
+      tags:
+      - Metas
+      summary: Histórico de movimentos
+      description: "Entradas e retiradas da meta, do mais novo para o mais antigo,\
+        \ com o nome de quem fez. Movimentos de contas excluídas aparecem sem autor\
+        \ (AD-15). Só membros do grupo acessam. A página começa em zero; o tamanho\
+        \ padrão é 20 e o máximo é 100."
+      operationId: listGoalContributions
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - name: page
+        in: query
+        description: "Índice da página, começando em zero"
+        required: false
+        schema:
+          type: integer
+          format: int32
+          default: 0
+        example: 0
+      - name: size
+        in: query
+        description: Quantidade de itens por página (1 a 100)
+        required: false
+        schema:
+          type: integer
+          format: int32
+          default: 20
+        example: 20
+      responses:
+        "404":
+          description: Meta não encontrada ou de um grupo do qual não é membro
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "403":
+          description: Forbidden
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "409":
+          description: Conflict
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "422":
+          description: Unprocessable Content
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "400":
+          description: Paginação inválida
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: Internal Server Error
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "401":
+          description: Não autenticado
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "429":
+          description: Too Many Requests
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "200":
+          description: Página do histórico
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ContributionPageResponseDTO"
+      security:
+      - BearerAuth: []
     post:
       tags:
       - Metas
@@ -736,7 +1120,8 @@ paths:
         \ de GET /goals/{id}/thermometer (RF-17). O id é gerado no app: o reenvio\
         \ com o mesmo id não registra de novo e devolve o Termômetro atual, també\
         m com 201 (seção 6.4). Nenhum saldo pessoal é retornado: só os movimentos\
-        \ das Caixinhas são visíveis ao grupo (RN02/RN08)."
+        \ das Caixinhas são visíveis ao grupo (RN02/RN08). O mesmo Termômetro é publicado\
+        \ em /topic/goals/{id} para os membros inscritos (RF-19)."
       operationId: registerContribution
       parameters:
       - name: id
@@ -808,6 +1193,79 @@ paths:
             '*/*':
               schema:
                 $ref: "#/components/schemas/ThermometerResponseDTO"
+      security:
+      - BearerAuth: []
+  /api/v1/goals/{id}/archive:
+    post:
+      tags:
+      - Metas
+      summary: Arquivar meta
+      description: "Arquiva a Caixinha: ela sai da lista padrão, mantém o histórico\
+        \ e o acumulado, e não aceita novos movimentos nem edição. Só o Admin (L-17).\
+        \ Arquivar uma meta já arquivada devolve a meta como está."
+      operationId: archiveGoal
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        "404":
+          description: Meta não encontrada ou de um grupo do qual não é membro
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "403":
+          description: Membro que não é Admin (L-17)
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "409":
+          description: Conflict
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "422":
+          description: Unprocessable Content
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "400":
+          description: Bad Request
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: Internal Server Error
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "401":
+          description: Não autenticado
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "429":
+          description: Too Many Requests
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "200":
+          description: Meta arquivada
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/GoalResponseDTO"
       security:
       - BearerAuth: []
   /api/v1/auth/verify-email:
@@ -1458,6 +1916,90 @@ paths:
                 $ref: "#/components/schemas/GroupResponseDTO"
       security:
       - BearerAuth: []
+  /api/v1/goals:
+    get:
+      tags:
+      - Metas
+      summary: Listar metas
+      description: "Lista as metas de todos os grupos de que o usuário é membro, incluindo\
+        \ a Caixinha individual (L-06), com o progresso de cada uma. Com groupId,\
+        \ lista só as daquele grupo. Por padrão lista só as metas ativas; archived=true\
+        \ lista as arquivadas. Ordenação: da mais antiga para a mais nova."
+      operationId: listGoals
+      parameters:
+      - name: groupId
+        in: query
+        description: "Filtro opcional: só as metas deste grupo"
+        required: false
+        schema:
+          type: string
+          format: uuid
+      - name: archived
+        in: query
+        description: "false (padrão): metas ativas; true: metas arquivadas"
+        required: false
+        schema:
+          type: boolean
+          default: false
+      responses:
+        "404":
+          description: groupId de um grupo do qual não é membro
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "403":
+          description: Forbidden
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "409":
+          description: Conflict
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "422":
+          description: Unprocessable Content
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "400":
+          description: Bad Request
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: Internal Server Error
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "401":
+          description: Não autenticado
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "429":
+          description: Too Many Requests
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "200":
+          description: Metas do usuário
+          content:
+            '*/*':
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/GoalSummaryResponseDTO"
+      security:
+      - BearerAuth: []
   /api/v1/goals/{id}/thermometer:
     get:
       tags:
@@ -1748,6 +2290,65 @@ components:
         updatedAt:
           type: string
           format: date-time
+    UpdateGoalRequestDTO:
+      type: object
+      properties:
+        name:
+          type: string
+          maxLength: 100
+          minLength: 0
+        targetAmount:
+          type: number
+          minimum: 0.01
+        deadline:
+          type: string
+          format: date
+        icon:
+          type: string
+          maxLength: 50
+          minLength: 0
+        category:
+          type: string
+          maxLength: 50
+          minLength: 0
+        monthlyReminder:
+          type: boolean
+        milestonesEnabled:
+          type: boolean
+      required:
+      - name
+      - targetAmount
+    GoalResponseDTO:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        groupId:
+          type: string
+          format: uuid
+        name:
+          type: string
+        targetAmount:
+          type: number
+        currency:
+          type: string
+        deadline:
+          type: string
+          format: date
+        icon:
+          type: string
+        category:
+          type: string
+        monthlyReminder:
+          type: boolean
+        milestonesEnabled:
+          type: boolean
+        archived:
+          type: boolean
+        createdAt:
+          type: string
+          format: date-time
     CreateTransactionRequestDTO:
       type: object
       properties:
@@ -1872,37 +2473,6 @@ components:
       - id
       - name
       - targetAmount
-    GoalResponseDTO:
-      type: object
-      properties:
-        id:
-          type: string
-          format: uuid
-        groupId:
-          type: string
-          format: uuid
-        name:
-          type: string
-        targetAmount:
-          type: number
-        currency:
-          type: string
-        deadline:
-          type: string
-          format: date
-        icon:
-          type: string
-        category:
-          type: string
-        monthlyReminder:
-          type: boolean
-        milestonesEnabled:
-          type: boolean
-        archived:
-          type: boolean
-        createdAt:
-          type: string
-          format: date-time
     CreateContributionRequestDTO:
       type: object
       properties:
@@ -2144,6 +2714,91 @@ components:
           format: date-time
         alreadyMember:
           type: boolean
+    GoalSummaryResponseDTO:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        groupId:
+          type: string
+          format: uuid
+        name:
+          type: string
+        icon:
+          type: string
+        category:
+          type: string
+        currency:
+          type: string
+        targetAmount:
+          type: number
+        accumulated:
+          type: number
+        progressPercent:
+          type: number
+        status:
+          type: string
+          enum:
+          - ATINGIDA
+          - VENCIDA
+          - SEM_APORTES
+          - EM_ANDAMENTO
+          - ADIANTADA
+          - NO_PRAZO
+          - ATRASADA
+        deadline:
+          type: string
+          format: date
+        daysLeft:
+          type: integer
+          format: int64
+        archived:
+          type: boolean
+    ContributionPageResponseDTO:
+      type: object
+      properties:
+        content:
+          type: array
+          items:
+            $ref: "#/components/schemas/ContributionResponseDTO"
+        page:
+          type: integer
+          format: int32
+        size:
+          type: integer
+          format: int32
+        totalElements:
+          type: integer
+          format: int64
+        totalPages:
+          type: integer
+          format: int32
+        hasNext:
+          type: boolean
+    ContributionResponseDTO:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        type:
+          type: string
+          enum:
+          - ENTRADA
+          - RETIRADA
+        amount:
+          type: number
+        currency:
+          type: string
+        userId:
+          type: string
+          format: uuid
+        userName:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
   securitySchemes:
     BearerAuth:
       type: http
