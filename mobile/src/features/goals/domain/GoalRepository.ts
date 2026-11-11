@@ -68,4 +68,10 @@ export interface GoalRepository {
      * o membro mais antigo vira Admin (L-10).
      */
     leaveGroup(groupId: string): Promise<void>;
+
+    /**
+     * Remove um membro do grupo da Caixinha. Só o Admin (RN04, L-10).
+     * Os aportes que ele já fez continuam no total da Caixinha.
+     */
+    removeMember(groupId: string, memberId: string): Promise<void>;
 }
