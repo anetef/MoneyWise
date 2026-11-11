@@ -80,7 +80,11 @@ async function readResponse<T>(response: Response): Promise<T> {
 // Se várias requisições tomarem 401 ao mesmo tempo, só um refresh é feito.
 let refreshInProgress: Promise<boolean> | null = null;
 
-function refreshTokens(): Promise<boolean> {
+/**
+ * Renova o access token com o refresh token.
+ * Exportado para o tempo real (WebSocket), que não passa pelo `apiRequest`.
+ */
+export function refreshTokens(): Promise<boolean> {
     if (!refreshInProgress) {
         refreshInProgress = (async () => {
             try {
