@@ -1,10 +1,11 @@
 import { useRef, useState } from 'react';
 
 import { goalRepository } from '../../data/ApiGoalRepository';
-import type { Goal, GoalType } from '../../domain/Goal';
+import type { Goal, GoalExtras, GoalType } from '../../domain/Goal';
 import { formatCurrency } from '../utils/formatCurrency';
 import { maskDate, parseDate, toAmountDigits } from '../utils/goalForm';
 import { goalErrorMessage, isApiErrorCode } from '../utils/goalErrorMessage';
+import { NEW_GOAL_EXTRAS } from '../utils/goalOptions';
 
 type FormErrors = {
     name?: string;
@@ -18,13 +19,16 @@ type FormErrors = {
  * ViewModel da criação de Caixinha.
  *
  * Valida localmente nome e valor objetivo (MGO-03)
- * e delega a criação ao Repository.
+ * e delega a criação ao Repository, com os campos
+ * extras da meta (L-08).
  */
 export function useCreateGoal() {
     const [name, setName] = useState('');
     const [type, setType] = useState<GoalType>('individual');
     const [amountDigits, setAmountDigits] = useState('');
     const [deadlineText, setDeadlineText] = useState('');
+    const [noDeadline, setNoDeadlineValue] = useState(false);
+    const [extras, setExtras] = useState<GoalExtras>(NEW_GOAL_EXTRAS);
     const [errors, setErrors] = useState<FormErrors>({});
     const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -48,6 +52,20 @@ export function useCreateGoal() {
         setErrors((current) => ({ ...current, deadline: undefined }));
     }
 
+    function changeExtras(patch: Partial<GoalExtras>) {
+        setExtras((current) => ({ ...current, ...patch }));
+    }
+
+    /** "Meta sem prazo fixo": ligar apaga a data limite. */
+    function setNoDeadline(value: boolean) {
+        setNoDeadlineValue(value);
+
+        if (value) {
+            setDeadlineText('');
+            setErrors((current) => ({ ...current, deadline: undefined }));
+        }
+    }
+
     function validate(): { deadline: Date | null } | null {
         const nextErrors: FormErrors = {};
         let deadline: Date | null = null;
@@ -60,7 +78,7 @@ export function useCreateGoal() {
             nextErrors.targetAmount = 'Informe um valor objetivo maior que zero.';
         }
 
-        if (deadlineText) {
+        if (deadlineText && !noDeadline) {
             deadline = parseDate(deadlineText);
 
             if (!deadline) {
@@ -94,7 +112,8 @@ export function useCreateGoal() {
                 name: name.trim(),
                 type,
                 targetAmount,
-                deadline: validated.deadline,
+                deadline: noDeadline ? null : validated.deadline,
+                ...extras,
             });
         } catch (error) {
             submittingRef.current = false;
@@ -115,12 +134,16 @@ export function useCreateGoal() {
         type,
         amountText: amountDigits ? formatCurrency(targetAmount) : '',
         deadlineText,
+        noDeadline,
+        extras,
         errors,
         isSubmitting,
         changeName,
         setType,
         changeAmount,
         changeDeadline,
+        setNoDeadline,
+        changeExtras,
         submit,
     };
 }

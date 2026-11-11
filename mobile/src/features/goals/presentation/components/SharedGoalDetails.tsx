@@ -44,7 +44,7 @@ export function SharedGoalDetails({
     onOpenSettings,
     onSeeAllRecords,
 }: Props) {
-    const visual = getGoalVisual(goal.id);
+    const visual = getGoalVisual(goal.id, goal.icon);
     // Só o Admin convida (L-10): "Compartilhar" e "Convidar" abrem o convite.
     const isAdmin = isCurrentUserAdmin(goal);
 

@@ -25,7 +25,7 @@ type Props = {
  * Cartão de Caixinha exibido na lista.
  */
 export function GoalCard({ goal, onPress }: Props) {
-    const visual = getGoalVisual(goal.id);
+    const visual = getGoalVisual(goal.id, goal.icon);
 
     return (
         <Pressable

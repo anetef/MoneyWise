@@ -30,31 +30,40 @@ export type Goal = {
     /** Data limite (AAAA-MM-DD), ou null quando não há prazo. */
     deadline: string | null;
     deadlineLabel: string | null;
+    /** Ícone escolhido (L-08), ou null para o visual padrão. */
+    icon: string | null;
+    /** Categoria escolhida (L-08), ou null. */
+    category: string | null;
     accumulatedAmount: number;
     targetAmount: number;
     progress: GoalProgress;
 };
 
 /**
- * Dados informados na criação de uma Caixinha.
- *
- * Contém apenas os campos já definidos; ícone, categoria,
- * meta sem prazo, lembrete e marcos dependem de L-08.
+ * Campos extras da meta (L-08). Lembrete mensal e marcos ficam
+ * guardados; os avisos no celular chegam com as notificações
+ * (Release 2).
  */
-export type CreateGoalInput = {
+export type GoalExtras = {
+    icon: string | null;
+    category: string | null;
+    monthlyReminder: boolean;
+    milestonesEnabled: boolean;
+};
+
+/**
+ * Dados informados na criação de uma Caixinha.
+ * "Meta sem prazo fixo" é a data limite vazia.
+ */
+export type CreateGoalInput = GoalExtras & {
     name: string;
     type: GoalType;
     targetAmount: number;
     deadline: Date | null;
 };
 
-/**
- * Dados editáveis nas Configurações da Caixinha.
- *
- * Mesmos campos já definidos da criação; os demais
- * dependem de L-08.
- */
-export type UpdateGoalInput = {
+/** Dados editáveis nas Configurações da Caixinha. */
+export type UpdateGoalInput = GoalExtras & {
     name: string;
     targetAmount: number;
     deadline: Date | null;
@@ -126,6 +135,8 @@ export type GoalPace = {
 };
 
 export type GoalDetails = Goal & {
+    monthlyReminder: boolean;
+    milestonesEnabled: boolean;
     remainingAmount: number;
     pace: GoalPace | null;
     members: GoalMember[];

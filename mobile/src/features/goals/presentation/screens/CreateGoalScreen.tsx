@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -25,10 +26,13 @@ import {
 } from '../../../../core/theme';
 
 import type { GoalType } from '../../domain/Goal';
-import { DisabledSwitch } from '../components/DisabledSwitch';
 import { FormRow } from '../components/FormRow';
 import { FormSection } from '../components/FormSection';
+import { GoalCategoryChips } from '../components/GoalCategoryChips';
+import { GoalIconGrid } from '../components/GoalIconGrid';
+import { GoalSwitch } from '../components/GoalSwitch';
 import { SegmentedTabs } from '../components/SegmentedTabs';
+import { findGoalIcon } from '../utils/goalOptions';
 import { useCreateGoal } from '../viewmodels/useCreateGoal';
 
 type Props = NativeStackScreenProps<MainStackParamList, 'CreateGoal'>;
@@ -44,14 +48,21 @@ export function CreateGoalScreen({ navigation }: Props) {
         type,
         amountText,
         deadlineText,
+        noDeadline,
+        extras,
         errors,
         isSubmitting,
         changeName,
         setType,
         changeAmount,
         changeDeadline,
+        setNoDeadline,
+        changeExtras,
         submit,
     } = useCreateGoal();
+
+    const [isIconOpen, setIsIconOpen] = useState(false);
+    const [isCategoryOpen, setIsCategoryOpen] = useState(false);
 
     // Os botões "Criar" e "Criar Caixinha" acionam esta mesma operação.
     async function handleCreate() {
@@ -109,17 +120,31 @@ export function CreateGoalScreen({ navigation }: Props) {
                 >
                     {/* Identidade visual e nome */}
                     <View style={styles.identity}>
-                        <View style={styles.avatar}>
-                            <Text style={styles.avatarIcon}>🐷</Text>
+                        <Pressable
+                            onPress={() => setIsIconOpen((open) => !open)}
+                            accessibilityRole="button"
+                            accessibilityLabel="Escolher ícone"
+                            accessibilityState={{ expanded: isIconOpen }}
+                            style={styles.avatar}
+                        >
+                            <Text style={styles.avatarIcon}>
+                                {findGoalIcon(extras.icon)?.emoji ?? '🐷'}
+                            </Text>
 
-                            {/* Seleção de ícone depende de L-08 */}
-                            <View
-                                style={styles.cameraBadge}
-                                accessibilityLabel="Escolher ícone, em breve"
-                            >
+                            <View style={styles.cameraBadge}>
                                 <Text style={styles.cameraIcon}>📷</Text>
                             </View>
-                        </View>
+                        </Pressable>
+
+                        {isIconOpen && (
+                            <GoalIconGrid
+                                value={extras.icon}
+                                onChange={(icon) => {
+                                    changeExtras({ icon });
+                                    setIsIconOpen(false);
+                                }}
+                            />
+                        )}
 
                         <TextInput
                             style={styles.nameInput}
@@ -177,12 +202,13 @@ export function CreateGoalScreen({ navigation }: Props) {
                             <FormRow icon="▦" label="Data Limite Estimada">
                                 <TextInput
                                     style={styles.dateInput}
-                                    placeholder="DD/MM/AAAA"
+                                    placeholder={noDeadline ? 'Sem prazo' : 'DD/MM/AAAA'}
                                     placeholderTextColor={colors.text.secondary}
                                     value={deadlineText}
                                     onChangeText={changeDeadline}
                                     keyboardType="number-pad"
                                     maxLength={10}
+                                    editable={!noDeadline}
                                     accessibilityLabel="Data limite estimada, opcional"
                                 />
                             </FormRow>
@@ -190,14 +216,42 @@ export function CreateGoalScreen({ navigation }: Props) {
                             <FormRow
                                 label="Meta sem prazo fixo"
                                 description="Guardar livremente no seu próprio ritmo"
-                                comingSoon
                             >
-                                <DisabledSwitch />
+                                <GoalSwitch
+                                    value={noDeadline}
+                                    onValueChange={setNoDeadline}
+                                    label="Meta sem prazo fixo"
+                                />
                             </FormRow>
 
-                            <FormRow icon="◇" label="Categoria" comingSoon>
-                                <Text style={styles.rowValue}>Selecionar ›</Text>
+                            <FormRow icon="◇" label="Categoria">
+                                <Pressable
+                                    onPress={() => setIsCategoryOpen((open) => !open)}
+                                    accessibilityRole="button"
+                                    accessibilityLabel={`Categoria: ${extras.category ?? 'nenhuma'}`}
+                                    accessibilityState={{ expanded: isCategoryOpen }}
+                                    hitSlop={spacing.sm}
+                                >
+                                    <Text
+                                        style={[
+                                            styles.rowValue,
+                                            extras.category && styles.rowValueChosen,
+                                        ]}
+                                    >
+                                        {extras.category ?? 'Selecionar'} ›
+                                    </Text>
+                                </Pressable>
                             </FormRow>
+
+                            {isCategoryOpen && (
+                                <GoalCategoryChips
+                                    value={extras.category}
+                                    onChange={(category) => {
+                                        changeExtras({ category });
+                                        setIsCategoryOpen(false);
+                                    }}
+                                />
+                            )}
                         </FormSection>
 
                         {formErrors.map((message) => (
@@ -216,9 +270,12 @@ export function CreateGoalScreen({ navigation }: Props) {
                             icon="♕"
                             label="Marcos de Conquista"
                             description="Feedback motivador a cada 25% completado"
-                            comingSoon
                         >
-                            <DisabledSwitch />
+                            <GoalSwitch
+                                value={extras.milestonesEnabled}
+                                onValueChange={(milestonesEnabled) => changeExtras({ milestonesEnabled })}
+                                label="Marcos de Conquista"
+                            />
                         </FormRow>
                     </FormSection>
 
@@ -231,19 +288,12 @@ export function CreateGoalScreen({ navigation }: Props) {
                             icon="🔔"
                             label="Lembrete Mensal"
                             description="Aviso no smartphone para registrar economia"
-                            comingSoon
                         >
-                            <DisabledSwitch />
-                        </FormRow>
-                    </FormSection>
-
-                    <FormSection title="Lembretes & Notificações">
-                        <FormRow
-                            label="Lembrete mensal de aporte"
-                            description="Receba alerta para atualizar o progresso"
-                            comingSoon
-                        >
-                            <DisabledSwitch />
+                            <GoalSwitch
+                                value={extras.monthlyReminder}
+                                onValueChange={(monthlyReminder) => changeExtras({ monthlyReminder })}
+                                label="Lembrete Mensal"
+                            />
                         </FormRow>
                     </FormSection>
 
@@ -347,7 +397,6 @@ const styles = StyleSheet.create({
         backgroundColor: colors.surface.primary,
         alignItems: 'center',
         justifyContent: 'center',
-        opacity: 0.6,
         ...shadows.sm,
     },
 
@@ -412,6 +461,10 @@ const styles = StyleSheet.create({
         fontFamily: fontFamily.medium,
         fontSize: fontSize.sm,
         color: colors.text.secondary,
+    },
+
+    rowValueChosen: {
+        color: colors.primary,
     },
 
     errorText: {

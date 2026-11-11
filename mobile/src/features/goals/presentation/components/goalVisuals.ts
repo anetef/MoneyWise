@@ -1,10 +1,11 @@
+import { findGoalIcon } from '../utils/goalOptions';
+
 /**
- * Capas e ícones temporários das Caixinhas.
+ * Capas e ícones das Caixinhas.
  *
- * O Figma usa fotos e ícones que ainda não foram
- * exportados como assets, e o campo de ícone da meta
- * depende da decisão L-08. Até lá, a apresentação usa
- * estes marcadores visuais.
+ * O Figma usa fotos que ainda não foram exportadas como
+ * assets. Com um ícone escolhido (L-08), ele vira o ícone e
+ * a capa; sem ícone, ficam estes marcadores visuais.
  */
 type GoalVisual = {
     cover: string;
@@ -36,6 +37,9 @@ const defaultVisual: GoalVisual = {
     icon: '◎',
 };
 
-export function getGoalVisual(goalId: string): GoalVisual {
-    return visuals[goalId] ?? defaultVisual;
+export function getGoalVisual(goalId: string, icon?: string | null): GoalVisual {
+    const base = visuals[goalId] ?? defaultVisual;
+    const chosen = findGoalIcon(icon);
+
+    return chosen ? { ...base, cover: chosen.emoji, icon: chosen.emoji } : base;
 }

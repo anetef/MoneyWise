@@ -100,7 +100,7 @@ export function GoalContributionScreen({ navigation, route }: Props) {
             );
         }
 
-        const visual = getGoalVisual(goal.id);
+        const visual = getGoalVisual(goal.id, goal.icon);
 
         return (
             <>

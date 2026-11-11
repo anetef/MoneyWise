@@ -42,17 +42,28 @@ export function GoalSettingsScreen({ navigation, route }: Props) {
         name,
         amountText,
         deadlineText,
+        noDeadline,
+        extras,
         errors,
         isSaving,
         changeName,
         changeAmount,
         changeDeadline,
+        setNoDeadline,
+        changeExtras,
         save,
         archive,
         remove,
         leave,
         removeMember,
     } = useGoalSettings(route.params.goalId);
+
+    const extrasForm = {
+        extras,
+        noDeadline,
+        onChangeExtras: changeExtras,
+        onChangeNoDeadline: setNoDeadline,
+    };
 
     // Na compartilhada, só o Admin edita a meta (RN04, L-17).
     const canSave = !!goal && (goal.type === 'individual' || isCurrentUserAdmin(goal));
@@ -163,6 +174,7 @@ export function GoalSettingsScreen({ navigation, route }: Props) {
                     onChangeName={changeName}
                     onChangeAmount={changeAmount}
                     onChangeDeadline={changeDeadline}
+                    extrasForm={extrasForm}
                     onInvite={() =>
                         navigation.navigate('InviteMembers', { groupId: goal.groupId })
                     }
@@ -184,6 +196,7 @@ export function GoalSettingsScreen({ navigation, route }: Props) {
                 onChangeName={changeName}
                 onChangeAmount={changeAmount}
                 onChangeDeadline={changeDeadline}
+                extrasForm={extrasForm}
                 onArchive={handleArchive}
                 onDelete={handleDelete}
                 disabled={isSaving}
