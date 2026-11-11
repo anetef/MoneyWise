@@ -3,7 +3,8 @@ package com.moneywise.auth.infrastructure.persistence.refreshtoken;
 import java.util.Optional;
 
 import org.springframework.stereotype.Component;
-
+import java.util.List;
+import java.util.UUID;
 import com.moneywise.auth.infrastructure.security.jwt.RefreshTokenStore;
 
 /** Implementação de RefreshTokenStore com JPA e PostgreSQL (tabela refresh_tokens). */
@@ -24,5 +25,10 @@ public class JpaRefreshTokenStore implements RefreshTokenStore {
     @Override
     public Optional<RefreshTokenEntity> findByTokenHash(String tokenHash) {
         return repository.findByTokenHash(tokenHash);
+    }
+
+    @Override
+    public List<RefreshTokenEntity> findNotRevokedByUserId(UUID userId) {
+        return repository.findByUserIdAndRevokedAtIsNull(userId);
     }
 }

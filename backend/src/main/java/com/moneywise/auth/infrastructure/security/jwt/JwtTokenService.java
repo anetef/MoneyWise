@@ -123,6 +123,15 @@ public class JwtTokenService implements TokenService {
         });
     }
 
+    @Override
+    public void revokeAllRefreshTokens(UUID userId) {
+        Instant now = clock.instant();
+        for (RefreshTokenEntity token : refreshTokenStore.findNotRevokedByUserId(userId)) {
+            token.revoke(now);
+            refreshTokenStore.save(token);
+        }
+    }
+
     /** SHA-256 em hexadecimal (64 caracteres). É isso que vai para o banco, nunca o token. */
     static String sha256(String value) {
         try {

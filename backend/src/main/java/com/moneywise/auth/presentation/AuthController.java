@@ -9,6 +9,10 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.moneywise.auth.application.usecase.login.Login;
 import com.moneywise.auth.application.usecase.login.LoginCommand;
+import com.moneywise.auth.application.usecase.passwordreset.RequestPasswordReset;
+import com.moneywise.auth.application.usecase.passwordreset.ResetPassword;
+import com.moneywise.auth.application.usecase.passwordreset.ResetPasswordCommand;
+import com.moneywise.auth.application.usecase.passwordreset.VerifyPasswordResetCode;
 import com.moneywise.auth.application.usecase.register.RegisterUser;
 import com.moneywise.auth.application.usecase.register.RegisterUserCommand;
 import com.moneywise.auth.application.usecase.session.Logout;
@@ -16,14 +20,17 @@ import com.moneywise.auth.application.usecase.session.RefreshAccessToken;
 import com.moneywise.auth.application.usecase.verification.ResendVerificationCode;
 import com.moneywise.auth.application.usecase.verification.VerifyEmail;
 import com.moneywise.auth.application.usecase.verification.VerifyEmailCommand;
+import com.moneywise.auth.presentation.dto.ForgotPasswordRequestDTO;
 import com.moneywise.auth.presentation.dto.LoginRequestDTO;
 import com.moneywise.auth.presentation.dto.LoginResponseDTO;
 import com.moneywise.auth.presentation.dto.RefreshTokenRequestDTO;
 import com.moneywise.auth.presentation.dto.RegisterRequestDTO;
 import com.moneywise.auth.presentation.dto.ResendVerificationRequestDTO;
+import com.moneywise.auth.presentation.dto.ResetPasswordRequestDTO;
 import com.moneywise.auth.presentation.dto.TokenResponseDTO;
 import com.moneywise.auth.presentation.dto.UserResponseDTO;
 import com.moneywise.auth.presentation.dto.VerifyEmailRequestDTO;
+import com.moneywise.auth.presentation.dto.VerifyResetCodeRequestDTO;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -41,16 +48,27 @@ public class AuthController {
     private final ResendVerificationCode resendVerificationCode;
      private final RefreshAccessToken refreshAccessToken;
     private final Logout logout;
+    private final RequestPasswordReset requestPasswordReset;
+    private final VerifyPasswordResetCode verifyPasswordResetCode;
+    private final ResetPassword resetPassword;
 
     public AuthController(RegisterUser registerUser, Login login,
-                          VerifyEmail verifyEmail, ResendVerificationCode resendVerificationCode,
-                          RefreshAccessToken refreshAccessToken, Logout logout) {
+                          VerifyEmail verifyEmail, 
+                          ResendVerificationCode resendVerificationCode,
+                          RefreshAccessToken refreshAccessToken, 
+                          Logout logout,
+                          RequestPasswordReset requestPasswordReset,
+                          VerifyPasswordResetCode verifyPasswordResetCode,
+                          ResetPassword resetPassword) {
         this.registerUser = registerUser;
         this.login = login;
         this.verifyEmail = verifyEmail;
         this.resendVerificationCode = resendVerificationCode;
         this.refreshAccessToken = refreshAccessToken;
         this.logout = logout;
+        this.requestPasswordReset = requestPasswordReset;
+        this.verifyPasswordResetCode = verifyPasswordResetCode;
+        this.resetPassword = resetPassword;
     }
 
     @PostMapping("/register")
@@ -141,5 +159,52 @@ public class AuthController {
                     """)
     public void logout(@Valid @RequestBody RefreshTokenRequestDTO request) {
         logout.execute(request.refreshToken());
+    }
+
+    @PostMapping("/password/forgot")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    @Operation(
+            summary = "Esqueci a senha",
+            description = """
+                    Se o e-mail tiver conta, gera um código de 6 dígitos válido por 15 minutos e envia por e-mail.
+                    Responde 204 também quando o e-mail não tem conta, para não revelar quais e-mails estão
+                    cadastrados. Um novo pedido em menos de 1 minuto é ignorado (também com 204); o app deve
+                    deixar o botão de reenviar desativado durante esse minuto.
+
+                    Erros: 400 (e-mail inválido).
+                    """)
+    public void forgotPassword(@Valid @RequestBody ForgotPasswordRequestDTO request) {
+        requestPasswordReset.execute(request.email());
+    }
+
+    @PostMapping("/password/verify-code")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    @Operation(
+            summary = "Conferir código de recuperação",
+            description = """
+                    Confere o código na tela "confirmar código", antes da tela de nova senha. Não troca a senha
+                    nem gasta o código: o app guarda o código e o envia de novo em /password/reset.
+
+                    Erros: 400 (campos inválidos), 422 `INVALID_RESET_CODE` (código errado, vencido, já usado,
+                    5 tentativas erradas, ou e-mail sem conta; peça um novo código).
+                    """)
+    public void verifyResetCode(@Valid @RequestBody VerifyResetCodeRequestDTO request) {
+        verifyPasswordResetCode.execute(request.email(), request.code());
+    }
+
+    @PostMapping("/password/reset")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    @Operation(
+            summary = "Cadastrar nova senha",
+            description = """
+                    Confere o código de novo e troca a senha (mesmas regras do cadastro). O código passa a valer
+                    como usado, o e-mail fica confirmado e todas as sessões abertas caem: os refresh tokens antigos
+                    passam a receber 401 em /auth/refresh. Não faz login: o app leva o usuário para a tela de login.
+
+                    Erros: 400 (campos inválidos, senha fora de 8 a 72 caracteres),
+                    422 `INVALID_RESET_CODE` (código errado, vencido, já usado, 5 tentativas erradas, ou e-mail sem conta).
+                    """)
+    public void resetPassword(@Valid @RequestBody ResetPasswordRequestDTO request) {
+        resetPassword.execute(new ResetPasswordCommand(request.email(), request.code(), request.newPassword()));
     }
 }

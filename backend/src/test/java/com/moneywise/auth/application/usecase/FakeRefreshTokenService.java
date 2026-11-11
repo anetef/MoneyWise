@@ -39,4 +39,9 @@ class FakeRefreshTokenService implements TokenService {
     public void revokeRefreshToken(String refreshToken) {
         activeRefreshTokens.remove(refreshToken);
     }
+
+    @Override
+    public void revokeAllRefreshTokens(UUID userId) {
+        activeRefreshTokens.values().removeIf(owner -> owner.equals(userId));
+    }
 }

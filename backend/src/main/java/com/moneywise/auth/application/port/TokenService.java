@@ -24,4 +24,7 @@ public interface TokenService {
 
     /** Revoga um refresh token (logout ou rotação). Depois disso, ele não é mais aceito. */
     void revokeRefreshToken(String refreshToken);
+
+    /** Revoga todos os refresh tokens ativos do usuário (ex.: depois de trocar a senha). As sessões abertas caem. */
+    void revokeAllRefreshTokens(UUID userId);
 }

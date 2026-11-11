@@ -197,4 +197,21 @@ class JwtTokenServiceTest {
 
         assertThat(store.all()).isEmpty();
     }
+
+    @Test
+    @DisplayName("Revoga todos os refresh tokens do usuário e mantém os de outros usuários")
+    void shouldRevokeAllRefreshTokensOfUser() {
+        JwtTokenService service = service();
+        UUID userId = UUID.randomUUID();
+        UUID otherUserId = UUID.randomUUID();
+        String phone = service.issueRefreshToken(userId);
+        String laptop = service.issueRefreshToken(userId);
+        String otherUser = service.issueRefreshToken(otherUserId);
+
+        service.revokeAllRefreshTokens(userId);
+
+        assertThat(service.validateRefreshToken(phone)).isEmpty();
+        assertThat(service.validateRefreshToken(laptop)).isEmpty();
+        assertThat(service.validateRefreshToken(otherUser)).hasValue(otherUserId);
+    }
 }

@@ -1558,6 +1558,215 @@ paths:
             '*/*':
               schema:
                 $ref: "#/components/schemas/TokenResponseDTO"
+  /api/v1/auth/password/verify-code:
+    post:
+      tags:
+      - Autenticação
+      summary: Conferir código de recuperação
+      description: |
+        Confere o código na tela "confirmar código", antes da tela de nova senha. Não troca a senha
+        nem gasta o código: o app guarda o código e o envia de novo em /password/reset.
+
+        Erros: 400 (campos inválidos), 422 `INVALID_RESET_CODE` (código errado, vencido, já usado,
+        5 tentativas erradas, ou e-mail sem conta; peça um novo código).
+      operationId: verifyResetCode
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/VerifyResetCodeRequestDTO"
+        required: true
+      responses:
+        "404":
+          description: Not Found
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "403":
+          description: Forbidden
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "409":
+          description: Conflict
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "422":
+          description: Unprocessable Content
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "400":
+          description: Bad Request
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: Internal Server Error
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "401":
+          description: Unauthorized
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "429":
+          description: Too Many Requests
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "204":
+          description: No Content
+  /api/v1/auth/password/reset:
+    post:
+      tags:
+      - Autenticação
+      summary: Cadastrar nova senha
+      description: |
+        Confere o código de novo e troca a senha (mesmas regras do cadastro). O código passa a valer
+        como usado, o e-mail fica confirmado e todas as sessões abertas caem: os refresh tokens antigos
+        passam a receber 401 em /auth/refresh. Não faz login: o app leva o usuário para a tela de login.
+
+        Erros: 400 (campos inválidos, senha fora de 8 a 72 caracteres),
+        422 `INVALID_RESET_CODE` (código errado, vencido, já usado, 5 tentativas erradas, ou e-mail sem conta).
+      operationId: resetPassword
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ResetPasswordRequestDTO"
+        required: true
+      responses:
+        "404":
+          description: Not Found
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "403":
+          description: Forbidden
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "409":
+          description: Conflict
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "422":
+          description: Unprocessable Content
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "400":
+          description: Bad Request
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: Internal Server Error
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "401":
+          description: Unauthorized
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "429":
+          description: Too Many Requests
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "204":
+          description: No Content
+  /api/v1/auth/password/forgot:
+    post:
+      tags:
+      - Autenticação
+      summary: Esqueci a senha
+      description: |
+        Se o e-mail tiver conta, gera um código de 6 dígitos válido por 15 minutos e envia por e-mail.
+        Responde 204 também quando o e-mail não tem conta, para não revelar quais e-mails estão
+        cadastrados. Um novo pedido em menos de 1 minuto é ignorado (também com 204); o app deve
+        deixar o botão de reenviar desativado durante esse minuto.
+
+        Erros: 400 (e-mail inválido).
+      operationId: forgotPassword
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ForgotPasswordRequestDTO"
+        required: true
+      responses:
+        "404":
+          description: Not Found
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "403":
+          description: Forbidden
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "409":
+          description: Conflict
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "422":
+          description: Unprocessable Content
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "400":
+          description: Bad Request
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: Internal Server Error
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "401":
+          description: Unauthorized
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "429":
+          description: Too Many Requests
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "204":
+          description: No Content
   /api/v1/auth/logout:
     post:
       tags:
@@ -2635,6 +2844,49 @@ components:
           type: string
         tokenType:
           type: string
+    VerifyResetCodeRequestDTO:
+      type: object
+      properties:
+        email:
+          type: string
+          format: email
+          minLength: 1
+        code:
+          type: string
+          minLength: 1
+          pattern: "\\d{6}"
+      required:
+      - code
+      - email
+    ResetPasswordRequestDTO:
+      type: object
+      properties:
+        email:
+          type: string
+          format: email
+          minLength: 1
+        code:
+          type: string
+          minLength: 1
+          pattern: "\\d{6}"
+        newPassword:
+          type: string
+          example: novaSenhaSegura123
+          maxLength: 72
+          minLength: 8
+      required:
+      - code
+      - email
+      - newPassword
+    ForgotPasswordRequestDTO:
+      type: object
+      properties:
+        email:
+          type: string
+          format: email
+          minLength: 1
+      required:
+      - email
     LoginRequestDTO:
       type: object
       properties:
