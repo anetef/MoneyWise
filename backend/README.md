@@ -98,3 +98,26 @@ O banco de desenvolvimento não é usado nem alterado.
 
 Para um novo teste de integração, use `@SpringBootTest` com
 `@Import(TestcontainersConfiguration.class)`.
+
+## Suíte de segurança
+
+Testes que provam os requisitos de segurança das seções 6.2 e 6.3 da arquitetura. Ficam em
+`src/test/java/com/moneywise/security` e usam o PostgreSQL do Testcontainers (o Docker precisa estar aberto).
+
+Para rodar só a suíte, a partir da pasta `backend`:
+
+```bash
+./mvnw test -Dgroups=security
+```
+
+Ela também roda junto com todos os testes no `./mvnw clean verify`.
+
+| Classe | O que prova |
+|---|---|
+| `TransactionIsolationSecurityTest` | O usuário A não lê, não edita e não exclui as transações do usuário B |
+| `GoalAccessSecurityTest` | Quem não é membro não acessa metas nem aportes (404); membro removido perde o acesso |
+| `GoalSubscriptionSecurityTest` | Quem não é membro não se inscreve em `/topic/goals/{id}`; o app não publica nos tópicos |
+| `AdminActionsSecurityTest` | Membro comum não executa ações de Admin (403), incluindo alterar o valor da meta (RN04) |
+| `PersonalBalanceExposureSecurityTest` | Nenhum endpoint devolve o saldo pessoal de outro usuário (RN02, RN08) |
+
+Toda classe nova da suíte deve herdar de `SecurityTestSupport` (ou ter `@Tag("security")`) para entrar no comando acima.
