@@ -12,6 +12,7 @@ import {
 
 import type { GoalDetails } from '../../domain/Goal';
 import { formatCurrency } from '../utils/formatCurrency';
+import { isCurrentUserAdmin } from '../utils/goalPermissions';
 
 import { ContributorItem } from './ContributorItem';
 import { goalColors } from './goalColors';
@@ -44,6 +45,8 @@ export function SharedGoalDetails({
     onSeeAllRecords,
 }: Props) {
     const visual = getGoalVisual(goal.id);
+    // Só o Admin convida (L-10): "Compartilhar" e "Convidar" abrem o convite.
+    const isAdmin = isCurrentUserAdmin(goal);
 
     return (
         <View style={styles.container}>
@@ -98,17 +101,19 @@ export function SharedGoalDetails({
                         <Text style={styles.primaryActionText}>+ Registrar aporte</Text>
                     </Pressable>
 
-                    <Pressable
-                        onPress={onShare}
-                        accessibilityRole="button"
-                        style={({ pressed }) => [
-                            styles.actionButton,
-                            styles.secondaryAction,
-                            pressed && styles.pressed,
-                        ]}
-                    >
-                        <Text style={styles.secondaryActionText}>⇪  Compartilhar</Text>
-                    </Pressable>
+                    {isAdmin && (
+                        <Pressable
+                            onPress={onShare}
+                            accessibilityRole="button"
+                            style={({ pressed }) => [
+                                styles.actionButton,
+                                styles.secondaryAction,
+                                pressed && styles.pressed,
+                            ]}
+                        >
+                            <Text style={styles.secondaryActionText}>⇪  Compartilhar</Text>
+                        </Pressable>
+                    )}
                 </View>
             </View>
 
@@ -117,9 +122,11 @@ export function SharedGoalDetails({
                 <View style={styles.sectionHeader}>
                     <Text style={styles.sectionTitle}>Contribuições</Text>
 
-                    <Pressable onPress={onInvite} accessibilityRole="button" hitSlop={spacing.sm}>
-                        <Text style={styles.sectionLink}>Convidar</Text>
-                    </Pressable>
+                    {isAdmin && (
+                        <Pressable onPress={onInvite} accessibilityRole="button" hitSlop={spacing.sm}>
+                            <Text style={styles.sectionLink}>Convidar</Text>
+                        </Pressable>
+                    )}
                 </View>
 
                 <View style={styles.card}>
