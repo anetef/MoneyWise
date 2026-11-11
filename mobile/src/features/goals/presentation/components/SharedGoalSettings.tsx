@@ -9,13 +9,14 @@ import {
     spacing,
 } from '../../../../core/theme';
 
-import type { GoalDetails } from '../../domain/Goal';
+import type { GoalDetails, GoalMember } from '../../domain/Goal';
 
 import { DisabledSwitch } from './DisabledSwitch';
 import { FormRow } from './FormRow';
 import { FormSection } from './FormSection';
 import { GoalBasicsFields } from './GoalBasicsFields';
 import { MemberSettingsItem } from './MemberSettingsItem';
+import { isCurrentUserAdmin } from '../utils/goalPermissions';
 
 type FormErrors = {
     name?: string;
@@ -33,6 +34,12 @@ type Props = {
     onChangeAmount: (value: string) => void;
     onChangeDeadline: (value: string) => void;
     onInvite: () => void;
+    onLeave: () => void;
+    onArchive: () => void;
+    /** Só o Admin remove membros (RN04, L-10). */
+    onRemoveMember: (member: GoalMember) => void;
+    /** Trava as ações enquanto uma operação está em andamento. */
+    disabled?: boolean;
 };
 
 /**
@@ -40,9 +47,9 @@ type Props = {
  * (frame "Caixinha - Configurações (Compartilhada)").
  *
  * Os campos comuns ficam em GoalBasicsFields. Membros e papéis
- * vêm do mock e são apenas exibidos: gerenciar membros,
- * permissões e regras do grupo depende de L-09 e L-10.
- * Essas ações aparecem desativadas, com "Em breve".
+ * vêm da API. Sair, arquivar e remover membro (só o Admin)
+ * chamam a API; gerenciar permissões e regras do grupo seguem
+ * com "Em breve" (L-10).
  */
 export function SharedGoalSettings({
     goal,
@@ -54,7 +61,13 @@ export function SharedGoalSettings({
     onChangeAmount,
     onChangeDeadline,
     onInvite,
+    onLeave,
+    onArchive,
+    onRemoveMember,
+    disabled = false,
 }: Props) {
+    const isAdmin = isCurrentUserAdmin(goal);
+
     return (
         <View style={styles.container}>
             <GoalBasicsFields
@@ -66,14 +79,26 @@ export function SharedGoalSettings({
                 onChangeName={onChangeName}
                 onChangeAmount={onChangeAmount}
                 onChangeDeadline={onChangeDeadline}
+                readOnly={!isAdmin}
             />
 
             <FormSection
                 title={`Membros da Caixinha (${goal.members.length})`}
-                asideAction={{ label: '+ Convidar', onPress: onInvite }}
+                // Só o Admin convida (L-10).
+                asideAction={isAdmin ? { label: '+ Convidar', onPress: onInvite } : undefined}
             >
                 {goal.members.map((member) => (
-                    <MemberSettingsItem key={member.id} member={member} />
+                    <MemberSettingsItem
+                        key={member.id}
+                        member={member}
+                        // O Admin remove os outros; para si mesmo há "Sair desta Caixinha".
+                        onRemove={
+                            isAdmin && !member.isCurrentUser
+                                ? () => onRemoveMember(member)
+                                : undefined
+                        }
+                        disabled={disabled}
+                    />
                 ))}
 
                 {/* Gerenciar convites e permissões depende de L-05 e L-10 */}
@@ -122,41 +147,45 @@ export function SharedGoalSettings({
                 </FormRow>
             </FormSection>
 
-            {/* Sair do grupo e arquivar dependem de L-09 */}
             <View style={styles.actionsCard}>
                 <Pressable
-                    disabled
+                    onPress={onLeave}
+                    disabled={disabled}
                     accessibilityRole="button"
-                    accessibilityLabel="Sair desta Caixinha, em breve"
-                    accessibilityState={{ disabled: true }}
-                    style={[styles.actionRow, styles.disabled]}
+                    accessibilityLabel="Sair desta Caixinha"
+                    accessibilityState={{ disabled }}
+                    style={({ pressed }) => [
+                        styles.actionRow,
+                        (pressed || disabled) && styles.disabled,
+                    ]}
                 >
                     <Text style={[styles.actionIcon, styles.primaryText]}>⇥</Text>
                     <Text style={[styles.actionLabel, styles.primaryText]}>
                         Sair desta Caixinha
                     </Text>
-                    <View style={styles.soonBadge}>
-                        <Text style={styles.soonBadgeText}>Em breve</Text>
-                    </View>
                 </Pressable>
 
-                <View style={styles.divider} />
+                {/* Só o Admin arquiva (L-17) */}
+                {isAdmin && <View style={styles.divider} />}
 
-                <Pressable
-                    disabled
-                    accessibilityRole="button"
-                    accessibilityLabel="Encerrar e Arquivar Caixinha, em breve"
-                    accessibilityState={{ disabled: true }}
-                    style={[styles.actionRow, styles.disabled]}
-                >
-                    <Text style={[styles.actionIcon, styles.dangerText]}>⊠</Text>
-                    <Text style={[styles.actionLabel, styles.dangerText]}>
-                        Encerrar e Arquivar Caixinha
-                    </Text>
-                    <View style={styles.soonBadge}>
-                        <Text style={styles.soonBadgeText}>Em breve</Text>
-                    </View>
-                </Pressable>
+                {isAdmin && (
+                    <Pressable
+                        onPress={onArchive}
+                        disabled={disabled}
+                        accessibilityRole="button"
+                        accessibilityLabel="Encerrar e Arquivar Caixinha"
+                        accessibilityState={{ disabled }}
+                        style={({ pressed }) => [
+                            styles.actionRow,
+                            (pressed || disabled) && styles.disabled,
+                        ]}
+                    >
+                        <Text style={[styles.actionIcon, styles.dangerText]}>⊠</Text>
+                        <Text style={[styles.actionLabel, styles.dangerText]}>
+                            Encerrar e Arquivar Caixinha
+                        </Text>
+                    </Pressable>
+                )}
             </View>
 
             {/* Aviso do Figma */}

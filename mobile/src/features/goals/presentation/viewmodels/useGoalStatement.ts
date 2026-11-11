@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 
-import { goalRepository } from '../../data/MockGoalRepository';
+import { goalRepository } from '../../data/ApiGoalRepository';
 import type { GoalDetails, GoalRecord, GoalRecordKind } from '../../domain/Goal';
 import { dayKey, formatDayHeader } from '../utils/formatDate';
 
@@ -109,6 +109,11 @@ export function useGoalStatement(goalId: string) {
 
             setGoal(details);
             setRecords(allRecords);
+        } catch {
+            // Falha de rede: a tela mostra "Caixinha não encontrada"
+            // e tenta de novo ao receber foco.
+            setGoal(null);
+            setRecords([]);
         } finally {
             setIsLoading(false);
         }

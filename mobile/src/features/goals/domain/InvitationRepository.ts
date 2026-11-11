@@ -3,9 +3,9 @@ import type { Invitation } from './Invitation';
 /**
  * Acesso aos convites dos grupos.
  *
- * A implementação atual é simulada e não envia convites.
+ * Implementação real: `ApiInvitationRepository`.
  */
 export interface InvitationRepository {
-    /** Convite ativo do grupo; gera um novo se não houver. */
+    /** Gera um convite para o grupo (código de uso único, válido por 7 dias). */
     getActiveInvitation(groupId: string): Promise<Invitation>;
 }

@@ -2,9 +2,10 @@ import * as Clipboard from 'expo-clipboard';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Platform, Share } from 'react-native';
 
-import { goalRepository } from '../../data/MockGoalRepository';
-import { invitationRepository } from '../../data/MockInvitationRepository';
+import { goalRepository } from '../../data/ApiGoalRepository';
+import { invitationRepository } from '../../data/ApiInvitationRepository';
 import type { Invitation } from '../../domain/Invitation';
+import { goalErrorMessage } from '../utils/goalErrorMessage';
 
 /** Tempo de exibição dos retornos de cópia e compartilhamento. */
 const FEEDBACK_MS = 4000;
@@ -18,7 +19,7 @@ export type InviteFeedback = {
  * Mensagem compartilhada com o código de convite.
  *
  * Não contém link: o formato do link ainda não foi definido
- * (L-05). Deixa claro que o convite é simulado nesta versão.
+ * (L-05). Explica onde usar o código dentro do app.
  */
 function buildInviteMessage(
     goalName: string | null,
@@ -33,21 +34,21 @@ function buildInviteMessage(
     return [
         `Convite para ${goal} no MoneyWise.`,
         `Código de convite: ${code}${validity}.`,
-        'Convite simulado: nesta versão de demonstração, o código ainda não pode ser usado para entrar na caixinha.',
+        'Para entrar, abra o MoneyWise, vá em Caixinhas e toque em "Tenho um código de convite".',
     ].join('\n');
 }
 
 /**
  * ViewModel da tela Convidar Membros.
  *
- * Copia o código de convite e abre o compartilhamento nativo.
- * Nenhum convite é enviado ou validado: o mecanismo real
- * depende da integração (GRP-05).
+ * Gera o código na API (POST /groups/{id}/invitations), copia
+ * e abre o compartilhamento nativo. Só o Admin convida (L-10).
  */
 export function useInviteMembers(groupId: string) {
     const [invitation, setInvitation] = useState<Invitation | null>(null);
     const [goalName, setGoalName] = useState<string | null>(null);
     const [isLoading, setIsLoading] = useState(true);
+    const [error, setError] = useState('');
     const [isCopied, setIsCopied] = useState(false);
     const [feedback, setFeedback] = useState<InviteFeedback | null>(null);
 
@@ -58,14 +59,19 @@ export function useInviteMembers(groupId: string) {
     const sharingRef = useRef(false);
 
     const load = useCallback(async () => {
+        setError('');
+
         try {
             const [activeInvitation, goals] = await Promise.all([
                 invitationRepository.getActiveInvitation(groupId),
-                goalRepository.listGoals(),
+                // O nome só enfeita a mensagem: se falhar, segue sem ele.
+                goalRepository.listGoals().catch(() => []),
             ]);
 
             setInvitation(activeInvitation);
             setGoalName(goals.find((goal) => goal.groupId === groupId)?.name ?? null);
+        } catch (e) {
+            setError(goalErrorMessage(e, 'Não foi possível gerar o convite. Volte e tente novamente.'));
         } finally {
             setIsLoading(false);
         }
@@ -166,7 +172,7 @@ export function useInviteMembers(groupId: string) {
             if (completed) {
                 showFeedback({
                     tone: 'info',
-                    message: 'Mensagem compartilhada pelo app escolhido. O convite ainda é simulado.',
+                    message: 'Mensagem compartilhada pelo app escolhido.',
                 });
             }
         } catch (error) {
@@ -190,6 +196,7 @@ export function useInviteMembers(groupId: string) {
 
     return {
         invitation,
+        error,
         goalName,
         expiresInDays,
         isLoading,

@@ -1,14 +1,17 @@
 import { useRef, useState } from 'react';
 
-import { goalRepository } from '../../data/MockGoalRepository';
+import { goalRepository } from '../../data/ApiGoalRepository';
 import type { Goal, GoalType } from '../../domain/Goal';
 import { formatCurrency } from '../utils/formatCurrency';
 import { maskDate, parseDate, toAmountDigits } from '../utils/goalForm';
+import { goalErrorMessage, isApiErrorCode } from '../utils/goalErrorMessage';
 
 type FormErrors = {
     name?: string;
     targetAmount?: string;
     deadline?: string;
+    /** Falha ao gravar na API. */
+    submit?: string;
 };
 
 /**
@@ -96,7 +99,14 @@ export function useCreateGoal() {
         } catch (error) {
             submittingRef.current = false;
             setIsSubmitting(false);
-            throw error;
+
+            setErrors(
+                isApiErrorCode(error, 'INVALID_GOAL_DEADLINE')
+                    ? { deadline: goalErrorMessage(error, '') }
+                    : { submit: goalErrorMessage(error, 'Não foi possível criar a Caixinha. Tente novamente.') },
+            );
+
+            return null;
         }
     }
 
