@@ -30,9 +30,13 @@ function toUser(response: UserResponse): User {
 // Moeda padrão da conta (RN09). Ainda não há seletor de moeda no cadastro.
 const DEFAULT_CURRENCY = 'BRL';
 
-/** Guarda tokens e usuário no aparelho (usado no login e na confirmação do e-mail). */
-async function saveSession(data: LoginResponse): Promise<User> {
+/**
+ * Guarda tokens e usuário (usado no login e na confirmação do e-mail).
+ * `remember` falso: a sessão fica só na memória e some ao fechar o app (L-02).
+ */
+async function saveSession(data: LoginResponse, remember: boolean): Promise<User> {
     const user = toUser(data.user);
+    await sessionStore.start(remember);
     await sessionStore.saveTokens(data.accessToken, data.refreshToken);
     await sessionStore.saveUser(user);
     return user;
@@ -42,14 +46,14 @@ async function saveSession(data: LoginResponse): Promise<User> {
  * Repository real: conversa com a API do MoneyWise.
  */
 export class ApiAuthRepository implements AuthRepository {
-    async login(email: string, password: string): Promise<User> {
+    async login(email: string, password: string, remember: boolean): Promise<User> {
         const data = await apiRequest<LoginResponse>('/auth/login', {
             method: 'POST',
             body: { email, password },
             auth: false,
         });
 
-        return saveSession(data);
+        return saveSession(data, remember);
     }
 
     async register(name: string, email: string, password: string): Promise<void> {
@@ -70,7 +74,8 @@ export class ApiAuthRepository implements AuthRepository {
             auth: false,
         });
 
-        return saveSession(data);
+        // O cadastro não tem "Lembrar de mim": a sessão fica guardada.
+        return saveSession(data, true);
     }
 
     async resendVerificationCode(email: string): Promise<void> {
