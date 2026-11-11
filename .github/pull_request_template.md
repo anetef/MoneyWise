@@ -1,6 +1,6 @@
 <!-- Título da PR: [ID-DA-TASK] Nome da task. Ex.: [SEC-05] Cadastro de usuário -->
 
-Closes #
+Refs #
 
 ## O que foi feito
 
