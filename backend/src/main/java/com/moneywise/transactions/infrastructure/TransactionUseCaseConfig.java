@@ -7,6 +7,9 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
+import com.moneywise.transactions.application.port.CategoryCatalog;
+import com.moneywise.transactions.application.usecase.categories.ListCategories;
+import com.moneywise.transactions.application.usecase.categories.CreateCustomCategory;
 import com.moneywise.transactions.application.port.TransactionRepository;
 import com.moneywise.transactions.application.usecase.delete.DeleteTransaction;
 import com.moneywise.transactions.application.usecase.list.ListTransactions;
@@ -50,4 +53,15 @@ public class TransactionUseCaseConfig {
             @Qualifier("transactionBusinessClock") Clock clock) {
         return new DeleteTransaction(transactions, clock);
     }
+
+    @Bean
+    ListCategories listCategories(CategoryCatalog catalog) {
+        return new ListCategories(catalog);
+    }
+
+    @Bean
+    CreateCustomCategory createCustomCategory(CategoryCatalog catalog) {
+        return new CreateCustomCategory(catalog);
+    }
+
 }
