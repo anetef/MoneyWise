@@ -4,6 +4,7 @@ import java.time.Clock;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import com.moneywise.auth.application.usecase.profile.GetCurrentUser;
 
 import com.moneywise.auth.application.port.EmailSender;
 import com.moneywise.auth.application.port.EmailVerificationCodeRepository;
@@ -86,4 +87,11 @@ public class AuthUseCaseConfig {
                                 UnitOfWork unitOfWork, Clock clock) {
         return new ResetPassword(userRepository, codes, passwordHasher, tokenService, unitOfWork, clock);
     }
+
+
+@Bean
+GetCurrentUser getCurrentUser(UserRepository userRepository) {
+    return new GetCurrentUser(userRepository);
+}
+
 }
