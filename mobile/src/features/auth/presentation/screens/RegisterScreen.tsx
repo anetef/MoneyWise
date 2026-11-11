@@ -1,9 +1,7 @@
-import { useState } from 'react';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import {
-    Alert,
     KeyboardAvoidingView,
     Platform,
     Pressable,
@@ -15,8 +13,7 @@ import {
 } from 'react-native';
 
 import type { AuthStackParamList } from '../../../../core/navigation/types';
-import { ApiError } from '../../../../core/api/apiClient';
-import { authRepository } from '../../data/ApiAuthRepository';
+import { useRegister } from '../viewmodels/useRegister';
 
 import {
     colors,
@@ -36,116 +33,10 @@ const INPUT_PLACEHOLDER = '#B7C9BE';
 const INPUT_BORDER = '#E4ECFF';
 const INPUT_BACKGROUND = '#FFFFFF';
 
-function getPasswordStrength(password: string): number {
-    if (!password) return 0;
-
-    let strength = 0;
-
-    if (password.length >= 8) strength++;
-    if (/[A-Z]/.test(password) && /[a-z]/.test(password)) strength++;
-    if (/\d/.test(password)) strength++;
-    if (/[^A-Za-z0-9]/.test(password)) strength++;
-
-    return strength;
-}
-
 export function RegisterScreen({ navigation }: Props) {
-    const [name, setName] = useState('');
-    const [email, setEmail] = useState('');
-    const [password, setPassword] = useState('');
-    const [confirmPassword, setConfirmPassword] = useState('');
-
-    const [showPassword, setShowPassword] = useState(false);
-    const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-
-    const [acceptedTerms, setAcceptedTerms] = useState(false);
-    const [error, setError] = useState('');
-    const [isLoading, setIsLoading] = useState(false);
-
-    const passwordStrength = getPasswordStrength(password);
-
-    async function handleRegister() {
-        if (isLoading) {
-            return;
-        }
-
-        setError('');
-
-        if (
-            !name.trim() ||
-            !email.trim() ||
-            !password ||
-            !confirmPassword
-        ) {
-            setError('Preencha todos os campos obrigatórios.');
-            return;
-        }
-
-        if (name.trim().length < 3) {
-            setError('Digite seu nome completo.');
-            return;
-        }
-
-        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-
-        if (!emailRegex.test(email.trim())) {
-            setError('Digite um e-mail válido.');
-            return;
-        }
-
-        if (password.length < 8) {
-            setError('A senha deve ter pelo menos 8 caracteres.');
-            return;
-        }
-
-        if (password !== confirmPassword) {
-            setError('As senhas não coincidem.');
-            return;
-        }
-
-        if (!acceptedTerms) {
-            setError(
-                'Você precisa aceitar os Termos de Uso e a Política de Privacidade.'
-            );
-            return;
-        }
-
-        if (password.length > 72) {
-            setError('A senha deve ter no máximo 72 caracteres.');
-            return;
-        }
-
-        setIsLoading(true);
-
-        const cleanEmail = email.trim().toLowerCase();
-
-        try {
-            await authRepository.register(name.trim(), cleanEmail, password);
-
-            // Conta criada: agora o usuário confirma o código enviado por e-mail.
-            navigation.navigate('VerifyEmail', { email: cleanEmail });
-        } catch (e) {
-            if (e instanceof ApiError && e.code === 'EMAIL_ALREADY_IN_USE') {
-                setError('Este e-mail já está cadastrado. Tente entrar na sua conta.');
-            } else if (e instanceof ApiError && e.code === 'NETWORK_ERROR') {
-                setError('Sem conexão com o servidor. Tente de novo.');
-            } else if (e instanceof ApiError && e.fields.length > 0) {
-                // Erro de validação do backend (400): mostra a primeira mensagem.
-                setError(e.fields[0].message);
-            } else {
-                setError('Não foi possível criar sua conta. Tente novamente.');
-            }
-        } finally {
-            setIsLoading(false);
-        }
-    }
-
-    function handleLegalDocument(document: string) {
-        Alert.alert(
-            document,
-            'O documento ainda não está disponível nesta versão de demonstração.'
-        );
-    }
+    const viewModel = useRegister({
+        onRegistered: (email) => navigation.navigate('VerifyEmail', { email }),
+    });
 
     return (
         <SafeAreaView style={styles.safeArea}>
@@ -195,8 +86,8 @@ export function RegisterScreen({ navigation }: Props) {
 
                             <TextInput
                                 style={styles.textInput}
-                                value={name}
-                                onChangeText={setName}
+                                value={viewModel.name}
+                                onChangeText={viewModel.setName}
                                 placeholder="Ex: Maria Silva"
                                 placeholderTextColor={INPUT_PLACEHOLDER}
                                 autoCapitalize="words"
@@ -217,8 +108,8 @@ export function RegisterScreen({ navigation }: Props) {
 
                             <TextInput
                                 style={styles.textInput}
-                                value={email}
-                                onChangeText={setEmail}
+                                value={viewModel.email}
+                                onChangeText={viewModel.setEmail}
                                 placeholder="seuemail@exemplo.com"
                                 placeholderTextColor={INPUT_PLACEHOLDER}
                                 keyboardType="email-address"
@@ -228,6 +119,12 @@ export function RegisterScreen({ navigation }: Props) {
                                 returnKeyType="next"
                                 accessibilityLabel="E-mail"
                             />
+
+                            {viewModel.emailError ? (
+                                <Text style={styles.fieldErrorText} accessibilityRole="alert">
+                                    {viewModel.emailError}
+                                </Text>
+                            ) : null}
                         </View>
 
                         {/* Senha */}
@@ -244,11 +141,11 @@ export function RegisterScreen({ navigation }: Props) {
                             <View style={styles.passwordRow}>
                                 <TextInput
                                     style={[styles.textInput, styles.passwordInput]}
-                                    value={password}
-                                    onChangeText={setPassword}
+                                    value={viewModel.password}
+                                    onChangeText={viewModel.setPassword}
                                     placeholder="Digite uma senha forte"
                                     placeholderTextColor={INPUT_PLACEHOLDER}
-                                    secureTextEntry={!showPassword}
+                                    secureTextEntry={!viewModel.showPassword}
                                     autoCapitalize="none"
                                     autoCorrect={false}
                                     autoComplete="new-password"
@@ -256,15 +153,15 @@ export function RegisterScreen({ navigation }: Props) {
                                 />
 
                                 <Pressable
-                                    onPress={() => setShowPassword(!showPassword)}
+                                    onPress={viewModel.toggleShowPassword}
                                     accessibilityRole="button"
                                     accessibilityLabel={
-                                        showPassword ? 'Ocultar senha' : 'Mostrar senha'
+                                        viewModel.showPassword ? 'Ocultar senha' : 'Mostrar senha'
                                     }
                                     style={styles.eyeButton}
                                 >
                                     <Text style={styles.eyeIcon}>
-                                        {showPassword ? '◉' : '◎'}
+                                        {viewModel.showPassword ? '◉' : '◎'}
                                     </Text>
                                 </Pressable>
                             </View>
@@ -276,7 +173,7 @@ export function RegisterScreen({ navigation }: Props) {
                                         key={level}
                                         style={[
                                             styles.strengthSegment,
-                                            level <= passwordStrength &&
+                                            level <= viewModel.passwordStrength &&
                                             styles.strengthActive,
                                         ]}
                                     />
@@ -296,11 +193,11 @@ export function RegisterScreen({ navigation }: Props) {
                             <View style={styles.passwordRow}>
                                 <TextInput
                                     style={[styles.textInput, styles.passwordInput]}
-                                    value={confirmPassword}
-                                    onChangeText={setConfirmPassword}
+                                    value={viewModel.confirmPassword}
+                                    onChangeText={viewModel.setConfirmPassword}
                                     placeholder="Repita sua senha"
                                     placeholderTextColor={INPUT_PLACEHOLDER}
-                                    secureTextEntry={!showConfirmPassword}
+                                    secureTextEntry={!viewModel.showConfirmPassword}
                                     autoCapitalize="none"
                                     autoCorrect={false}
                                     autoComplete="new-password"
@@ -308,19 +205,17 @@ export function RegisterScreen({ navigation }: Props) {
                                 />
 
                                 <Pressable
-                                    onPress={() =>
-                                        setShowConfirmPassword(!showConfirmPassword)
-                                    }
+                                    onPress={viewModel.toggleShowConfirmPassword}
                                     accessibilityRole="button"
                                     accessibilityLabel={
-                                        showConfirmPassword
+                                        viewModel.showConfirmPassword
                                             ? 'Ocultar confirmação de senha'
                                             : 'Mostrar confirmação de senha'
                                     }
                                     style={styles.eyeButton}
                                 >
                                     <Text style={styles.eyeIcon}>
-                                        {showConfirmPassword ? '◉' : '◎'}
+                                        {viewModel.showConfirmPassword ? '◉' : '◎'}
                                     </Text>
                                 </Pressable>
                             </View>
@@ -330,16 +225,16 @@ export function RegisterScreen({ navigation }: Props) {
                     {/* Termos */}
                     <View style={styles.termsRow}>
                         <Pressable
-                            onPress={() => setAcceptedTerms(!acceptedTerms)}
+                            onPress={viewModel.toggleAcceptedTerms}
                             accessibilityRole="checkbox"
-                            accessibilityState={{ checked: acceptedTerms }}
+                            accessibilityState={{ checked: viewModel.acceptedTerms }}
                             accessibilityLabel="Aceitar Termos de Uso e Política de Privacidade"
                             style={[
                                 styles.checkbox,
-                                acceptedTerms && styles.checkboxChecked,
+                                viewModel.acceptedTerms && styles.checkboxChecked,
                             ]}
                         >
-                            {acceptedTerms && (
+                            {viewModel.acceptedTerms && (
                                 <Text style={styles.checkboxMark}>✓</Text>
                             )}
                         </Pressable>
@@ -349,7 +244,7 @@ export function RegisterScreen({ navigation }: Props) {
                                 Li e concordo com os{' '}
                                 <Text
                                     style={styles.termsLink}
-                                    onPress={() => handleLegalDocument('Termos de Uso')}
+                                    onPress={() => navigation.navigate('Legal', { document: 'terms' })}
                                 >
                                     Termos de Uso
                                 </Text>
@@ -357,7 +252,7 @@ export function RegisterScreen({ navigation }: Props) {
                                 <Text
                                     style={styles.termsLink}
                                     onPress={() =>
-                                        handleLegalDocument('Política de Privacidade')
+                                        navigation.navigate('Legal', { document: 'privacy' })
                                     }
                                 >
                                     Política de Privacidade
@@ -368,28 +263,28 @@ export function RegisterScreen({ navigation }: Props) {
                     </View>
 
                     {/* Mensagem de validação */}
-                    {error ? (
+                    {viewModel.error ? (
                         <Text
                             style={styles.errorText}
                             accessibilityRole="alert"
                         >
-                            {error}
+                            {viewModel.error}
                         </Text>
                     ) : null}
 
                     {/* Cadastro */}
                     <Pressable
-                        onPress={handleRegister}
-                        disabled={isLoading}
+                        onPress={viewModel.submit}
+                        disabled={viewModel.isLoading}
                         accessibilityRole="button"
-                        accessibilityState={{ disabled: isLoading, busy: isLoading }}
+                        accessibilityState={{ disabled: viewModel.isLoading, busy: viewModel.isLoading }}
                         style={({ pressed }) => [
                             styles.primaryButton,
-                            (pressed || isLoading) && styles.pressed,
+                            (pressed || viewModel.isLoading) && styles.pressed,
                         ]}
                     >
                         <Text style={styles.primaryButtonText}>
-                            {isLoading ? 'Criando conta...' : 'Criar conta gratuita →'}
+                            {viewModel.isLoading ? 'Criando conta...' : 'Criar conta gratuita →'}
                         </Text>
                     </Pressable>
 
@@ -603,6 +498,11 @@ const styles = StyleSheet.create({
         ...typography.caption,
         color: colors.status.error,
         marginBottom: spacing.md,
+    },
+
+    fieldErrorText: {
+        ...typography.caption,
+        color: colors.status.error,
     },
 
     primaryButton: {

@@ -14,6 +14,8 @@ export type AuthStackParamList = {
     /** Confirmação do e-mail com o código de 6 dígitos (após o cadastro). */
     VerifyEmail: { email: string };
     ForgotPassword: undefined;
+    /** Termos de Uso e Privacidade (L-19), abertos pelo cadastro. */
+    Legal: { document?: 'terms' | 'privacy' } | undefined;
 };
 
 /** Abas principais do aplicativo. */

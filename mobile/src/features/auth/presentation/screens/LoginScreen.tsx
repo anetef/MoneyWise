@@ -1,4 +1,3 @@
-import { useState } from 'react';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -14,9 +13,7 @@ import {
 } from 'react-native';
 
 import type { AuthStackParamList } from '../../../../core/navigation/types';
-import { useMockAuth } from '../../../../core/navigation/MockAuthContext';
-import { ApiError } from '../../../../core/api/apiClient';
-import { authRepository } from '../../data/ApiAuthRepository';
+import { useLogin } from '../viewmodels/useLogin';
 
 import {
     colors,
@@ -33,61 +30,9 @@ type Props = NativeStackScreenProps<
 >;
 
 export function LoginScreen({ navigation }: Props) {
-    const { signIn } = useMockAuth();
-
-    const [email, setEmail] = useState('');
-    const [password, setPassword] = useState('');
-    const [showPassword, setShowPassword] = useState(false);
-    const [rememberMe, setRememberMe] = useState(false);
-    const [error, setError] = useState('');
-    const [isLoading, setIsLoading] = useState(false);
-
-    async function handleLogin() {
-        if (isLoading) {
-            return;
-        }
-
-        setError('');
-        if (!email.trim() || !password) {
-            setError('Preencha seu e-mail e sua senha.');
-            return;
-        }
-
-        // Validação temporária para o login mockado.
-        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-
-        if (!emailRegex.test(email.trim())) {
-            setError('Digite um e-mail válido.');
-            return;
-        }
-
-        if (password.length < 8) {
-            setError('A senha deve ter pelo menos 8 caracteres.');
-            return;
-        }
-
-        setIsLoading(true);
-
-        try {
-            await authRepository.login(email.trim(), password);
-            signIn();
-        } catch (e) {
-
-            if (e instanceof ApiError && e.code === 'INVALID_CREDENTIALS') {
-                setError('E-mail ou senha incorretos.');
-            } else if (e instanceof ApiError && e.code === 'EMAIL_NOT_VERIFIED') {
-                // Leva para a confirmação; lá dá para pedir um novo código.
-                navigation.navigate('VerifyEmail', { email: email.trim().toLowerCase() });
-            } else if (e instanceof ApiError && e.code === 'NETWORK_ERROR') {
-                setError('Sem conexão com o servidor. Tente de novo.');
-            } else {
-                setError('Não foi possível entrar. Tente novamente.');
-            }
-        } finally {
-            setIsLoading(false);
-        }
-    }
-    
+    const viewModel = useLogin({
+        onEmailNotVerified: (email) => navigation.navigate('VerifyEmail', { email }),
+    });
 
     return (
         <SafeAreaView style={styles.safeArea}>
@@ -143,8 +88,8 @@ export function LoginScreen({ navigation }: Props) {
                                         style={styles.input}
                                         placeholder="seuemail@exemplo.com"
                                         placeholderTextColor={colors.text.secondary}
-                                        value={email}
-                                        onChangeText={setEmail}
+                                        value={viewModel.email}
+                                        onChangeText={viewModel.setEmail}
                                         keyboardType="email-address"
                                         autoCapitalize="none"
                                         autoCorrect={false}
@@ -169,9 +114,9 @@ export function LoginScreen({ navigation }: Props) {
                                         style={styles.input}
                                         placeholder="Digite sua senha"
                                         placeholderTextColor={colors.text.secondary}
-                                        value={password}
-                                        onChangeText={setPassword}
-                                        secureTextEntry={!showPassword}
+                                        value={viewModel.password}
+                                        onChangeText={viewModel.setPassword}
+                                        secureTextEntry={!viewModel.showPassword}
                                         autoCapitalize="none"
                                         autoCorrect={false}
                                         autoComplete="current-password"
@@ -180,15 +125,15 @@ export function LoginScreen({ navigation }: Props) {
                                 </View>
 
                                 <Pressable
-                                    onPress={() => setShowPassword(!showPassword)}
+                                    onPress={viewModel.toggleShowPassword}
                                     accessibilityRole="button"
                                     accessibilityLabel={
-                                        showPassword ? 'Ocultar senha' : 'Mostrar senha'
+                                        viewModel.showPassword ? 'Ocultar senha' : 'Mostrar senha'
                                     }
                                     style={styles.eyeButton}
                                 >
                                     <Text style={styles.eyeIcon}>
-                                        {showPassword ? '◉' : '◎'}
+                                        {viewModel.showPassword ? '◉' : '◎'}
                                     </Text>
                                 </Pressable>
                             </View>
@@ -197,18 +142,18 @@ export function LoginScreen({ navigation }: Props) {
                         {/* Opções */}
                         <View style={styles.optionsRow}>
                             <Pressable
-                                onPress={() => setRememberMe(!rememberMe)}
+                                onPress={viewModel.toggleRememberMe}
                                 accessibilityRole="checkbox"
-                                accessibilityState={{ checked: rememberMe }}
+                                accessibilityState={{ checked: viewModel.rememberMe }}
                                 style={styles.rememberRow}
                             >
                                 <View
                                     style={[
                                         styles.checkbox,
-                                        rememberMe && styles.checkboxChecked,
+                                        viewModel.rememberMe && styles.checkboxChecked,
                                     ]}
                                 >
-                                    {rememberMe && (
+                                    {viewModel.rememberMe && (
                                         <Text style={styles.checkboxMark}>✓</Text>
                                     )}
                                 </View>
@@ -228,16 +173,16 @@ export function LoginScreen({ navigation }: Props) {
                             </Pressable>
                         </View>
 
-                        {error ? (
+                        {viewModel.error ? (
                             <Text style={styles.errorText} accessibilityRole="alert">
-                                {error}
+                                {viewModel.error}
                             </Text>
                         ) : null}
 
                         {/* Login */}
                         <Pressable
-                            onPress={handleLogin}
-                            disabled={isLoading}
+                            onPress={viewModel.submit}
+                            disabled={viewModel.isLoading}
                             accessibilityRole="button"
                             style={({ pressed }) => [
                                 styles.primaryButton,
@@ -245,7 +190,7 @@ export function LoginScreen({ navigation }: Props) {
                             ]}
                         >
                             <Text style={styles.primaryButtonText}>
-                                {isLoading ? 'Entrando...' : 'Entrar na conta →'}
+                                {viewModel.isLoading ? 'Entrando...' : 'Entrar na conta →'}
                             </Text>
                         </Pressable>
                         
