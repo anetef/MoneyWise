@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useCallback, useState } from 'react';
 
 import { ApiError } from '../../../../core/api/apiClient';
 import { useMockAuth } from '../../../../core/navigation/MockAuthContext';
@@ -25,7 +25,20 @@ export function useLogin({ onEmailNotVerified }: Options) {
     const [showPassword, setShowPassword] = useState(false);
     const [rememberMe, setRememberMe] = useState(false);
     const [error, setError] = useState('');
+    // Aviso verde, ex.: depois de trocar a senha.
+    const [notice, setNotice] = useState('');
     const [isLoading, setIsLoading] = useState(false);
+
+    /** Volta da troca de senha: mostra o aviso e preenche o e-mail. */
+    const showPasswordChanged = useCallback((changedEmail?: string) => {
+        if (changedEmail) {
+            setEmail(changedEmail);
+        }
+
+        setPassword('');
+        setError('');
+        setNotice('Senha alterada. Entre com a nova senha.');
+    }, []);
 
     async function submit() {
         if (isLoading) {
@@ -33,6 +46,7 @@ export function useLogin({ onEmailNotVerified }: Options) {
         }
 
         setError('');
+        setNotice('');
 
         if (!email.trim() || !password) {
             setError('Preencha seu e-mail e sua senha.');
@@ -80,6 +94,8 @@ export function useLogin({ onEmailNotVerified }: Options) {
         rememberMe,
         toggleRememberMe: () => setRememberMe((current) => !current),
         error,
+        notice,
+        showPasswordChanged,
         isLoading,
         submit,
     };

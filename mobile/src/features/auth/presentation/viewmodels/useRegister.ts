@@ -2,22 +2,9 @@ import { useState } from 'react';
 
 import { ApiError } from '../../../../core/api/apiClient';
 import { authRepository } from '../../data/ApiAuthRepository';
+import { getPasswordStrength, validateNewPassword } from '../utils/passwordRules';
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-
-/** Força da senha de 0 a 4, para o medidor da tela. */
-function getPasswordStrength(password: string): number {
-    if (!password) return 0;
-
-    let strength = 0;
-
-    if (password.length >= 8) strength++;
-    if (/[A-Z]/.test(password) && /[a-z]/.test(password)) strength++;
-    if (/\d/.test(password)) strength++;
-    if (/[^A-Za-z0-9]/.test(password)) strength++;
-
-    return strength;
-}
 
 type Options = {
     /** Conta criada: a tela leva para a confirmação do e-mail. */
@@ -79,13 +66,10 @@ export function useRegister({ onRegistered }: Options) {
             return;
         }
 
-        if (password.length < 8) {
-            setError('A senha deve ter pelo menos 8 caracteres.');
-            return;
-        }
+        const passwordError = validateNewPassword(password, confirmPassword);
 
-        if (password !== confirmPassword) {
-            setError('As senhas não coincidem.');
+        if (passwordError) {
+            setError(passwordError);
             return;
         }
 
@@ -93,11 +77,6 @@ export function useRegister({ onRegistered }: Options) {
             setError(
                 'Você precisa aceitar os Termos de Uso e a Política de Privacidade.'
             );
-            return;
-        }
-
-        if (password.length > 72) {
-            setError('A senha deve ter no máximo 72 caracteres.');
             return;
         }
 

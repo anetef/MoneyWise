@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -29,10 +30,22 @@ type Props = NativeStackScreenProps<
     'Login'
 >;
 
-export function LoginScreen({ navigation }: Props) {
+export function LoginScreen({ navigation, route }: Props) {
     const viewModel = useLogin({
         onEmailNotVerified: (email) => navigation.navigate('VerifyEmail', { email }),
     });
+
+    const passwordChanged = route.params?.passwordChanged;
+    const changedEmail = route.params?.email;
+    const { showPasswordChanged } = viewModel;
+
+    // Volta da troca de senha (MAU-08): mostra o aviso uma vez só.
+    useEffect(() => {
+        if (passwordChanged) {
+            showPasswordChanged(changedEmail);
+            navigation.setParams({ passwordChanged: undefined, email: undefined });
+        }
+    }, [passwordChanged, changedEmail, showPasswordChanged, navigation]);
 
     return (
         <SafeAreaView style={styles.safeArea}>
@@ -164,7 +177,11 @@ export function LoginScreen({ navigation }: Props) {
                             </Pressable>
 
                             <Pressable
-                                onPress={() => navigation.navigate('ForgotPassword')}
+                                onPress={() =>
+                                    navigation.navigate('ForgotPassword', {
+                                        email: viewModel.email.trim() || undefined,
+                                    })
+                                }
                                 accessibilityRole="button"
                             >
                                 <Text style={styles.forgotText}>
@@ -172,6 +189,13 @@ export function LoginScreen({ navigation }: Props) {
                                 </Text>
                             </Pressable>
                         </View>
+
+                        {viewModel.notice ? (
+                            <View style={styles.noticeBox} accessibilityRole="alert">
+                                <Text style={styles.noticeIcon}>✓</Text>
+                                <Text style={styles.noticeText}>{viewModel.notice}</Text>
+                            </View>
+                        ) : null}
 
                         {viewModel.error ? (
                             <Text style={styles.errorText} accessibilityRole="alert">
@@ -402,6 +426,28 @@ const styles = StyleSheet.create({
     errorText: {
         ...typography.caption,
         color: colors.status.error,
+    },
+
+    noticeBox: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: spacing.sm,
+        backgroundColor: '#ECFDF3',
+        borderRadius: radius.md,
+        paddingHorizontal: spacing.lg,
+        paddingVertical: spacing.md,
+    },
+
+    noticeIcon: {
+        fontFamily: fontFamily.bold,
+        fontSize: fontSize.md,
+        color: colors.status.success,
+    },
+
+    noticeText: {
+        ...typography.caption,
+        flex: 1,
+        color: colors.status.success,
     },
 
     primaryButton: {
