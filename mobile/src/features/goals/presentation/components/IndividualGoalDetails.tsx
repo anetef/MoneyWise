@@ -38,7 +38,7 @@ export function IndividualGoalDetails({
     onOpenSettings,
     onSeeAllRecords,
 }: Props) {
-    const visual = getGoalVisual(goal.id);
+    const visual = getGoalVisual(goal.id, goal.icon);
 
     return (
         <View style={styles.container}>

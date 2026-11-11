@@ -28,6 +28,8 @@ type GoalSummaryResponse = {
     id: string;
     groupId: string;
     name: string;
+    icon: string | null;
+    category: string | null;
     targetAmount: Amount;
     accumulated: Amount;
     progressPercent: Amount;
@@ -119,6 +121,8 @@ function toGoal(summary: GoalSummaryResponse, type: GoalType): Goal {
         name: summary.name,
         deadline: summary.deadline,
         deadlineLabel: toDeadlineLabel(summary.deadline),
+        icon: summary.icon ?? null,
+        category: summary.category ?? null,
         accumulatedAmount: money(summary.accumulated),
         targetAmount: money(summary.targetAmount),
         progress: toProgress(summary.status, summary.progressPercent),
@@ -231,6 +235,10 @@ export class ApiGoalRepository implements GoalRepository {
             name: goal.name,
             deadline: goal.deadline,
             deadlineLabel: toDeadlineLabel(goal.deadline),
+            icon: goal.icon ?? null,
+            category: goal.category ?? null,
+            monthlyReminder: goal.monthlyReminder,
+            milestonesEnabled: goal.milestonesEnabled,
             accumulatedAmount: money(thermometer.accumulated),
             targetAmount: money(thermometer.targetAmount),
             progress: toProgress(thermometer.status, thermometer.progressPercent),
@@ -294,10 +302,10 @@ export class ApiGoalRepository implements GoalRepository {
                 name: input.name,
                 targetAmount: toCentsAmount(input.targetAmount),
                 deadline,
-                icon: null,
-                category: null,
-                monthlyReminder: false,
-                milestonesEnabled: false,
+                icon: input.icon,
+                category: input.category,
+                monthlyReminder: input.monthlyReminder,
+                milestonesEnabled: input.milestonesEnabled,
             },
         });
 
@@ -308,6 +316,8 @@ export class ApiGoalRepository implements GoalRepository {
             name: created.name,
             deadline: created.deadline,
             deadlineLabel: toDeadlineLabel(created.deadline),
+            icon: created.icon ?? null,
+            category: created.category ?? null,
             accumulatedAmount: 0,
             targetAmount: money(created.targetAmount),
             progress: toProgress('SEM_APORTES', 0),
@@ -321,18 +331,17 @@ export class ApiGoalRepository implements GoalRepository {
             return null;
         }
 
-        // O PUT substitui tudo: campos que a tela não edita são
-        // reenviados como estão, para não serem apagados.
+        // O PUT substitui tudo: a tela manda todos os campos da meta.
         await apiRequest<GoalResponse>(`/goals/${goalId}`, {
             method: 'PUT',
             body: {
                 name: input.name,
                 targetAmount: toCentsAmount(input.targetAmount),
                 deadline: toIsoDate(input.deadline),
-                icon: current.icon,
-                category: current.category,
-                monthlyReminder: current.monthlyReminder,
-                milestonesEnabled: current.milestonesEnabled,
+                icon: input.icon,
+                category: input.category,
+                monthlyReminder: input.monthlyReminder,
+                milestonesEnabled: input.milestonesEnabled,
             },
         });
 
@@ -343,7 +352,15 @@ export class ApiGoalRepository implements GoalRepository {
             return null;
         }
 
-        const { remainingAmount, pace, members, records, ...goal } = details;
+        const {
+            remainingAmount,
+            pace,
+            members,
+            records,
+            monthlyReminder,
+            milestonesEnabled,
+            ...goal
+        } = details;
         return goal;
     }
 

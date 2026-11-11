@@ -11,10 +11,10 @@ import {
 
 import type { GoalDetails } from '../../domain/Goal';
 
-import { DisabledSwitch } from './DisabledSwitch';
 import { FormRow } from './FormRow';
 import { FormSection } from './FormSection';
-import { GoalBasicsFields } from './GoalBasicsFields';
+import { GoalBasicsFields, type GoalExtrasForm } from './GoalBasicsFields';
+import { GoalSwitch } from './GoalSwitch';
 
 type FormErrors = {
     name?: string;
@@ -31,6 +31,7 @@ type Props = {
     onChangeName: (value: string) => void;
     onChangeAmount: (value: string) => void;
     onChangeDeadline: (value: string) => void;
+    extrasForm: GoalExtrasForm;
     onArchive: () => void;
     onDelete: () => void;
     /** Trava as ações enquanto uma operação está em andamento. */
@@ -53,6 +54,7 @@ export function IndividualGoalSettings({
     onChangeName,
     onChangeAmount,
     onChangeDeadline,
+    extrasForm,
     onArchive,
     onDelete,
     disabled = false,
@@ -68,6 +70,7 @@ export function IndividualGoalSettings({
                 onChangeName={onChangeName}
                 onChangeAmount={onChangeAmount}
                 onChangeDeadline={onChangeDeadline}
+                extrasForm={extrasForm}
             />
 
             <FormSection
@@ -79,9 +82,12 @@ export function IndividualGoalSettings({
                     icon="🔔"
                     label="Lembrete Mensal"
                     description="Aviso no smartphone para registrar economia"
-                    comingSoon
                 >
-                    <DisabledSwitch />
+                    <GoalSwitch
+                        value={extrasForm.extras.monthlyReminder}
+                        onValueChange={(monthlyReminder) => extrasForm.onChangeExtras({ monthlyReminder })}
+                        label="Lembrete Mensal"
+                    />
                 </FormRow>
             </FormSection>
 
@@ -90,9 +96,12 @@ export function IndividualGoalSettings({
                     icon="♕"
                     label="Marcos de Conquista"
                     description="Feedback motivador a cada 25% completado"
-                    comingSoon
                 >
-                    <DisabledSwitch />
+                    <GoalSwitch
+                        value={extrasForm.extras.milestonesEnabled}
+                        onValueChange={(milestonesEnabled) => extrasForm.onChangeExtras({ milestonesEnabled })}
+                        label="Marcos de Conquista"
+                    />
                 </FormRow>
             </FormSection>
 

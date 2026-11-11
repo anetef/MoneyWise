@@ -110,6 +110,8 @@ export class MockGoalRepository implements GoalRepository {
     );
     private nextId = 1;
     private nextRecordId = 1;
+    /** Lembrete mensal e marcos (L-08) de cada Caixinha da sessão. */
+    private routines: Record<string, Pick<GoalDetails, 'monthlyReminder' | 'milestonesEnabled'>> = {};
 
     /**
      * Detalhes simulados da Caixinha. As criadas na sessão
@@ -149,6 +151,8 @@ export class MockGoalRepository implements GoalRepository {
         return {
             ...goal,
             ...details,
+            monthlyReminder: this.routines[goal.id]?.monthlyReminder ?? false,
+            milestonesEnabled: this.routines[goal.id]?.milestonesEnabled ?? false,
             // Acompanha alterações do valor objetivo e aportes da sessão.
             remainingAmount: Math.max(goal.targetAmount - goal.accumulatedAmount, 0),
             records: details.records.slice(0, RECENT_RECORDS_LIMIT),
@@ -172,6 +176,8 @@ export class MockGoalRepository implements GoalRepository {
             name: input.name,
             deadline: toIsoDate(input.deadline),
             deadlineLabel: formatDeadline(input.deadline),
+            icon: input.icon,
+            category: input.category,
             accumulatedAmount: 0,
             targetAmount: input.targetAmount,
             progress: {
@@ -182,6 +188,10 @@ export class MockGoalRepository implements GoalRepository {
         };
 
         this.goals = [goal, ...this.goals];
+        this.routines[id] = {
+            monthlyReminder: input.monthlyReminder,
+            milestonesEnabled: input.milestonesEnabled,
+        };
 
         return goal;
     }
@@ -201,6 +211,8 @@ export class MockGoalRepository implements GoalRepository {
             targetAmount: input.targetAmount,
             deadline: toIsoDate(input.deadline),
             deadlineLabel: formatDeadline(input.deadline),
+            icon: input.icon,
+            category: input.category,
             progress: {
                 ...current.progress,
                 percent: progressPercent(current.accumulatedAmount, input.targetAmount),
@@ -208,6 +220,10 @@ export class MockGoalRepository implements GoalRepository {
         };
 
         this.goals = this.goals.map((item) => (item.id === goalId ? updated : item));
+        this.routines[goalId] = {
+            monthlyReminder: input.monthlyReminder,
+            milestonesEnabled: input.milestonesEnabled,
+        };
 
         return updated;
     }

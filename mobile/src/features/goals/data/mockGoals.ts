@@ -9,6 +9,8 @@ export const mockGoals: Goal[] = [
         name: 'Viagem Japão',
         deadline: '2027-10-31',
         deadlineLabel: 'Outubro 2027',
+        icon: 'travel',
+        category: 'Viagem',
         accumulatedAmount: 8500,
         targetAmount: 15000,
         progress: {
@@ -24,6 +26,8 @@ export const mockGoals: Goal[] = [
         name: 'Emergência',
         deadline: '2027-12-31',
         deadlineLabel: 'Dezembro 2027',
+        icon: 'safety',
+        category: 'Reserva de emergência',
         accumulatedAmount: 5000,
         targetAmount: 10000,
         progress: {
@@ -39,6 +43,8 @@ export const mockGoals: Goal[] = [
         name: 'Viagem a Paris',
         deadline: '2027-07-31',
         deadlineLabel: 'Julho 2027',
+        icon: 'travel',
+        category: 'Viagem',
         accumulatedAmount: 4500,
         targetAmount: 10000,
         progress: {

@@ -1,4 +1,5 @@
-import { StyleSheet, Text, TextInput, View } from 'react-native';
+import { useState } from 'react';
+import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 
 import {
     colors,
@@ -10,12 +11,22 @@ import {
     typography,
 } from '../../../../core/theme';
 
-import type { GoalDetails } from '../../domain/Goal';
+import type { GoalDetails, GoalExtras } from '../../domain/Goal';
 
-import { DisabledSwitch } from './DisabledSwitch';
 import { FormRow } from './FormRow';
 import { FormSection } from './FormSection';
+import { GoalCategoryChips } from './GoalCategoryChips';
+import { GoalIconGrid } from './GoalIconGrid';
+import { GoalSwitch } from './GoalSwitch';
 import { getGoalVisual } from './goalVisuals';
+
+/** Campos extras da meta (L-08) e o "Meta sem prazo fixo". */
+export type GoalExtrasForm = {
+    extras: GoalExtras;
+    noDeadline: boolean;
+    onChangeExtras: (patch: Partial<GoalExtras>) => void;
+    onChangeNoDeadline: (value: boolean) => void;
+};
 
 type FormErrors = {
     name?: string;
@@ -32,6 +43,7 @@ type Props = {
     onChangeName: (value: string) => void;
     onChangeAmount: (value: string) => void;
     onChangeDeadline: (value: string) => void;
+    extrasForm: GoalExtrasForm;
     /** Membro comum: vê os campos, mas só o Admin edita (RN04, L-17). */
     readOnly?: boolean;
 };
@@ -43,11 +55,11 @@ function nameInputWidth(name: string): number {
 
 /**
  * Campos comuns às Configurações individual e compartilhada:
- * identidade visual, nome e "Identificação & Objetivo".
+ * ícone, nome e "Identificação & Objetivo".
  *
- * Nome, valor objetivo e data limite são editáveis pelo Admin;
- * para o membro comum aparecem só para leitura. Os demais
- * campos dependem de L-08 e ficam "Em breve".
+ * Nome, valor, data, ícone, "sem prazo" e categoria (L-08) são
+ * editáveis pelo Admin; para o membro comum aparecem só para
+ * leitura.
  */
 export function GoalBasicsFields({
     goal,
@@ -58,26 +70,45 @@ export function GoalBasicsFields({
     onChangeName,
     onChangeAmount,
     onChangeDeadline,
+    extrasForm,
     readOnly = false,
 }: Props) {
-    const visual = getGoalVisual(goal.id);
+    const { extras, noDeadline, onChangeExtras, onChangeNoDeadline } = extrasForm;
+    const visual = getGoalVisual(goal.id, extras.icon);
     const formErrors = [errors.targetAmount, errors.deadline].filter(Boolean);
+    const [isIconOpen, setIsIconOpen] = useState(false);
+    const [isCategoryOpen, setIsCategoryOpen] = useState(false);
 
     return (
         <>
             {/* Identidade visual e nome */}
             <View style={styles.identity}>
-                <View style={styles.avatar}>
+                <Pressable
+                    onPress={() => setIsIconOpen((open) => !open)}
+                    disabled={readOnly}
+                    accessibilityRole="button"
+                    accessibilityLabel="Alterar ícone"
+                    accessibilityState={{ disabled: readOnly, expanded: isIconOpen }}
+                    style={styles.avatar}
+                >
                     <Text style={styles.avatarIcon}>{visual.icon}</Text>
 
-                    {/* Troca de ícone ou foto depende de L-08 */}
-                    <View
-                        style={styles.cameraBadge}
-                        accessibilityLabel="Alterar ícone, em breve"
-                    >
-                        <Text style={styles.cameraIcon}>📷</Text>
-                    </View>
-                </View>
+                    {!readOnly && (
+                        <View style={styles.cameraBadge}>
+                            <Text style={styles.cameraIcon}>📷</Text>
+                        </View>
+                    )}
+                </Pressable>
+
+                {isIconOpen && !readOnly && (
+                    <GoalIconGrid
+                        value={extras.icon}
+                        onChange={(icon) => {
+                            onChangeExtras({ icon });
+                            setIsIconOpen(false);
+                        }}
+                    />
+                )}
 
                 <View style={styles.nameRow}>
                     <TextInput
@@ -128,11 +159,11 @@ export function GoalBasicsFields({
                             style={styles.dateInput}
                             value={deadlineText}
                             onChangeText={onChangeDeadline}
-                            placeholder={readOnly ? 'Sem data' : 'DD/MM/AAAA'}
+                            placeholder={noDeadline ? 'Sem prazo' : readOnly ? 'Sem data' : 'DD/MM/AAAA'}
                             placeholderTextColor={colors.text.secondary}
                             keyboardType="number-pad"
                             maxLength={10}
-                            editable={!readOnly}
+                            editable={!readOnly && !noDeadline}
                             accessibilityLabel="Data limite estimada, opcional"
                         />
                     </FormRow>
@@ -140,14 +171,40 @@ export function GoalBasicsFields({
                     <FormRow
                         label="Meta sem prazo fixo"
                         description="Guardar livremente no seu próprio ritmo"
-                        comingSoon
                     >
-                        <DisabledSwitch />
+                        <GoalSwitch
+                            value={noDeadline}
+                            onValueChange={onChangeNoDeadline}
+                            label="Meta sem prazo fixo"
+                            disabled={readOnly}
+                        />
                     </FormRow>
 
-                    <FormRow icon="◇" label="Categoria" comingSoon>
-                        <Text style={styles.rowValue}>Selecionar ›</Text>
+                    <FormRow icon="◇" label="Categoria">
+                        <Pressable
+                            onPress={() => setIsCategoryOpen((open) => !open)}
+                            disabled={readOnly}
+                            accessibilityRole="button"
+                            accessibilityLabel={`Categoria: ${extras.category ?? 'nenhuma'}`}
+                            accessibilityState={{ disabled: readOnly, expanded: isCategoryOpen }}
+                            hitSlop={spacing.sm}
+                        >
+                            <Text style={[styles.rowValue, extras.category && styles.rowValueChosen]}>
+                                {extras.category ?? (readOnly ? 'Nenhuma' : 'Selecionar')}
+                                {readOnly ? '' : ' ›'}
+                            </Text>
+                        </Pressable>
                     </FormRow>
+
+                    {isCategoryOpen && !readOnly && (
+                        <GoalCategoryChips
+                            value={extras.category}
+                            onChange={(category) => {
+                                onChangeExtras({ category });
+                                setIsCategoryOpen(false);
+                            }}
+                        />
+                    )}
                 </FormSection>
 
                 {formErrors.map((message) => (
@@ -195,7 +252,6 @@ const styles = StyleSheet.create({
         backgroundColor: colors.surface.primary,
         alignItems: 'center',
         justifyContent: 'center',
-        opacity: 0.6,
         ...shadows.sm,
     },
 
@@ -250,6 +306,10 @@ const styles = StyleSheet.create({
         fontFamily: fontFamily.medium,
         fontSize: fontSize.sm,
         color: colors.text.secondary,
+    },
+
+    rowValueChosen: {
+        color: colors.primary,
     },
 
     errorText: {

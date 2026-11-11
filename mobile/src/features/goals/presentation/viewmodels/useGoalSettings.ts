@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 
 import { goalRepository } from '../../data/ApiGoalRepository';
-import type { GoalDetails } from '../../domain/Goal';
+import type { GoalDetails, GoalExtras } from '../../domain/Goal';
 import { formatCurrency } from '../utils/formatCurrency';
 import {
     isoDateToInput,
@@ -10,6 +10,7 @@ import {
     toAmountDigits,
 } from '../utils/goalForm';
 import { goalErrorMessage, isApiErrorCode } from '../utils/goalErrorMessage';
+import { NEW_GOAL_EXTRAS } from '../utils/goalOptions';
 
 type FormErrors = {
     name?: string;
@@ -23,9 +24,9 @@ export type SettingsActionResult = { ok: true } | { ok: false; message: string |
 /**
  * ViewModel das Configurações da Caixinha.
  *
- * Edita nome, valor objetivo e data limite; os demais
- * campos dependem de L-08. Também arquiva, exclui e sai do
- * grupo. Permissões (Admin, L-17) são validadas pelo backend.
+ * Edita nome, valor objetivo, data limite e os campos extras
+ * da meta (L-08). Também arquiva, exclui e sai do grupo.
+ * Permissões (Admin, L-17) são validadas pelo backend.
  */
 export function useGoalSettings(goalId: string) {
     const [goal, setGoal] = useState<GoalDetails | null>(null);
@@ -34,6 +35,8 @@ export function useGoalSettings(goalId: string) {
     const [name, setName] = useState('');
     const [amountDigits, setAmountDigits] = useState('');
     const [deadlineText, setDeadlineText] = useState('');
+    const [noDeadline, setNoDeadlineValue] = useState(false);
+    const [extras, setExtras] = useState<GoalExtras>(NEW_GOAL_EXTRAS);
     const [errors, setErrors] = useState<FormErrors>({});
     const [isSaving, setIsSaving] = useState(false);
 
@@ -50,6 +53,14 @@ export function useGoalSettings(goalId: string) {
                 setName(details.name);
                 setAmountDigits(String(Math.round(details.targetAmount * 100)));
                 setDeadlineText(isoDateToInput(details.deadline));
+                // Sem data limite é o mesmo que "Meta sem prazo fixo".
+                setNoDeadlineValue(details.deadline === null);
+                setExtras({
+                    icon: details.icon,
+                    category: details.category,
+                    monthlyReminder: details.monthlyReminder,
+                    milestonesEnabled: details.milestonesEnabled,
+                });
             }
         } finally {
             setIsLoading(false);
@@ -77,6 +88,20 @@ export function useGoalSettings(goalId: string) {
         setErrors((current) => ({ ...current, deadline: undefined }));
     }
 
+    function changeExtras(patch: Partial<GoalExtras>) {
+        setExtras((current) => ({ ...current, ...patch }));
+    }
+
+    /** "Meta sem prazo fixo": ligar apaga a data limite. */
+    function setNoDeadline(value: boolean) {
+        setNoDeadlineValue(value);
+
+        if (value) {
+            setDeadlineText('');
+            setErrors((current) => ({ ...current, deadline: undefined }));
+        }
+    }
+
     function validate(): { deadline: Date | null } | null {
         const nextErrors: FormErrors = {};
         let deadline: Date | null = null;
@@ -89,7 +114,7 @@ export function useGoalSettings(goalId: string) {
             nextErrors.targetAmount = 'Informe um valor objetivo maior que zero.';
         }
 
-        if (deadlineText) {
+        if (deadlineText && !noDeadline) {
             deadline = parseDate(deadlineText);
 
             if (!deadline) {
@@ -121,7 +146,8 @@ export function useGoalSettings(goalId: string) {
             const updated = await goalRepository.updateGoal(goalId, {
                 name: name.trim(),
                 targetAmount,
-                deadline: validated.deadline,
+                deadline: noDeadline ? null : validated.deadline,
+                ...extras,
             });
 
             return updated
@@ -236,11 +262,15 @@ export function useGoalSettings(goalId: string) {
         name,
         amountText: amountDigits ? formatCurrency(targetAmount) : '',
         deadlineText,
+        noDeadline,
+        extras,
         errors,
         isSaving,
         changeName,
         changeAmount,
         changeDeadline,
+        setNoDeadline,
+        changeExtras,
         save,
         archive,
         remove,
