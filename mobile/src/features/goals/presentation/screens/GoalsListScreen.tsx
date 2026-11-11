@@ -63,6 +63,7 @@ export function GoalsListScreen({ navigation, route }: Props) {
         selectedType,
         setSelectedType,
         isLoading,
+        error,
         reload,
     } = useGoalsList();
 
@@ -115,7 +116,12 @@ export function GoalsListScreen({ navigation, route }: Props) {
 
                 {/* Lista de Caixinhas */}
                 <View style={styles.list}>
-                    {isLoading ? (
+                    {error ? (
+                        <EmptyState
+                            title="Não foi possível carregar"
+                            description={error}
+                        />
+                    ) : isLoading ? (
                         <ActivityIndicator color={colors.primary} />
                     ) : visibleGoals.length === 0 ? (
                         <EmptyState {...emptyMessages[selectedType]} />

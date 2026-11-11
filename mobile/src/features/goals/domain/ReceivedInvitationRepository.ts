@@ -4,7 +4,7 @@ import type { InvitationPreview } from './InvitationPreview';
  * Convites recebidos: consultar e aceitar pelo código.
  *
  * Fica separado do `InvitationRepository`, que gera os
- * convites do grupo e ainda é simulado.
+ * convites do grupo.
  */
 export interface ReceivedInvitationRepository {
     /** Prévia do convite: Caixinha, quem convidou e validade. */

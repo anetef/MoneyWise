@@ -28,7 +28,7 @@ type Props = NativeStackScreenProps<MainStackParamList, 'GoalDetails'>;
  * conforme o tipo da Caixinha.
  */
 export function GoalDetailsScreen({ navigation, route }: Props) {
-    const { goal, isLoading, reload } = useGoalDetails(route.params.goalId);
+    const { goal, isLoading, error, reload } = useGoalDetails(route.params.goalId);
 
     useFocusEffect(
         useCallback(() => {
@@ -42,7 +42,9 @@ export function GoalDetailsScreen({ navigation, route }: Props) {
         }
 
         if (!goal) {
-            return (
+            return error ? (
+                <EmptyState title="Não foi possível carregar" description={error} />
+            ) : (
                 <EmptyState
                     title="Caixinha não encontrada"
                     description="Volte para a lista e selecione outra caixinha."

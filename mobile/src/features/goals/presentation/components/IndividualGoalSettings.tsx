@@ -31,6 +31,10 @@ type Props = {
     onChangeName: (value: string) => void;
     onChangeAmount: (value: string) => void;
     onChangeDeadline: (value: string) => void;
+    onArchive: () => void;
+    onDelete: () => void;
+    /** Trava as ações enquanto uma operação está em andamento. */
+    disabled?: boolean;
 };
 
 /**
@@ -38,7 +42,7 @@ type Props = {
  * (frame "Caixinha - Configurações (Individual)").
  *
  * Os campos comuns ficam em GoalBasicsFields. Arquivar e
- * excluir aparecem desativados, com "Em breve" (L-09).
+ * excluir chamam a API (só o Admin, L-17).
  */
 export function IndividualGoalSettings({
     goal,
@@ -49,6 +53,9 @@ export function IndividualGoalSettings({
     onChangeName,
     onChangeAmount,
     onChangeDeadline,
+    onArchive,
+    onDelete,
+    disabled = false,
 }: Props) {
     return (
         <View style={styles.container}>
@@ -89,38 +96,39 @@ export function IndividualGoalSettings({
                 </FormRow>
             </FormSection>
 
-            {/* Arquivar e excluir dependem de L-09 */}
             <View style={styles.actionsCard}>
                 <Pressable
-                    disabled
+                    onPress={onArchive}
+                    disabled={disabled}
                     accessibilityRole="button"
-                    accessibilityLabel="Arquivar Caixinha, em breve"
-                    accessibilityState={{ disabled: true }}
-                    style={[styles.actionRow, styles.disabled]}
+                    accessibilityLabel="Arquivar Caixinha"
+                    accessibilityState={{ disabled }}
+                    style={({ pressed }) => [
+                        styles.actionRow,
+                        (pressed || disabled) && styles.disabled,
+                    ]}
                 >
                     <Text style={styles.actionIcon}>⊡</Text>
                     <Text style={styles.actionLabel}>Arquivar Caixinha</Text>
-                    <View style={styles.soonBadge}>
-                        <Text style={styles.soonBadgeText}>Em breve</Text>
-                    </View>
                 </Pressable>
 
                 <View style={styles.divider} />
 
                 <Pressable
-                    disabled
+                    onPress={onDelete}
+                    disabled={disabled}
                     accessibilityRole="button"
-                    accessibilityLabel="Excluir Meta Cadastrada, em breve"
-                    accessibilityState={{ disabled: true }}
-                    style={[styles.actionRow, styles.disabled]}
+                    accessibilityLabel="Excluir Meta Cadastrada"
+                    accessibilityState={{ disabled }}
+                    style={({ pressed }) => [
+                        styles.actionRow,
+                        (pressed || disabled) && styles.disabled,
+                    ]}
                 >
                     <Text style={[styles.actionIcon, styles.dangerText]}>🗑</Text>
                     <Text style={[styles.actionLabel, styles.dangerText]}>
                         Excluir Meta Cadastrada
                     </Text>
-                    <View style={styles.soonBadge}>
-                        <Text style={styles.soonBadgeText}>Em breve</Text>
-                    </View>
                 </Pressable>
             </View>
 

@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 
-import { goalRepository } from '../../data/MockGoalRepository';
+import { goalRepository } from '../../data/ApiGoalRepository';
 import type { GoalDetails } from '../../domain/Goal';
 import { formatCurrency } from '../utils/formatCurrency';
 import {
@@ -9,6 +9,7 @@ import {
     parseDate,
     toAmountDigits,
 } from '../utils/goalForm';
+import { goalErrorMessage, isApiErrorCode } from '../utils/goalErrorMessage';
 
 type FormErrors = {
     name?: string;
@@ -16,11 +17,15 @@ type FormErrors = {
     deadline?: string;
 };
 
+/** Resultado de uma ação: deu certo, ou a mensagem para mostrar. */
+export type SettingsActionResult = { ok: true } | { ok: false; message: string | null };
+
 /**
  * ViewModel das Configurações da Caixinha.
  *
  * Edita nome, valor objetivo e data limite; os demais
- * campos dependem de L-08. Grava no Repository simulado.
+ * campos dependem de L-08. Também arquiva, exclui e sai do
+ * grupo. Permissões (Admin, L-17) são validadas pelo backend.
  */
 export function useGoalSettings(goalId: string) {
     const [goal, setGoal] = useState<GoalDetails | null>(null);
@@ -37,7 +42,7 @@ export function useGoalSettings(goalId: string) {
 
     const load = useCallback(async () => {
         try {
-            const details = await goalRepository.getGoalDetails(goalId);
+            const details = await goalRepository.getGoalDetails(goalId).catch(() => null);
 
             setGoal(details);
 
@@ -97,16 +102,16 @@ export function useGoalSettings(goalId: string) {
         return Object.keys(nextErrors).length === 0 ? { deadline } : null;
     }
 
-    /** Salva no Repository simulado; devolve true quando gravou. */
-    async function save(): Promise<boolean> {
+    /** Salva na API. Erro de validação local não gera mensagem (fica no campo). */
+    async function save(): Promise<SettingsActionResult> {
         if (savingRef.current) {
-            return false;
+            return { ok: false, message: null };
         }
 
         const validated = validate();
 
         if (!validated) {
-            return false;
+            return { ok: false, message: null };
         }
 
         savingRef.current = true;
@@ -119,11 +124,73 @@ export function useGoalSettings(goalId: string) {
                 deadline: validated.deadline,
             });
 
-            return updated !== null;
+            return updated
+                ? { ok: true }
+                : { ok: false, message: 'Essa Caixinha não existe mais.' };
+        } catch (e) {
+            if (isApiErrorCode(e, 'INVALID_GOAL_DEADLINE')) {
+                setErrors({ deadline: goalErrorMessage(e, '') });
+                return { ok: false, message: null };
+            }
+
+            return { ok: false, message: goalErrorMessage(e, 'Não foi possível salvar. Tente novamente.') };
         } finally {
             savingRef.current = false;
             setIsSaving(false);
         }
+    }
+
+    /** Executa uma ação da API travando a tela enquanto roda. */
+    async function runAction(
+        action: () => Promise<void>,
+        fallback: string,
+    ): Promise<SettingsActionResult> {
+        if (savingRef.current) {
+            return { ok: false, message: null };
+        }
+
+        savingRef.current = true;
+        setIsSaving(true);
+
+        try {
+            await action();
+            return { ok: true };
+        } catch (e) {
+            return { ok: false, message: goalErrorMessage(e, fallback) };
+        } finally {
+            savingRef.current = false;
+            setIsSaving(false);
+        }
+    }
+
+    /** Arquiva: sai da lista, mas guarda histórico e acumulado. */
+    function archive() {
+        return runAction(
+            () => goalRepository.archiveGoal(goalId),
+            'Não foi possível arquivar. Tente novamente.',
+        );
+    }
+
+    /** Exclui de vez (só sem saldo). */
+    function remove() {
+        return runAction(
+            () => goalRepository.deleteGoal(goalId),
+            'Não foi possível excluir. Tente novamente.',
+        );
+    }
+
+    /** Sai do grupo da Caixinha compartilhada. */
+    function leave() {
+        if (!goal) {
+            return Promise.resolve<SettingsActionResult>({ ok: false, message: null });
+        }
+
+        const groupId = goal.groupId;
+
+        return runAction(
+            () => goalRepository.leaveGroup(groupId),
+            'Não foi possível sair da Caixinha. Tente novamente.',
+        );
     }
 
     return {
@@ -138,5 +205,8 @@ export function useGoalSettings(goalId: string) {
         changeAmount,
         changeDeadline,
         save,
+        archive,
+        remove,
+        leave,
     };
 }

@@ -284,6 +284,22 @@ export class MockGoalRepository implements GoalRepository {
                 : item,
         );
     }
+
+    async archiveGoal(goalId: string): Promise<void> {
+        this.goals = this.goals.filter((item) => item.id !== goalId);
+    }
+
+    async deleteGoal(goalId: string): Promise<void> {
+        this.goals = this.goals.filter((item) => item.id !== goalId);
+    }
+
+    async leaveGroup(groupId: string): Promise<void> {
+        this.goals = this.goals.filter((item) => item.groupId !== groupId);
+    }
 }
 
-export const goalRepository: GoalRepository = new MockGoalRepository();
+/**
+ * Versão simulada, mantida para testes e demonstrações sem API.
+ * O app usa o `ApiGoalRepository`.
+ */
+export const mockGoalRepository: GoalRepository = new MockGoalRepository();

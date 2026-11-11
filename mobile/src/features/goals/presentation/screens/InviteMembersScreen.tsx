@@ -35,14 +35,15 @@ type Props = NativeStackScreenProps<MainStackParamList, 'InviteMembers'>;
  *
  * Segue a decisão L-05: código de convite compartilhado como
  * link, WhatsApp ou QR Code. E-mail e "Sugestões de Contatos"
- * ficam fora do MVP. Nenhum convite é enviado de verdade.
+ * ficam fora do MVP.
  *
  * Como o formato do link ainda não foi definido, a tela mostra,
- * copia e compartilha somente o código do convite simulado.
+ * copia e compartilha somente o código gerado pela API.
  */
 export function InviteMembersScreen({ navigation, route }: Props) {
     const {
         invitation,
+        error,
         goalName,
         expiresInDays,
         isLoading,
@@ -73,7 +74,7 @@ export function InviteMembersScreen({ navigation, route }: Props) {
             return (
                 <EmptyState
                     title="Convite indisponível"
-                    description="Não foi possível gerar o convite. Volte e tente novamente."
+                    description={error || 'Não foi possível gerar o convite. Volte e tente novamente.'}
                 />
             );
         }
@@ -126,8 +127,8 @@ export function InviteMembersScreen({ navigation, route }: Props) {
 
                     <Text style={styles.expiration}>
                         Válido por {expiresInDays}{' '}
-                        {expiresInDays === 1 ? 'dia' : 'dias'} · Convite simulado nesta
-                        versão: o código ainda não permite entrar na caixinha.
+                        {expiresInDays === 1 ? 'dia' : 'dias'} · Cada código vale
+                        para uma pessoa.
                     </Text>
                 </View>
 
