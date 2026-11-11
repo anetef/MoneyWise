@@ -9,11 +9,17 @@ export type AuthStackParamList = {
     OnboardingStep3: undefined;
 
     Welcome: undefined;
-    Login: undefined;
+    /** `passwordChanged`: volta da troca de senha, com o aviso e o e-mail preenchido. */
+    Login: { passwordChanged?: boolean; email?: string } | undefined;
     Register: undefined;
     /** Confirmação do e-mail com o código de 6 dígitos (após o cadastro). */
     VerifyEmail: { email: string };
-    ForgotPassword: undefined;
+    /** Recuperar Senha, com o e-mail que já estava no login. */
+    ForgotPassword: { email?: string } | undefined;
+    /** Verificar o código de recuperação de senha (MAU-08). */
+    ResetCode: { email: string };
+    /** Nova senha; o código vai junto porque a API confere de novo. */
+    ResetPassword: { email: string; code: string };
     /** Termos de Uso e Privacidade (L-19), abertos pelo cadastro. */
     Legal: { document?: 'terms' | 'privacy' } | undefined;
 };

@@ -18,6 +18,8 @@ import { LoginScreen } from '../../features/auth/presentation/screens/LoginScree
 import { RegisterScreen } from '../../features/auth/presentation/screens/RegisterScreen';
 import { VerifyEmailScreen } from '../../features/auth/presentation/screens/VerifyEmailScreen';
 import { ForgotPasswordScreen } from '../../features/auth/presentation/screens/ForgotPasswordScreen';
+import { ResetCodeScreen } from '../../features/auth/presentation/screens/ResetCodeScreen';
+import { ResetPasswordScreen } from '../../features/auth/presentation/screens/ResetPasswordScreen';
 import { LegalScreen } from '../../features/auth/presentation/screens/LegalScreen';
 
 const Stack = createNativeStackNavigator<AuthStackParamList>();
@@ -112,6 +114,16 @@ export function AuthStack() {
             <Stack.Screen
                 name="ForgotPassword"
                 component={ForgotPasswordScreen}
+            />
+
+            <Stack.Screen
+                name="ResetCode"
+                component={ResetCodeScreen}
+            />
+
+            <Stack.Screen
+                name="ResetPassword"
+                component={ResetPasswordScreen}
             />
 
             <Stack.Screen

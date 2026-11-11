@@ -27,6 +27,22 @@ export interface AuthRepository {
     /** Pede um novo código de confirmação (o anterior deixa de valer). */
     resendVerificationCode(email: string): Promise<void>;
 
+    /**
+     * Esqueci a senha (SEC-09): pede o código de 6 dígitos por e-mail.
+     * A API responde igual quando o e-mail não tem conta, para não
+     * revelar quem está cadastrado.
+     */
+    requestPasswordReset(email: string): Promise<void>;
+
+    /** Confere o código de recuperação sem gastá-lo. */
+    verifyResetCode(email: string, code: string): Promise<void>;
+
+    /**
+     * Troca a senha com o código. Não faz login: o usuário
+     * entra de novo com a senha nova.
+     */
+    resetPassword(email: string, code: string, newPassword: string): Promise<void>;
+
     /** Usuário da sessão atual. */
     getCurrentUser(): Promise<User>;
 

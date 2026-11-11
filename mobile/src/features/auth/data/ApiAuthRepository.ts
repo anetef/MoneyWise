@@ -86,6 +86,30 @@ export class ApiAuthRepository implements AuthRepository {
         });
     }
 
+    async requestPasswordReset(email: string): Promise<void> {
+        await apiRequest<void>('/auth/password/forgot', {
+            method: 'POST',
+            body: { email },
+            auth: false,
+        });
+    }
+
+    async verifyResetCode(email: string, code: string): Promise<void> {
+        await apiRequest<void>('/auth/password/verify-code', {
+            method: 'POST',
+            body: { email, code },
+            auth: false,
+        });
+    }
+
+    async resetPassword(email: string, code: string, newPassword: string): Promise<void> {
+        await apiRequest<void>('/auth/password/reset', {
+            method: 'POST',
+            body: { email, code, newPassword },
+            auth: false,
+        });
+    }
+
     async getCurrentUser(): Promise<User> {
         const user = await sessionStore.getUser();
 

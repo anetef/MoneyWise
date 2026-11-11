@@ -1,3 +1,4 @@
+import { ApiError } from '../../../core/api/apiClient';
 import type { AuthRepository } from '../domain/AuthRepository';
 import type { User } from '../domain/User';
 
@@ -7,6 +8,8 @@ const mockUser: User = {
     name: 'Alice Silva',
     email: 'alice.silva@email.com',
 };
+
+const MOCK_RESET_CODE = '123456';
 
 /**
  * Repository simulado da sessão.
@@ -26,6 +29,21 @@ export class MockAuthRepository implements AuthRepository {
 
     async resendVerificationCode(): Promise<void> {
         // Simulação: nenhum e-mail é enviado.
+    }
+
+    async requestPasswordReset(): Promise<void> {
+        // Simulação: nenhum e-mail é enviado.
+    }
+
+    async verifyResetCode(_email: string, code: string): Promise<void> {
+        // Simulação: só o código 123456 vale.
+        if (code !== MOCK_RESET_CODE) {
+            throw new ApiError(422, 'INVALID_RESET_CODE', 'Código inválido.');
+        }
+    }
+
+    async resetPassword(email: string, code: string): Promise<void> {
+        await this.verifyResetCode(email, code);
     }
 
     async getCurrentUser(): Promise<User> {
