@@ -15,6 +15,7 @@ import com.moneywise.goals.application.usecase.delete.DeleteGoal;
 import com.moneywise.goals.application.usecase.detail.GetGoal;
 import com.moneywise.goals.application.usecase.history.GetContributionHistory;
 import com.moneywise.goals.application.usecase.list.ListGoals;
+import com.moneywise.goals.application.usecase.subscription.AuthorizeGoalSubscription;
 import com.moneywise.goals.application.usecase.thermometer.GetGoalThermometer;
 import com.moneywise.goals.application.usecase.update.UpdateGoal;
 import com.moneywise.groups.application.GroupAuthorizationService;
@@ -77,5 +78,11 @@ public class GoalUseCaseConfig {
     DeleteGoal deleteGoal(GoalRepository goals, ContributionRepository contributions,
             GroupAuthorizationService authorization, UnitOfWork unitOfWork) {
         return new DeleteGoal(goals, contributions, authorization, unitOfWork);
+    }
+
+    @Bean
+    AuthorizeGoalSubscription authorizeGoalSubscription(GoalRepository goals,
+            GroupAuthorizationService authorization) {
+        return new AuthorizeGoalSubscription(goals, authorization);
     }
 }

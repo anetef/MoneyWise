@@ -34,6 +34,7 @@ import com.moneywise.goals.presentation.dto.GoalResponseDTO;
 import com.moneywise.goals.presentation.dto.GoalSummaryResponseDTO;
 import com.moneywise.goals.presentation.dto.ThermometerResponseDTO;
 import com.moneywise.goals.presentation.dto.UpdateGoalRequestDTO;
+import com.moneywise.goals.presentation.websocket.GoalWebSocketPublisher;
 import com.moneywise.shared.web.CurrentUserId;
 import com.moneywise.shared.web.ErrorResponse;
 
@@ -62,11 +63,12 @@ public class GoalController {
     private final UpdateGoal updateGoal;
     private final ArchiveGoal archiveGoal;
     private final DeleteGoal deleteGoal;
+    private final GoalWebSocketPublisher goalWebSocketPublisher;
 
     public GoalController(CreateGoal createGoal, GetGoalThermometer getGoalThermometer,
             RegisterContribution registerContribution, ListGoals listGoals, GetGoal getGoal,
             GetContributionHistory getContributionHistory, UpdateGoal updateGoal, ArchiveGoal archiveGoal,
-            DeleteGoal deleteGoal) {
+            DeleteGoal deleteGoal, GoalWebSocketPublisher goalWebSocketPublisher) {
         this.createGoal = createGoal;
         this.getGoalThermometer = getGoalThermometer;
         this.registerContribution = registerContribution;
@@ -76,6 +78,7 @@ public class GoalController {
         this.updateGoal = updateGoal;
         this.archiveGoal = archiveGoal;
         this.deleteGoal = deleteGoal;
+        this.goalWebSocketPublisher = goalWebSocketPublisher;
     }
 
     @PostMapping("/groups/{groupId}/goals")
@@ -138,7 +141,8 @@ public class GoalController {
                     recusada e o acumulado nunca fica negativo. A resposta é o novo estado do Termômetro, no mesmo \
                     formato de GET /goals/{id}/thermometer (RF-17). O id é gerado no app: o reenvio com o mesmo id \
                     não registra de novo e devolve o Termômetro atual, também com 201 (seção 6.4). \
-                    Nenhum saldo pessoal é retornado: só os movimentos das Caixinhas são visíveis ao grupo (RN02/RN08).""")
+                    Nenhum saldo pessoal é retornado: só os movimentos das Caixinhas são visíveis ao grupo (RN02/RN08). \
+                    O mesmo Termômetro é publicado em /topic/goals/{id} para os membros inscritos (RF-19).""")
     @ApiResponses({
             @ApiResponse(responseCode = "201", description = "Movimento registrado (ou já existente, no reenvio)",
                     content = @Content(schema = @Schema(implementation = ThermometerResponseDTO.class))),
@@ -156,7 +160,10 @@ public class GoalController {
     public ThermometerResponseDTO registerContribution(@PathVariable UUID id,
             @Valid @RequestBody CreateContributionRequestDTO request, @CurrentUserId UUID userId) {
         var command = new RegisterContributionCommand(request.id(), id, userId, request.type(), request.amount());
-        return ThermometerResponseDTO.from(registerContribution.execute(command));
+        ThermometerResponseDTO thermometer = ThermometerResponseDTO.from(registerContribution.execute(command));
+        // Só chega aqui se o caso de uso terminou com sucesso (transação concluída); com erro, nada é publicado.
+        goalWebSocketPublisher.publish(thermometer);
+        return thermometer;
     }
 
     @GetMapping("/goals")
