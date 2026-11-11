@@ -67,12 +67,10 @@ export function GoalContributionScreen({ navigation, route }: Props) {
         kind,
         canWithdraw,
         amountText,
-        description,
         errors,
         isSaving,
         changeKind,
         changeAmount,
-        changeDescription,
         save,
     } = useGoalContribution(route.params.goalId, route.params.kind);
 
@@ -172,29 +170,7 @@ export function GoalContributionScreen({ navigation, route }: Props) {
                         <Text style={styles.sectionTitle}>Detalhes</Text>
 
                         <View style={styles.card}>
-                            {/* Descrição só nos dados simulados; não confirmada no contrato */}
-                            <View style={styles.detailRow}>
-                                <View style={styles.detailIcon}>
-                                    <Text style={styles.detailIconText}>✎</Text>
-                                </View>
-
-                                <View style={styles.detailContent}>
-                                    <Text style={styles.detailLabel}>
-                                        Descrição (opcional)
-                                    </Text>
-                                    <TextInput
-                                        style={styles.detailInput}
-                                        value={description}
-                                        onChangeText={changeDescription}
-                                        placeholder={isWithdrawal ? 'Ex.: Compra da passagem' : 'Ex.: Economia do mês'}
-                                        placeholderTextColor={colors.text.secondary}
-                                        maxLength={80}
-                                        accessibilityLabel="Descrição, opcional"
-                                    />
-                                </View>
-                            </View>
-
-                            <View style={styles.divider} />
+                            {/* A API não guarda descrição do movimento: o campo foi retirado. */}
 
                             {/* Data do registro, definida pelo sistema */}
                             <View style={styles.detailRow}>

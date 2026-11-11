@@ -1,5 +1,5 @@
 /**
- * Gera um UUID v4 para a transação.
+ * Gera um UUID v4 para registros criados no app (transações, Caixinhas, aportes...).
  *
  * A API exige que o ID venha do app: assim, se a mesma transação
  * for enviada duas vezes (ex.: internet caiu no meio), ela não duplica.
