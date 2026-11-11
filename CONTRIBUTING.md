@@ -100,7 +100,7 @@ chore(mobile): atualiza dependências do Expo
 
 - **Título** com o ID da task: `[SEC-05] Cadastro de usuário`.
 - **Base:** `develop` (só a PR de release usa `main` como base).
-- **Descrição:** preencha o template (é carregado automaticamente). Ele pede o link da issue (`Closes #n`), o que foi feito, como testar e o checklist da Definition of Done.
+- **Descrição:** preencha o template (é carregado automaticamente). Ele pede a referência da issue (`Refs #n`), o que foi feito, como testar e o checklist da Definition of Done.
 - Antes de abrir: `develop` atualizada na sua branch, build passando e testes da task passando na sua máquina.
 - PR pequena e focada: se a task ficou grande demais, converse com o time para dividir.
 
@@ -111,7 +111,8 @@ chore(mobile): atualiza dependências do Expo
 - Toda PR precisa de **pelo menos 1 aprovação** de outra pessoa do time antes do merge. Quem abriu a PR não aprova a própria.
 - Quem revisa confere os critérios de aceitação da issue e a Definition of Done.
 - Pedidos de mudança são respondidos com novos commits na mesma branch.
-- O merge em `develop` é feito com **squash and merge**, para que cada task vire um único commit na `develop`. A mensagem do squash segue o padrão de commit (ex.: `feat: adiciona cadastro de usuário (#45)`).
+- O merge em `develop` é feito com **merge commit** (botão "Create a merge commit"), mantendo os commits da branch na `develop`.
+- A PR usa `Refs #n`, então a issue não fecha sozinha no merge: ela é fechada depois que a entrega é revisada.
 - Depois do merge, apague a branch da task.
 
 ## 7. Definition of Done

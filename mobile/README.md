@@ -1,67 +1,35 @@
-# MoneyWise
+# MoneyWise · Aplicativo móvel
 
-O **MoneyWise** é uma aplicação desenvolvida para auxiliar no controle financeiro pessoal, permitindo que o usuário registre e acompanhe suas transações de forma simples e organizada.
+Aplicativo do MoneyWise para Android e iOS, feito com **React Native**, **Expo** e **TypeScript**. Ele consome a API REST do projeto (pasta `backend/`) e recebe as atualizações do Termômetro em tempo real via WebSocket/STOMP.
 
-## Funcionalidades
+A visão geral do projeto, a arquitetura e as regras de contribuição estão no [README principal](../README.md) e no [CONTRIBUTING.md](../CONTRIBUTING.md).
 
-- Cadastro de usuários
-- Login e autenticação
-- Sessão persistente
-- Cadastro de transações
-- Edição e exclusão de transações
-- Listagem e histórico de transações
-- Filtro por período
-- Resumo financeiro
+## Organização
 
-## Tecnologias utilizadas
-
-- Flutter
-- Dart
-- Firebase Authentication
-- Firebase
-- BLoC
-- Figma
-- Git e GitHub
-
-## Como executar o projeto
-
-### Pré-requisitos
-
-- Flutter instalado
-- Dart configurado
-- Firebase configurado
-- Git instalado
-
-### Instalação
-
-Clone o repositório:
-
-```bash
-git clone https://github.com/anetef/MoneyWise.git
-Entre na pasta do projeto:
-
-```bash
-cd MoneyWise
+```
+src/
+├── core/        # api, navigation, realtime, storage, theme, utils
+└── features/    # auth, onboarding, transactions, reports, goals
 ```
 
-Instale as dependências:
+O app segue **MVVM com Repository**: a tela (View) usa um ViewModel (hook), que chama um Repository, e só o Repository fala com a API ou com o armazenamento local.
 
-```bash
-flutter pub get
-```
+## Como rodar
 
-Execute a aplicação:
+1. Suba o banco e a API seguindo o [README principal](../README.md#-como-executar).
+2. Crie o arquivo `mobile/.env.local` com o endereço da API. No celular, use o IP do computador na rede, e não `localhost`:
 
-```bash
-flutter run
-```
+   ```bash
+   EXPO_PUBLIC_API_URL=http://192.168.0.10:8080/api/v1
+   ```
 
-## Organização do projeto
+3. Instale as dependências e inicie o Expo:
 
-O desenvolvimento é organizado por meio de Issues, Sprints e GitHub Projects.
+   ```bash
+   npm install
+   npx expo start
+   ```
 
-As novas funcionalidades são desenvolvidas em branches específicas e integradas à branch `develop` após revisão.
+4. Leia o QR Code com o app **Expo Go** ou pressione `a` (Android) ou `i` (iOS) para abrir no emulador.
 
-## Equipe
-
-Projeto desenvolvido por estudantes de Engenharia de Software como atividade acadêmica.
+O app não será publicado nas lojas nesta versão: ele é instalado e apresentado pelo Expo.
