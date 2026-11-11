@@ -18,6 +18,7 @@ import { LoginScreen } from '../../features/auth/presentation/screens/LoginScree
 import { RegisterScreen } from '../../features/auth/presentation/screens/RegisterScreen';
 import { VerifyEmailScreen } from '../../features/auth/presentation/screens/VerifyEmailScreen';
 import { ForgotPasswordScreen } from '../../features/auth/presentation/screens/ForgotPasswordScreen';
+import { LegalScreen } from '../../features/auth/presentation/screens/LegalScreen';
 
 const Stack = createNativeStackNavigator<AuthStackParamList>();
 
@@ -111,6 +112,11 @@ export function AuthStack() {
             <Stack.Screen
                 name="ForgotPassword"
                 component={ForgotPasswordScreen}
+            />
+
+            <Stack.Screen
+                name="Legal"
+                component={LegalScreen}
             />
         </Stack.Navigator>
     );

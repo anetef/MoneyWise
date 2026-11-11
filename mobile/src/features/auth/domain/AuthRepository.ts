@@ -8,8 +8,11 @@ import type { User } from './User';
  * endpoint `/users/me` (L-09).
  */
 export interface AuthRepository {
-        /** Faz login e guarda a sessão no aparelho. */
-    login(email: string, password: string): Promise<User>;
+    /**
+     * Faz login. Com `remember`, guarda a sessão no aparelho;
+     * sem, a sessão some ao fechar o app (L-02).
+     */
+    login(email: string, password: string, remember: boolean): Promise<User>;
 
     /**
      * Cria a conta com o e-mail ainda não confirmado.
