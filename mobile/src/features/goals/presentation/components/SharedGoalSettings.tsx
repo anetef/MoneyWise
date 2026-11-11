@@ -9,7 +9,7 @@ import {
     spacing,
 } from '../../../../core/theme';
 
-import type { GoalDetails } from '../../domain/Goal';
+import type { GoalDetails, GoalMember } from '../../domain/Goal';
 
 import { DisabledSwitch } from './DisabledSwitch';
 import { FormRow } from './FormRow';
@@ -35,6 +35,8 @@ type Props = {
     onInvite: () => void;
     onLeave: () => void;
     onArchive: () => void;
+    /** Só o Admin remove membros (RN04, L-10). */
+    onRemoveMember: (member: GoalMember) => void;
     /** Trava as ações enquanto uma operação está em andamento. */
     disabled?: boolean;
 };
@@ -44,8 +46,9 @@ type Props = {
  * (frame "Caixinha - Configurações (Compartilhada)").
  *
  * Os campos comuns ficam em GoalBasicsFields. Membros e papéis
- * vêm da API. Sair e arquivar chamam a API; gerenciar
- * permissões e regras do grupo seguem com "Em breve" (L-10).
+ * vêm da API. Sair, arquivar e remover membro (só o Admin)
+ * chamam a API; gerenciar permissões e regras do grupo seguem
+ * com "Em breve" (L-10).
  */
 export function SharedGoalSettings({
     goal,
@@ -59,8 +62,11 @@ export function SharedGoalSettings({
     onInvite,
     onLeave,
     onArchive,
+    onRemoveMember,
     disabled = false,
 }: Props) {
+    const isAdmin = goal.members.some((member) => member.isCurrentUser && member.role === 'admin');
+
     return (
         <View style={styles.container}>
             <GoalBasicsFields
@@ -79,7 +85,17 @@ export function SharedGoalSettings({
                 asideAction={{ label: '+ Convidar', onPress: onInvite }}
             >
                 {goal.members.map((member) => (
-                    <MemberSettingsItem key={member.id} member={member} />
+                    <MemberSettingsItem
+                        key={member.id}
+                        member={member}
+                        // O Admin remove os outros; para si mesmo há "Sair desta Caixinha".
+                        onRemove={
+                            isAdmin && !member.isCurrentUser
+                                ? () => onRemoveMember(member)
+                                : undefined
+                        }
+                        disabled={disabled}
+                    />
                 ))}
 
                 {/* Gerenciar convites e permissões depende de L-05 e L-10 */}

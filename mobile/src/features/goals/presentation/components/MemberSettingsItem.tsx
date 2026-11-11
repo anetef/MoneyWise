@@ -16,6 +16,10 @@ import { goalColors } from './goalColors';
 
 type Props = {
     member: GoalMember;
+    /** Só o Admin vê o ⋮, e só nos outros membros. Sem isso, o ⋮ some. */
+    onRemove?: () => void;
+    /** Trava o ⋮ enquanto uma operação está em andamento. */
+    disabled?: boolean;
 };
 
 // Papéis da arquitetura; Criador/Editor/Leitor do Figma dependem de L-10.
@@ -26,10 +30,10 @@ const roleLabels: Record<GoalMember['role'], string> = {
 
 /**
  * Membro na lista das Configurações da Caixinha compartilhada:
- * papel e valor registrado. O menu ⋮ fica desativado até a
- * gestão de membros existir (GRP-03, L-10).
+ * papel e valor registrado. O ⋮ remove o membro (só o Admin,
+ * RN04); para quem não pode remover, ele não aparece.
  */
-export function MemberSettingsItem({ member }: Props) {
+export function MemberSettingsItem({ member, onRemove, disabled = false }: Props) {
     const name = member.isCurrentUser ? `${member.name} (Você)` : member.name;
     const role = roleLabels[member.role];
     const amount = formatCurrency(member.contributedAmount);
@@ -64,15 +68,22 @@ export function MemberSettingsItem({ member }: Props) {
                 <Text style={styles.amount}>Registrou: {amount}</Text>
             </View>
 
-            <Pressable
-                disabled
-                accessibilityRole="button"
-                accessibilityLabel={`Opções de ${member.name}, em breve`}
-                accessibilityState={{ disabled: true }}
-                style={[styles.menuButton, styles.disabled]}
-            >
-                <Text style={styles.menuIcon}>⋮</Text>
-            </Pressable>
+            {onRemove ? (
+                <Pressable
+                    onPress={onRemove}
+                    disabled={disabled}
+                    accessibilityRole="button"
+                    accessibilityLabel={`Remover ${member.name} da Caixinha`}
+                    accessibilityState={{ disabled }}
+                    hitSlop={spacing.md}
+                    style={({ pressed }) => [
+                        styles.menuButton,
+                        (pressed || disabled) && styles.disabled,
+                    ]}
+                >
+                    <Text style={styles.menuIcon}>⋮</Text>
+                </Pressable>
+            ) : null}
         </View>
     );
 }
@@ -152,8 +163,10 @@ const styles = StyleSheet.create({
     },
 
     menuButton: {
-        width: 24,
+        width: 32,
+        minHeight: 44,
         alignItems: 'center',
+        justifyContent: 'center',
     },
 
     menuIcon: {

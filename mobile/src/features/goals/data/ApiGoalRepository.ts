@@ -370,6 +370,12 @@ export class ApiGoalRepository implements GoalRepository {
     async leaveGroup(groupId: string): Promise<void> {
         await apiRequest<void>(`/groups/${groupId}/members/me`, { method: 'DELETE' });
     }
+
+    async removeMember(groupId: string, memberId: string): Promise<void> {
+        // Continua compartilhada mesmo se sobrar só o Admin (ver sharedGroupsStore).
+        await sharedGroupsStore.add(groupId);
+        await apiRequest<void>(`/groups/${groupId}/members/${memberId}`, { method: 'DELETE' });
+    }
 }
 
 export const goalRepository: GoalRepository = new ApiGoalRepository();

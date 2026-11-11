@@ -296,6 +296,17 @@ export class MockGoalRepository implements GoalRepository {
     async leaveGroup(groupId: string): Promise<void> {
         this.goals = this.goals.filter((item) => item.groupId !== groupId);
     }
+
+    async removeMember(groupId: string, memberId: string): Promise<void> {
+        // Tira o membro da lista; os aportes continuam no total.
+        this.goals
+            .filter((item) => item.groupId === groupId)
+            .forEach((item) => {
+                const details = this.detailsFor(item);
+                details.members = details.members.filter((member) => member.id !== memberId);
+                this.details[item.id] = details;
+            });
+    }
 }
 
 /**
